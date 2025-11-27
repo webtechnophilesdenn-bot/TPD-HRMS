@@ -1,0 +1,678 @@
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:38:48.132Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5001","timestamp":"2025-11-24T00:38:48.152Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T00:38:48.245Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:40:16.094Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5001","timestamp":"2025-11-24T00:40:16.140Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T00:40:16.224Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T00:45:24.514Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T00:45:31.520Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T00:45:44.994Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:50:54.428Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5001","timestamp":"2025-11-24T00:50:54.437Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T00:51:23.743Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:53:11.791Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5001","timestamp":"2025-11-24T00:53:11.800Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T00:53:11.826Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:58:58.155Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T00:58:58.165Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T00:58:58.211Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T00:59:58.520Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T00:59:58.525Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T01:00:28.100Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:01:31.755Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:01:31.769Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:01:31.799Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T01:03:15.531Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:04:19.568Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:04:25.484Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:05:44.204Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:07:12.572Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:07:12.592Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:07:12.609Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:07:18.978Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:07:20.472Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:07:20.482Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:07:20.507Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:07:31.305Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:07:31.311Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:07:31.342Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:07:41.819Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:07:42.265Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:07:45.879Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:08:25.386Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:09:37.694Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:09:37.708Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:09:37.742Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:09:42.873Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:09:42.883Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:09:42.906Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:09:49.851Z"}
+{"level":"error","message":"Job validation failed: hiringManager: Path `hiringManager` is required.","name":"ValidationError","stack":"ValidationError: Job validation failed: hiringManager: Path `hiringManager` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:10:39.936Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:16:57.194Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:16:57.218Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:16:57.281Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:17:09.796Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:17:09.806Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:17:09.831Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:17:32.759Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:17:32.776Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:17:32.833Z"}
+{"level":"error","message":"Offboarding validation failed: resignationDate: Path `resignationDate` is required.","name":"ValidationError","stack":"ValidationError: Offboarding validation failed: resignationDate: Path `resignationDate` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:21:18.076Z"}
+{"level":"error","message":"Offboarding validation failed: resignationDate: Path `resignationDate` is required.","name":"ValidationError","stack":"ValidationError: Offboarding validation failed: resignationDate: Path `resignationDate` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:21:25.710Z"}
+{"level":"error","message":"Offboarding validation failed: resignationDate: Path `resignationDate` is required.","name":"ValidationError","stack":"ValidationError: Offboarding validation failed: resignationDate: Path `resignationDate` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T01:21:36.970Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:22:25.866Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:22:25.876Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:22:25.908Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:30:53.295Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:30:53.318Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:30:53.384Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T01:32:58.662Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T01:32:58.682Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T01:32:58.776Z"}
+{"level":"error","message":"Asset validation failed: assetId: Path `assetId` is required.","name":"ValidationError","stack":"ValidationError: Asset validation failed: assetId: Path `assetId` is required.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T02:21:00.334Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:22:40.699Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:22:40.726Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:22:40.775Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:22:51.621Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:22:51.632Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:22:51.666Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:28:14.199Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:30:47.383Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:30:47.390Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:30:47.414Z"}
+{"level":"error","message":"Asset validation failed: status: `Assigned` is not a valid enum value for path `status`.","name":"ValidationError","stack":"ValidationError: Asset validation failed: status: `Assigned` is not a valid enum value for path `status`.\n    at Document.invalidate (C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\hrmsbackend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-24T02:34:43.182Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:36:44.330Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:36:44.390Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:36:50.945Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:01.826Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:08.543Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:15.320Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:22.145Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:28.985Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:33.268Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:37:42.941Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T02:41:54.169Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:43:20.025Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:43:20.046Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:43:20.095Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:43:32.159Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:43:32.178Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:43:32.225Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:43:44.671Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:43:44.691Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:43:44.764Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:45:14.848Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:45:14.858Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:45:14.890Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:48:48.222Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:48:48.234Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:48:48.262Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:48:53.911Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:48:53.926Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:48:53.973Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T02:57:30.052Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T02:57:30.067Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T02:57:30.106Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:01:19.680Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:01:19.693Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:01:19.729Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:01:21.589Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:01:21.601Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:01:21.632Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:03:04.661Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:03:04.671Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:03:04.702Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:08:12.130Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:08:12.145Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:08:12.191Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\hrmsbackend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T03:08:47.620Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:09:50.694Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:09:50.704Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:09:50.736Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:11:18.741Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:11:18.749Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:11:18.771Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:15:54.703Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:15:54.731Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:15:54.831Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:16:11.168Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:16:11.175Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:16:11.205Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:18:41.825Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:18:41.834Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:18:41.861Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:19:01.415Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:19:01.423Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:19:01.452Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:21:50.853Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:21:50.881Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:21:50.969Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:23:05.702Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:23:05.713Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:23:05.756Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:23:50.854Z"}
+{"level":"info","message":"✓ Database connected successfully","timestamp":"2025-11-24T03:23:50.861Z"}
+{"level":"info","message":"✓ Default leave types seeded successfully (5 types)","timestamp":"2025-11-24T03:23:51.042Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:23:51.054Z"}
+{"level":"info","message":"✓ Cron jobs initialized","timestamp":"2025-11-24T03:23:51.055Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:23:51.056Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:25:15.291Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:25:15.299Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:25:15.327Z"}
+{"level":"info","message":"Starting birthday reminder job","timestamp":"2025-11-24T03:30:00.445Z"}
+{"level":"info","message":"Starting document expiry alert job","timestamp":"2025-11-24T03:30:00.453Z"}
+{"level":"info","message":"Birthday reminder job completed","timestamp":"2025-11-24T03:30:00.465Z"}
+{"level":"info","message":"Document expiry alerts sent","timestamp":"2025-11-24T03:30:00.468Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:32:24.173Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:32:24.715Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:32:24.782Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:37:24.401Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:37:24.427Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:37:24.514Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:41:01.761Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:41:01.773Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:41:01.831Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:44:42.537Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:44:42.558Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:46:04.856Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:46:04.892Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:46:04.958Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:46:21.360Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:46:21.845Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:46:21.919Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:46:28.726Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:46:28.737Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:46:28.777Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:46:48.624Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:46:48.641Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:46:48.689Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:46:53.843Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:46:53.864Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:46:53.927Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:47:11.172Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:47:11.195Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:47:11.252Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:47:18.182Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:47:18.196Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:47:18.239Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:48:08.478Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:48:08.497Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:48:08.536Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:48:13.670Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:48:13.684Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:48:13.719Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:53:08.929Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:53:08.943Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:53:08.996Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:54:30.813Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:54:30.834Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:54:30.890Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:55:29.394Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:55:29.416Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:55:42.653Z"}
+{"level":"error","message":"Training.paginate is not a function","name":"TypeError","stack":"TypeError: Training.paginate is not a function\n    at exports.getAllTrainings (C:\\HRMS\\hrmsbackend\\src\\controllers\\trainingController.js:64:38)\n    at Layer.handle [as handle_request] (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n    at next (C:\\HRMS\\hrmsbackend\\node_modules\\express\\lib\\router\\route.js:149:13)\n    at exports.protect (C:\\HRMS\\hrmsbackend\\src\\middlewares\\auth.middleware.js:27:5)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-24T03:55:42.663Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T03:59:06.985Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T03:59:07.007Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T03:59:07.073Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T04:00:48.605Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T04:00:48.629Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T04:00:48.691Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T04:01:25.925Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T04:01:25.963Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T04:01:26.103Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T04:01:39.551Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T04:01:39.562Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T04:01:39.614Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T04:02:10.251Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T04:02:10.264Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T04:02:10.308Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T11:54:15.193Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T11:54:15.204Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T11:54:15.259Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T11:57:13.762Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T11:57:13.770Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T11:57:13.795Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T12:02:57.579Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T12:11:27.755Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T12:11:27.786Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T12:11:27.831Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T12:13:10.758Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T12:13:10.769Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T12:13:10.799Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T12:13:24.387Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T12:13:24.395Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T12:13:24.426Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:10:41.491Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:10:41.506Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:10:41.540Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:11:00.613Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:11:00.620Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:11:00.643Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:18:33.398Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:18:33.406Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:18:33.444Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:19:31.486Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:19:31.495Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:19:31.545Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:21:01.428Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:21:01.444Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:21:01.489Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:21:31.851Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:21:31.859Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:21:31.888Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:21:38.986Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:21:38.995Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:21:39.028Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:23:44.214Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:23:44.226Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:23:44.257Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:23:46.466Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:23:46.474Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:23:46.502Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:24:06.191Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:24:06.204Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:24:06.247Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:31:20.060Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:31:20.079Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:31:20.149Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:31:27.284Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:31:27.312Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:31:27.365Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:31:38.171Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:31:38.185Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:31:38.225Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:57:01.467Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:57:01.479Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:57:01.509Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:57:09.252Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:57:09.263Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:57:09.311Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:57:47.467Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:57:47.479Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:57:47.515Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T13:59:35.878Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T13:59:35.891Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T13:59:35.937Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T14:02:16.390Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T14:02:40.157Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:14:44.524Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:14:44.533Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:14:44.556Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:02.238Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:02.247Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:02.275Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:04.809Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:04.818Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:04.846Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:30.271Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:30.278Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:30.303Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:33.430Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:33.438Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:33.461Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:44.781Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:44.790Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:44.821Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:16:47.600Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:16:47.610Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:16:47.703Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:17:10.527Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:17:10.536Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:17:10.565Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:17:15.528Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:17:15.537Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:17:15.558Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:17:48.570Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:17:48.579Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:17:48.608Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:17:52.401Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:17:52.409Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:17:52.434Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:20:20.047Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:20:20.056Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:20:20.090Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:20:25.877Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:20:25.888Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:20:25.918Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T14:53:40.991Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T14:53:41.011Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T14:53:41.059Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T16:33:16.264Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T16:33:16.275Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T16:33:16.298Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T18:21:46.651Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T18:21:46.662Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T18:21:46.690Z"}
+{"level":"error","message":"Cast to ObjectId failed for value \"\" (type string) at path \"_id\" for model \"Employee\"","name":"CastError","stack":"CastError: Cast to ObjectId failed for value \"\" (type string) at path \"_id\" for model \"Employee\"\n    at SchemaObjectId.cast (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\schema\\objectId.js:253:11)\n    at SchemaType.applySetters (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\schemaType.js:1288:12)\n    at SchemaType.castForQuery (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\schemaType.js:1724:17)\n    at cast (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\cast.js:390:32)\n    at Query.cast (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:5060:12)\n    at Query._castConditions (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:2374:10)\n    at model.Query._findOne (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:2697:8)\n    at model.Query.exec (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:4627:80)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async exports.createOnboarding (C:\\HRMS\\HRMS-backend\\src\\controllers\\onboarding.controller.js:12:22)","timestamp":"2025-11-24T19:13:57.133Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-24T19:16:24.048Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T19:27:06.243Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T19:27:06.255Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T19:27:35.320Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T19:52:20.963Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T19:52:20.973Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T19:52:50.373Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T19:56:36.139Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T19:56:36.149Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T19:57:05.578Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T19:59:51.778Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T19:59:51.786Z"}
+{"level":"error","message":"Operation `users.findOne()` buffering timed out after 10000ms","name":"MongooseError","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\drivers\\node-mongodb-native\\collection.js:187:23)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)","timestamp":"2025-11-24T20:00:12.511Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:00:21.349Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:04:42.035Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:04:42.049Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:05:11.519Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:05:39.960Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:05:39.968Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:06:09.627Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:06:50.099Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:06:50.105Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:07:19.746Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:08:01.040Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:08:01.047Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:08:30.720Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:10:03.836Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:10:03.843Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:10:33.383Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:14:33.012Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:14:33.019Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:15:02.647Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:17:20.330Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:17:20.336Z"}
+{"level":"error","message":"Operation `users.findOne()` buffering timed out after 10000ms","name":"MongooseError","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\drivers\\node-mongodb-native\\collection.js:187:23)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)","timestamp":"2025-11-24T20:17:36.779Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed:","timestamp":"2025-11-24T20:17:50.027Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:21:49.429Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:21:49.436Z"}
+{"level":"error","message":"Operation `users.findOne()` buffering timed out after 10000ms","name":"MongooseError","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\drivers\\node-mongodb-native\\collection.js:187:23)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)","timestamp":"2025-11-24T20:22:07.093Z"}
+{"level":"error","message":"Operation `users.findOne()` buffering timed out after 10000ms","name":"MongooseError","stack":"MongooseError: Operation `users.findOne()` buffering timed out after 10000ms\n    at Timeout.<anonymous> (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\drivers\\node-mongodb-native\\collection.js:187:23)\n    at listOnTimeout (node:internal/timers:594:17)\n    at process.processTimers (node:internal/timers:529:7)","timestamp":"2025-11-24T20:22:15.377Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed: connect ECONNREFUSED 127.0.0.1:27017","timestamp":"2025-11-24T20:22:19.122Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-24T20:23:22.350Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-24T20:23:22.357Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-24T20:23:22.380Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:07:16.719Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:07:16.740Z"}
+{"level":"error","message":"❌ MongoDB Connection Failed: connect ECONNREFUSED 127.0.0.1:27017","timestamp":"2025-11-25T10:07:45.667Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:09:34.873Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:09:34.882Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:09:34.909Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:19:31.681Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:19:31.693Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:19:31.782Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:20:32.153Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:20:32.160Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:20:32.184Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:23:12.742Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:23:12.759Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:23:12.796Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-25T10:26:34.904Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-25T10:32:48.258Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:43:31.489Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:43:31.515Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:43:31.575Z"}
+{"code":20,"level":"error","message":"Transaction numbers are only allowed on a replica set member or mongos","name":"MongoServerError","stack":"MongoServerError: Transaction numbers are only allowed on a replica set member or mongos\n    at Connection.sendCommand (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:306:27)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Connection.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cmap\\connection.js:334:26)\n    at async Server.command (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\sdam\\server.js:194:29)\n    at async tryOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:213:32)\n    at async executeOperation (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\operations\\execute_operation.js:78:16)\n    at async FindCursor._initialize (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\find_cursor.js:62:26)\n    at async FindCursor.cursorInit (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:632:27)\n    at async FindCursor.fetchBatch (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:666:13)\n    at async FindCursor.next (C:\\HRMS\\HRMS-backend\\node_modules\\mongodb\\lib\\cursor\\abstract_cursor.js:342:17)","timestamp":"2025-11-25T10:45:40.478Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:47:48.625Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:47:48.631Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:47:48.658Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T10:48:48.568Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T10:48:48.579Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T10:48:48.619Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:09:58.816Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:09:58.834Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:09:58.869Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:11:13.609Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:11:13.620Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:11:13.652Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:12:19.899Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:12:19.908Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:12:19.936Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:16:53.402Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:16:53.421Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:16:53.456Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:17:00.185Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:17:00.194Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:17:00.219Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:18:02.230Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:18:02.246Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:18:02.300Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:18:08.476Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:18:08.486Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:18:08.527Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:18:13.457Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:18:13.465Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:18:13.493Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:18:21.489Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:18:21.504Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:18:21.547Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:19:12.108Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:19:12.115Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:19:12.141Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:19:14.411Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:19:14.423Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:19:14.458Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:21:20.152Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:21:20.164Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:21:20.195Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:21:23.787Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:21:23.798Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:21:23.830Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:21:29.649Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:21:29.661Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:21:29.694Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:21:48.084Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:21:48.092Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:21:48.114Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:21:52.918Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:21:52.933Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:21:52.976Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:23:09.908Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:23:09.917Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:23:09.948Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:23:14.796Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:23:14.809Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:23:14.845Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:26:39.617Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:26:39.625Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:26:39.645Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:26:52.275Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:26:52.282Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:26:52.303Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:26:54.144Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:26:54.151Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:26:54.172Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:27:16.892Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:27:16.900Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:27:16.920Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:27:20.766Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:27:20.776Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:27:20.818Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-25T11:29:00.227Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-25T11:29:00.236Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-25T11:29:00.261Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T14:47:33.595Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T14:47:33.606Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T14:47:33.643Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T14:48:50.861Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T14:48:50.902Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T14:48:50.978Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T14:55:55.511Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T14:55:55.526Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T14:55:55.579Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:01:54.101Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:01:54.113Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:01:54.144Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:06:18.258Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:06:18.266Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:06:18.288Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:26:39.098Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:26:39.115Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:26:39.144Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:36:19.176Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:36:19.197Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:36:19.228Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:36:39.845Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:36:39.856Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:36:39.885Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:36:50.716Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:36:50.743Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:36:50.778Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:42:58.555Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:42:58.565Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:42:58.598Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:43:25.474Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:43:25.489Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:43:25.529Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T15:44:03.548Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T15:44:03.559Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T15:44:03.596Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:10:40.123Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:10:40.147Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:10:40.182Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:11:09.596Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:11:09.606Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:11:09.650Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:11:35.993Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:11:36.007Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:11:36.057Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:12:47.368Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:12:47.380Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:12:47.415Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:13:35.412Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:13:35.425Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:13:35.461Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:14:26.891Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:14:26.900Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:14:26.929Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:17:14.390Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:17:14.404Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:17:14.453Z"}
+{"level":"error","message":"leaveBalance.getCurrentBalance is not a function","name":"TypeError","stack":"TypeError: leaveBalance.getCurrentBalance is not a function\n    at exports.applyLeave (C:\\HRMS\\HRMS-backend\\src\\controllers\\leaveController.js:92:53)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-26T16:18:25.257Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:21:03.936Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:21:03.949Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:21:03.998Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:21:17.298Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:21:17.308Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:21:17.342Z"}
+{"level":"error","message":"leaveBalance.getCurrentBalance is not a function","name":"TypeError","stack":"TypeError: leaveBalance.getCurrentBalance is not a function\n    at exports.applyLeave (C:\\HRMS\\HRMS-backend\\src\\controllers\\leaveController.js:92:53)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-26T16:21:58.407Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:25:19.394Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:25:19.422Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:25:19.492Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:26:07.240Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:26:07.254Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:26:07.298Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:30:44.537Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:30:44.551Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:30:44.586Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:32:50.463Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:32:50.472Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:32:50.508Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:39:05.977Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:39:05.993Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:39:06.026Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:42:37.040Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:42:37.054Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:42:37.118Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:42:58.713Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:42:58.726Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:42:58.790Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:56:55.917Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:56:55.933Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:56:55.974Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:57:32.089Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:57:32.097Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:57:32.121Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T16:57:48.149Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T16:57:48.156Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T16:57:48.183Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:01:45.495Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:01:45.502Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:01:45.527Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:02:14.358Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:02:14.366Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:02:14.390Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:14:09.208Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:14:09.221Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:14:09.255Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:14:46.862Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:14:46.870Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:14:46.897Z"}
+{"level":"info","message":"Starting auto-attendance job","timestamp":"2025-11-26T17:30:00.863Z"}
+{"level":"info","message":"Auto-attendance job completed","timestamp":"2025-11-26T17:30:00.908Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:50:45.019Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:50:45.055Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:50:45.120Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:50:52.913Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:50:52.929Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:50:52.968Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T17:54:17.790Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T17:54:17.802Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T17:54:17.832Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T18:41:23.993Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T18:41:24.009Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T18:41:24.045Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T18:41:26.856Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T18:41:26.865Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T18:41:26.888Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T18:41:47.604Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T18:41:47.613Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T18:41:47.639Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T19:18:36.905Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T19:18:36.923Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T19:18:36.954Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:11:44.044Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:11:44.060Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:11:44.089Z"}
+{"level":"error","message":"Recognition validation failed: type: `Monthly Award` is not a valid enum value for path `type`., category: `Teamwork` is not a valid enum value for path `category`.","name":"ValidationError","stack":"ValidationError: Recognition validation failed: type: `Monthly Award` is not a valid enum value for path `type`., category: `Teamwork` is not a valid enum value for path `category`.\n    at Document.invalidate (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\document.js:3362:32)\n    at C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\document.js:3123:17\n    at C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\schemaType.js:1446:9\n    at process.processTicksAndRejections (node:internal/process/task_queues:85:11)","timestamp":"2025-11-26T20:33:24.019Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:39:04.629Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:39:04.644Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:39:04.671Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:44:50.030Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:44:50.040Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:44:50.067Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:51:43.922Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:51:43.932Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:51:43.973Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:52:23.605Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:52:23.613Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:52:23.645Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T20:59:52.696Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T20:59:52.709Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T20:59:52.740Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:00:14.093Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:00:14.101Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:00:14.129Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:02:55.776Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:02:55.792Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:02:55.832Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:03:08.473Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:03:08.483Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:03:08.513Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:03:24.860Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:03:24.872Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:03:24.900Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:03:32.093Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:03:32.103Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:03:32.126Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:03:37.287Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:03:37.296Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:03:37.326Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:05:07.898Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:05:07.924Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:05:07.996Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:05:20.303Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:05:20.317Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:05:20.358Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:06:47.902Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:06:47.912Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:06:47.945Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:07:47.277Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:07:47.293Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:07:47.341Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:10:14.291Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:10:14.298Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:10:14.330Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:10:24.634Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:10:24.642Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:10:24.676Z"}
+{"level":"error","message":"Cannot populate path `approvedBy` because it is not in your schema. Set the `strictPopulate` option to false to override.","name":"StrictPopulateError","stack":"StrictPopulateError: Cannot populate path `approvedBy` because it is not in your schema. Set the `strictPopulate` option to false to override.\n    at getModelsMapForPopulate (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\helpers\\populate\\getModelsMapForPopulate.js:50:12)\n    at _populatePath (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\model.js:4487:21)\n    at Function.populate (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\model.js:4454:21)\n    at model.Query._find (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:2456:20)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async model.Query.exec (C:\\HRMS\\HRMS-backend\\node_modules\\mongoose\\lib\\query.js:4627:63)\n    at async exports.getLeaveReport (C:\\HRMS\\HRMS-backend\\src\\controllers\\reportController.js:88:20)","timestamp":"2025-11-26T21:12:40.113Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:17:26.674Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:17:26.687Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:17:26.714Z"}
