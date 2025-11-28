@@ -8,7 +8,13 @@ import Dashboard from "./components/dashboard/Dashboard";
 import EmployeesPage from "./components/employees/EmployeesPage";
 import AttendancePage from "./components/attendance/AttendancePage";
 import LeavesPage from "./components/leaves/LeavesPage";
-import PayrollPage from "./components/payroll/PayrollPage";
+
+// ==================== NEW IMPROVED PAYROLL PAGES ====================
+import PayrollDashboard from "./components/payroll/PayrollDashboard";
+import EmployeePayslipView from "./components/payroll/EmployeePayslipView";
+import SalaryStructureView from "./components/payroll/SalaryStructureView";
+// ==================== END NEW PAYROLL PAGES ====================
+
 import RecruitmentPage from "./components/recruitment/RecruitmentPage";
 import AssetsPage from "./components/assets/AssetsPage";
 import TrainingPage from "./components/training/TrainingPage";
@@ -18,7 +24,7 @@ import ReportsPage from "./components/reports/ReportsPage";
 import ChatbotPage from "./components/chatbot/ChatbotPage";
 import OnboardingPage from "./components/onboarding/OnboardingPage";
 import OffboardingPage from "./components/offboarding/OffboardingPage";
-import CompliancePage from "./components/compliancePage/CompliancePage"; // ✅ Add this import
+import CompliancePage from "./components/compliancePage/CompliancePage";
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -35,13 +41,28 @@ const AppContent = () => {
         return <AttendancePage />;
       case "leaves":
         return <LeavesPage />;
+      
+      // ==================== PAYROLL ROUTES ====================
       case "payroll":
-        return <PayrollPage />;
+        // Show different views based on user role
+        if (user?.role === "admin" || user?.role === "hr") {
+          return <PayrollDashboard />;
+        } else {
+          return <EmployeePayslipView />;
+        }
+      case "payroll-payslips":
+        return <EmployeePayslipView />;
+      case "payroll-salary-structure":
+        return <SalaryStructureView />;
+      case "payroll-management":
+        return <PayrollDashboard />;
+      // ==================== END PAYROLL ROUTES ====================
+      
       case "recruitment":
         return <RecruitmentPage />;
-      case "onboarding": 
+      case "onboarding":
         return <OnboardingPage />;
-      case "offboarding": 
+      case "offboarding":
         return <OffboardingPage />;
       case "assets":
         return <AssetsPage />;
@@ -51,7 +72,7 @@ const AppContent = () => {
         return <AnnouncementsPage />;
       case "recognition":
         return <RecognitionPage />;
-      case "compliance": // ✅ Add this case
+      case "compliance":
         return <CompliancePage />;
       case "reports":
         return <ReportsPage />;

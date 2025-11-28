@@ -9,10 +9,13 @@ import {
   BookOpen,
   Shield,
   AlertTriangle,
+  DollarSign,
+  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotification } from "../../hooks/useNotification";
 import { apiService } from "../../services/apiService";
+import PAYROLL_API from "../../services/payrollAPI"; // Import new payroll API
 import StatCard from "../common/StatCard";
 import QuickActionCard from "../common/QuickActionCard";
 
@@ -26,6 +29,7 @@ const Dashboard = () => {
     pendingLeaves: 0,
   });
   const [complianceStats, setComplianceStats] = useState(null);
+  const [payrollStats, setPayrollStats] = useState(null); // NEW: Payroll stats
   const [loading, setLoading] = useState(true);
 
   const isAdmin = user?.role === "admin" || user?.role === "hr";
@@ -42,10 +46,8 @@ const Dashboard = () => {
       const response = await apiService.getDashboardStats();
       console.log("✅ Dashboard stats response:", response);
 
-      // Handle different response structures
       const dashboardData = response.data || response;
-      
-      // Extract stats with fallback values
+
       const extractedStats = {
         totalEmployees: dashboardData.totalEmployees || dashboardData.employees || 0,
         presentToday: dashboardData.presentToday || dashboardData.present || 0,
@@ -65,6 +67,21 @@ const Dashboard = () => {
         } catch (error) {
           console.error("❌ Error loading compliance stats:", error);
         }
+
+        // ==================== NEW: Load Payroll Analytics ====================
+        try {
+          const currentMonth = new Date().getMonth() + 1;
+          const currentYear = new Date().getFullYear();
+          const payrollResponse = await PAYROLL_API.getAnalytics({
+            year: currentYear,
+            month: currentMonth,
+          });
+          console.log("✅ Payroll analytics:", payrollResponse);
+          setPayrollStats(payrollResponse.data?.summary || null);
+        } catch (error) {
+          console.error("❌ Error loading payroll stats:", error);
+        }
+        // ==================== END NEW ====================
       } else {
         // Load pending acknowledgments for regular employees
         try {
@@ -76,6 +93,17 @@ const Dashboard = () => {
         } catch (error) {
           console.error("❌ Error loading acknowledgments:", error);
         }
+
+        // ==================== NEW: Load Employee Payroll Stats ====================
+        try {
+          const currentYear = new Date().getFullYear();
+          const payslipsResponse = await PAYROLL_API.getMyPayslips({ year: currentYear });
+          console.log("✅ Employee payslips:", payslipsResponse);
+          setPayrollStats(payslipsResponse.data?.summary || null);
+        } catch (error) {
+          console.error("❌ Error loading employee payroll stats:", error);
+        }
+        // ==================== END NEW ====================
       }
 
       setLoading(false);
@@ -84,6 +112,13 @@ const Dashboard = () => {
       showError("Failed to load dashboard data");
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amount || 0);
   };
 
   if (loading) {
@@ -147,6 +182,93 @@ const Dashboard = () => {
         />
       </div>
 
+      {/* ==================== NEW: Payroll Statistics ==================== */}
+      {payrollStats && (
+        <>
+          <div className="flex items-center gap-2 mt-8 mb-4">
+            <DollarSign className="h-6 w-6 text-green-600" />
+            <h2 className="text-xl font-bold text-gray-900">
+              {isAdmin ? "Payroll Overview" : "My Salary Overview"}
+            </h2>
+          </div>
+
+          {isAdmin ? (
+            // Admin view - Monthly payroll overview
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                icon={DollarSign}
+                label="Total Gross Payout"
+                value={formatCurrency(payrollStats.totalGross)}
+                change={`${payrollStats.employeeCount || 0} employees`}
+                changeType="neutral"
+                bgColor="bg-green-500"
+              />
+              <StatCard
+                icon={DollarSign}
+                label="Total Net Payout"
+                value={formatCurrency(payrollStats.totalNet)}
+                change={`This month`}
+                changeType="neutral"
+                bgColor="bg-blue-500"
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Total Deductions"
+                value={formatCurrency(payrollStats.totalDeductions)}
+                change={`PF, ESI, Tax`}
+                changeType="neutral"
+                bgColor="bg-red-500"
+              />
+              <StatCard
+                icon={Users}
+                label="Payroll Processed"
+                value={payrollStats.employeeCount || 0}
+                change={`${new Date().toLocaleString('default', { month: 'long' })}`}
+                changeType="neutral"
+                bgColor="bg-purple-500"
+              />
+            </div>
+          ) : (
+            // Employee view - Yearly earnings summary
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                icon={DollarSign}
+                label="Total Earnings (YTD)"
+                value={formatCurrency(payrollStats.totalEarnings)}
+                change={`${payrollStats.count || 0} payslips`}
+                changeType="neutral"
+                bgColor="bg-green-500"
+              />
+              <StatCard
+                icon={DollarSign}
+                label="Total Deductions (YTD)"
+                value={formatCurrency(payrollStats.totalDeductions)}
+                change={`Year ${new Date().getFullYear()}`}
+                changeType="neutral"
+                bgColor="bg-red-500"
+              />
+              <StatCard
+                icon={TrendingUp}
+                label="Net Salary (YTD)"
+                value={formatCurrency(payrollStats.totalNetSalary)}
+                change={`Take home`}
+                changeType="neutral"
+                bgColor="bg-blue-500"
+              />
+              <StatCard
+                icon={FileText}
+                label="Payslips Available"
+                value={payrollStats.count || 0}
+                change={`View all`}
+                changeType="neutral"
+                bgColor="bg-purple-500"
+              />
+            </div>
+          )}
+        </>
+      )}
+      {/* ==================== END NEW ==================== */}
+
       {/* Compliance Statistics */}
       {complianceStats && (
         <>
@@ -158,7 +280,6 @@ const Dashboard = () => {
           </div>
 
           {isAdmin ? (
-            // Admin view - Full compliance dashboard
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 icon={FileText}
@@ -173,9 +294,7 @@ const Dashboard = () => {
                 label="Pending Acknowledgments"
                 value={complianceStats.policies?.pending || 0}
                 change={`${complianceStats.policies?.completed || 0} completed`}
-                changeType={
-                  complianceStats.policies?.pending > 0 ? "increase" : "neutral"
-                }
+                changeType={complianceStats.policies?.pending > 0 ? "increase" : "neutral"}
                 bgColor="bg-yellow-500"
               />
               <StatCard
@@ -183,9 +302,7 @@ const Dashboard = () => {
                 label="Expired Documents"
                 value={complianceStats.documents?.expired || 0}
                 change={`${complianceStats.documents?.expiringSoon || 0} expiring soon`}
-                changeType={
-                  complianceStats.documents?.expired > 0 ? "increase" : "neutral"
-                }
+                changeType={complianceStats.documents?.expired > 0 ? "increase" : "neutral"}
                 bgColor="bg-red-500"
               />
               <StatCard
@@ -198,23 +315,14 @@ const Dashboard = () => {
               />
             </div>
           ) : (
-            // Employee view - Pending acknowledgments only
             complianceStats.pendingAcknowledgments > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard
                   icon={AlertCircle}
                   label="Pending Policy Acknowledgments"
                   value={complianceStats.pendingAcknowledgments || 0}
-                  change={
-                    complianceStats.pendingAcknowledgments > 0
-                      ? "Action Required"
-                      : "All Clear"
-                  }
-                  changeType={
-                    complianceStats.pendingAcknowledgments > 0
-                      ? "increase"
-                      : "neutral"
-                  }
+                  change={complianceStats.pendingAcknowledgments > 0 ? "Action Required" : "All Clear"}
+                  changeType={complianceStats.pendingAcknowledgments > 0 ? "increase" : "neutral"}
                   bgColor="bg-yellow-500"
                 />
               </div>
@@ -241,7 +349,7 @@ const Dashboard = () => {
           />
           <QuickActionCard
             icon={FileText}
-            label="View Payslip"
+            label={isAdmin ? "Manage Payroll" : "View Payslip"}
             color="bg-purple-500"
             onClick={() => (window.location.href = "/payroll")}
           />
@@ -263,19 +371,15 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* Pending Leave Approvals Alert (For Admins/Managers) */}
+      {/* Alerts remain the same */}
       {isAdmin && stats.pendingLeaves > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-3">
             <AlertCircle className="h-6 w-6 text-red-600" />
-            <h3 className="text-lg font-semibold text-red-900">
-              Pending Leave Approvals
-            </h3>
+            <h3 className="text-lg font-semibold text-red-900">Pending Leave Approvals</h3>
           </div>
           <p className="text-red-800 mb-3">
-            You have {stats.pendingLeaves} pending leave{" "}
-            {stats.pendingLeaves === 1 ? "request" : "requests"} that require
-            your attention.
+            You have {stats.pendingLeaves} pending leave {stats.pendingLeaves === 1 ? "request" : "requests"} that require your attention.
           </p>
           <button
             onClick={() => (window.location.href = "/leaves?tab=pending")}
@@ -286,21 +390,15 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Upcoming Policy Deadlines (For Employees) */}
       {!isAdmin && complianceStats?.pendingAcknowledgments > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-3">
             <AlertCircle className="h-6 w-6 text-yellow-600" />
-            <h3 className="text-lg font-semibold text-yellow-900">
-              Pending Policy Acknowledgments
-            </h3>
+            <h3 className="text-lg font-semibold text-yellow-900">Pending Policy Acknowledgments</h3>
           </div>
           <p className="text-yellow-800 mb-3">
             You have {complianceStats.pendingAcknowledgments} pending policy{" "}
-            {complianceStats.pendingAcknowledgments === 1
-              ? "acknowledgment"
-              : "acknowledgments"}{" "}
-            that require your attention.
+            {complianceStats.pendingAcknowledgments === 1 ? "acknowledgment" : "acknowledgments"} that require your attention.
           </p>
           <button
             onClick={() => (window.location.href = "/compliance")}
@@ -311,26 +409,17 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Expiring Documents Alert (For Admins) */}
       {isAdmin && complianceStats?.documents?.expiringSoon > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
           <div className="flex items-center gap-3 mb-3">
             <AlertTriangle className="h-6 w-6 text-orange-600" />
-            <h3 className="text-lg font-semibold text-orange-900">
-              Documents Expiring Soon
-            </h3>
+            <h3 className="text-lg font-semibold text-orange-900">Documents Expiring Soon</h3>
           </div>
           <p className="text-orange-800 mb-3">
-            {complianceStats.documents.expiringSoon} compliance{" "}
-            {complianceStats.documents.expiringSoon === 1
-              ? "document"
-              : "documents"}{" "}
-            will expire in the next 30 days.
+            {complianceStats.documents.expiringSoon} compliance {complianceStats.documents.expiringSoon === 1 ? "document" : "documents"} will expire in the next 30 days.
           </p>
           <button
-            onClick={() =>
-              (window.location.href = "/compliance?tab=documents")
-            }
+            onClick={() => (window.location.href = "/compliance?tab=documents")}
             className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
           >
             View Documents
@@ -338,18 +427,14 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Recent Activity (Optional) */}
+      {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">
-          Recent Activity
-        </h2>
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
         <div className="space-y-3">
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <CheckCircle className="h-5 w-5 text-green-600" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">
-                Attendance marked
-              </p>
+              <p className="text-sm font-medium text-gray-900">Attendance marked</p>
               <p className="text-xs text-gray-500">Today at 9:00 AM</p>
             </div>
           </div>
@@ -358,8 +443,7 @@ const Dashboard = () => {
               <Clock className="h-5 w-5 text-yellow-600" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">
-                  {stats.pendingLeaves} leave request
-                  {stats.pendingLeaves !== 1 ? "s" : ""} pending
+                  {stats.pendingLeaves} leave request{stats.pendingLeaves !== 1 ? "s" : ""} pending
                 </p>
                 <p className="text-xs text-gray-500">Needs approval</p>
               </div>

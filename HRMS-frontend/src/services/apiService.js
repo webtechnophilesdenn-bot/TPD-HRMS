@@ -488,13 +488,23 @@ getMyOffboarding: async () => {
     );
   },
 
-  getAllPayrolls: async (filters = {}) => {
-    const params = new URLSearchParams();
-    Object.keys(filters).forEach((key) => {
-      if (filters[key]) params.append(key, filters[key]);
-    });
-    return await apiService.request(`/payroll?${params.toString()}`);
-  },
+getAllPayrolls: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    // Only add non-empty values
+    if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
+      params.append(key, filters[key]);
+    }
+  });
+  
+  const queryString = params.toString();
+  const url = queryString ? `/payroll?${queryString}` : '/payroll';
+  
+  console.log('API Call URL:', url); // Debug log
+  
+  return await apiService.request(url);
+},
+
 
   updatePayrollStatus: async (payrollId, statusData) => {
     return await apiService.request(`/payroll/${payrollId}/status`, {

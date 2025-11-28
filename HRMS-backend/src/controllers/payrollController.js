@@ -1,255 +1,452 @@
-const Payroll = require("../models/Payroll");
-const Employee = require("../models/Employee");
-const Attendance = require("../models/Attendance");
-const { sendResponse } = require("../utils/responseHandler");
-const {
-  generatePayslipPDF,
-  generatePayrollReportPDF,
-} = require("../services/pdfService");
-const mongoose = require("mongoose");
-const moment = require("moment");
+const Payroll = require('../models/Payroll');
+const Employee = require('../models/Employee');
+const SalaryStructure = require('../models/SalaryStructure');
+const Attendance = require('../models/Attendance');
+const Loan = require('../models/Loan');
+const Advance = require('../models/Advance');
+const { sendResponse } = require('../utils/responseHandler');
+const moment = require('moment');
 
-// Generate Monthly Payroll with Advanced Calculations
+// ==================== HELPER FUNCTIONS ====================
+
+/**
+ * Calculate attendance summary for payroll period
+ */
+const calculateAttendanceSummary = (attendanceRecords, startDate, endDate) => {
+  const totalDays = endDate.diff(startDate, 'days') + 1;
+  let presentDays = 0;
+  let absentDays = 0;
+  let halfDays = 0;
+  let paidLeaves = 0;
+  let unpaidLeaves = 0;
+  let sickLeaves = 0;
+  let casualLeaves = 0;
+  let holidays = 0;
+  let weekends = 0;
+  let overtimeHours = 0;
+
+  // Count weekends
+  for (let d = moment(startDate); d.isSameOrBefore(endDate); d.add(1, 'day')) {
+    if (d.day() === 0 || d.day() === 6) {
+      weekends++;
+    }
+  }
+
+  // Process attendance records
+  attendanceRecords.forEach((record) => {
+    if (record.status === 'Present') {
+      presentDays++;
+      if (record.overtimeHours) overtimeHours += record.overtimeHours;
+    } else if (record.status === 'Absent') {
+      absentDays++;
+    } else if (record.status === 'Half Day') {
+      halfDays++;
+    } else if (record.status === 'Leave') {
+      if (record.leaveType === 'Paid Leave' || record.leaveType === 'Casual Leave') {
+        paidLeaves++;
+        casualLeaves++;
+      } else if (record.leaveType === 'Sick Leave') {
+        paidLeaves++;
+        sickLeaves++;
+      } else if (record.leaveType === 'Unpaid Leave' || record.leaveType === 'Loss of Pay') {
+        unpaidLeaves++;
+      }
+    } else if (record.status === 'Holiday') {
+      holidays++;
+    }
+  });
+
+  const totalWorkingDays = totalDays - weekends - holidays;
+  const paidDays = presentDays + halfDays * 0.5 + paidLeaves;
+  const lossOfPayDays = unpaidLeaves + absentDays;
+
+  return {
+    presentDays,
+    absentDays,
+    halfDays,
+    holidays,
+    weekends,
+    totalWorkingDays,
+    paidDays: Math.round(paidDays * 10) / 10,
+    lossOfPayDays,
+    overtimeHours,
+    paidLeaves,
+    unpaidLeaves,
+    sickLeaves,
+    casualLeaves,
+    attendancePercentage: totalWorkingDays > 0 ? parseFloat(((paidDays / totalWorkingDays) * 100).toFixed(2)) : 0,
+  };
+};
+
+/**
+ * Calculate loan recovery for the month
+ */
+const calculateLoanRecovery = async (employeeId, month, year) => {
+  const activeLoans = await Loan.find({
+    employee: employeeId,
+    status: 'Active',
+    'repayment.startDate': { $lte: new Date(year, month - 1, 1) },
+  });
+
+  let totalRecovery = 0;
+  let loanId = null;
+  let remaining = 0;
+
+  if (activeLoans.length > 0) {
+    const loan = activeLoans[0];
+    totalRecovery = loan.repayment?.emiAmount || 0;
+    loanId = loan._id;
+    remaining = loan.outstandingAmount || 0;
+  }
+
+  return { amount: totalRecovery, loanId, remaining };
+};
+
+/**
+ * Calculate advance recovery for the month
+ */
+const calculateAdvanceRecovery = async (employeeId, month, year) => {
+  const activeAdvances = await Advance.find({
+    employee: employeeId,
+    status: 'Approved',
+    'recovery.startDate': { $lte: new Date(year, month - 1, 1) },
+    'recovery.endDate': { $gte: new Date(year, month - 1, 1) },
+  });
+
+  let totalRecovery = 0;
+  let advanceId = null;
+  let remaining = 0;
+
+  if (activeAdvances.length > 0) {
+    const advance = activeAdvances[0];
+    totalRecovery = advance.recovery?.monthlyRecovery || 0;
+    advanceId = advance._id;
+    remaining = advance.outstandingAmount || 0;
+  }
+
+  return { amount: totalRecovery, advanceId, remaining };
+};
+
+// ==================== GENERATE MONTHLY PAYROLL ====================
 exports.generatePayroll = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
   try {
-    const { month, year, department, includeInactive = false } = req.body;
+    const { month, year, department, includeInactive = false, employeeIds } = req.body;
 
-    // Validate input
     if (!month || !year) {
-      await session.abortTransaction();
-      return sendResponse(res, 400, false, "Month and year are required");
+      return sendResponse(res, 400, false, 'Month and year are required');
     }
 
-    // Build employee filter
     const employeeFilter = {
-      status: includeInactive ? { $in: ["Active", "Inactive"] } : "Active",
+      status: includeInactive ? { $in: ['Active', 'Inactive', 'On Leave'] } : 'Active',
     };
+    
     if (department) employeeFilter.department = department;
+    if (employeeIds && employeeIds.length > 0) {
+      employeeFilter._id = { $in: employeeIds };
+    }
 
     const employees = await Employee.find(employeeFilter)
-      .populate("salaryStructure")
-      .populate("designation")
-      .populate("department")
-      .session(session);
+      .populate('department')
+      .populate('designation')
+      .populate('currentSalaryStructure');
 
     if (employees.length === 0) {
-      await session.abortTransaction();
-      return sendResponse(
-        res,
-        404,
-        false,
-        "No employees found for payroll generation"
-      );
+      return sendResponse(res, 404, false, 'No employees found for payroll generation');
     }
 
     const payrollRecords = [];
     const errors = [];
+    const warnings = [];
+
+    const startDate = moment(`${year}-${String(month).padStart(2, '0')}-01`).startOf('month');
+    const endDate = moment(startDate).endOf('month');
+    const paymentDate = moment(startDate).add(1, 'month').date(7);
 
     for (const employee of employees) {
       try {
-        // Check if payroll already exists for this period
         const existingPayroll = await Payroll.findOne({
           employee: employee._id,
-          month,
-          year,
-        }).session(session);
+          'period.month': month,
+          'period.year': year,
+        });
 
         if (existingPayroll) {
-          errors.push(
-            `Payroll already exists for ${employee.firstName} ${employee.lastName}`
-          );
+          warnings.push({
+            employeeId: employee.employeeId,
+            name: `${employee.firstName} ${employee.lastName}`,
+            message: 'Payroll already exists for this period',
+            existingPayrollId: existingPayroll.payrollId,
+          });
           continue;
         }
 
-        // Calculate date range for the payroll period
-        const startDate = moment(
-          `${year}-${month.toString().padStart(2, "0")}-01`
-        ).startOf("month");
-        const endDate = moment(startDate).endOf("month");
+        let salaryStructure = employee.currentSalaryStructure;
+        if (!salaryStructure) {
+          salaryStructure = await SalaryStructure.findOne({
+            employee: employee._id,
+            isActive: true,
+          }).sort({ effectiveFrom: -1 });
+        }
 
-        // Get attendance records
+        if (!salaryStructure) {
+          errors.push({
+            employeeId: employee.employeeId,
+            name: `${employee.firstName} ${employee.lastName}`,
+            error: 'No active salary structure found',
+          });
+          continue;
+        }
+
         const attendanceRecords = await Attendance.find({
           employee: employee._id,
-          date: {
-            $gte: startDate.toDate(),
-            $lte: endDate.toDate(),
+          date: { $gte: startDate.toDate(), $lte: endDate.toDate() },
+        });
+
+        const attendanceSummary = calculateAttendanceSummary(attendanceRecords, startDate, endDate);
+        const loanRecovery = await calculateLoanRecovery(employee._id, month, year);
+        const advanceRecovery = await calculateAdvanceRecovery(employee._id, month, year);
+
+        const payrollCalc = salaryStructure.calculateMonthlyPayroll(
+          attendanceSummary.paidDays,
+          attendanceSummary.totalWorkingDays,
+          attendanceSummary.overtimeHours || 0,
+          {
+            loanRecovery: loanRecovery.amount,
+            advanceRecovery: advanceRecovery.amount,
+            other: 0,
+          }
+        );
+
+        const payroll = await Payroll.create({
+          employee: employee._id,
+          period: {
+            month,
+            year,
+            startDate: startDate.toDate(),
+            endDate: endDate.toDate(),
+            paymentDate: paymentDate.toDate(),
           },
-        }).session(session);
+          earnings: {
+            basic: payrollCalc.breakdown.earnings.basic,
+            hra: payrollCalc.breakdown.earnings.hra,
+            specialAllowance: payrollCalc.breakdown.earnings.specialAllowance,
+            conveyance: payrollCalc.breakdown.earnings.conveyance,
+            medicalAllowance: payrollCalc.breakdown.earnings.medicalAllowance,
+            educationAllowance: payrollCalc.breakdown.earnings.educationAllowance || 0,
+            lta: payrollCalc.breakdown.earnings.lta || 0,
+            overtime: payrollCalc.breakdown.earnings.overtime,
+            bonus: 0,
+            incentives: 0,
+            arrears: 0,
+            otherAllowances: payrollCalc.breakdown.earnings.otherAllowances || 0,
+          },
+          deductions: {
+            pfEmployee: payrollCalc.breakdown.deductions.pfEmployee,
+            pfEmployer: payrollCalc.breakdown.deductions.pfEmployer,
+            esiEmployee: payrollCalc.breakdown.deductions.esiEmployee,
+            esiEmployer: payrollCalc.breakdown.deductions.esiEmployer,
+            professionalTax: payrollCalc.breakdown.deductions.professionalTax,
+            tds: payrollCalc.breakdown.deductions.tds,
+            loanRecovery: loanRecovery.amount,
+            advanceRecovery: advanceRecovery.amount,
+            lossOfPay: payrollCalc.lossOfPay,
+            otherDeductions: 0,
+          },
+          summary: {
+            grossEarnings: payrollCalc.grossEarnings,
+            totalDeductions: payrollCalc.totalDeductions,
+            netSalary: payrollCalc.netSalary,
+            costToCompany: payrollCalc.grossEarnings + payrollCalc.breakdown.deductions.pfEmployer + payrollCalc.breakdown.deductions.esiEmployer,
+            takeHomeSalary: payrollCalc.netSalary,
+          },
+          attendance: attendanceSummary,
+          leaves: {
+            paidLeaves: attendanceSummary.paidLeaves,
+            unpaidLeaves: attendanceSummary.unpaidLeaves,
+            sickLeaves: attendanceSummary.sickLeaves,
+            casualLeaves: attendanceSummary.casualLeaves,
+          },
+          loanDetails: loanRecovery.loanId ? {
+            loanId: loanRecovery.loanId,
+            emiAmount: loanRecovery.amount,
+            remainingAmount: loanRecovery.remaining,
+          } : undefined,
+          advanceDetails: advanceRecovery.advanceId ? {
+            advanceId: advanceRecovery.advanceId,
+            recoveryAmount: advanceRecovery.amount,
+            remainingAmount: advanceRecovery.remaining,
+          } : undefined,
+          status: 'Generated',
+          generatedBy: req.user.id,
+          generatedAt: new Date(),
+          salaryStructureSnapshot: salaryStructure._id,
+          bankDetails: {
+            accountNumber: employee.bankDetails?.accountNumber,
+            bankName: employee.bankDetails?.bankName,
+            ifscCode: employee.bankDetails?.ifscCode,
+            branch: employee.bankDetails?.branch,
+            accountHolderName: employee.bankDetails?.accountHolderName || `${employee.firstName} ${employee.lastName}`,
+          },
+          auditTrail: [{
+            action: 'PAYROLL_GENERATED',
+            performedBy: req.user.id,
+            timestamp: new Date(),
+            remarks: `Payroll generated for ${month}/${year}`,
+          }],
+        });
 
-        // Calculate working days and attendance
-        const attendanceSummary = calculateAttendanceSummary(
-          attendanceRecords,
-          startDate,
-          endDate
-        );
-
-        // Calculate salary components
-        const salaryCalculation = calculateSalary(
-          employee,
-          attendanceSummary,
-          month,
-          year
-        );
-
-        // Create payroll record
-        const payroll = await Payroll.create(
-          [
-            {
-              payrollId: await generatePayrollId(),
-              employee: employee._id,
-              month,
-              year,
-              period: {
-                startDate: startDate.toDate(),
-                endDate: endDate.toDate(),
-                paymentDate: calculatePaymentDate(month, year),
-              },
-
-              // Earnings
-              earnings: {
-                basic: salaryCalculation.basic,
-                hra: salaryCalculation.hra,
-                specialAllowance: salaryCalculation.specialAllowance,
-                conveyance: salaryCalculation.conveyance,
-                medicalAllowance: salaryCalculation.medicalAllowance,
-                overtime: salaryCalculation.overtime,
-                bonus: salaryCalculation.bonus,
-                incentives: salaryCalculation.incentives,
-                arrears: salaryCalculation.arrears,
-                otherAllowances: salaryCalculation.otherAllowances,
-              },
-
-              // Deductions
-              deductions: {
-                pfEmployee: salaryCalculation.pfEmployee,
-                pfEmployer: salaryCalculation.pfEmployer,
-                esicEmployee: salaryCalculation.esicEmployee,
-                esicEmployer: salaryCalculation.esicEmployer,
-                professionalTax: salaryCalculation.professionalTax,
-                tds: salaryCalculation.tds,
-                loanRecovery: salaryCalculation.loanRecovery,
-                advanceRecovery: salaryCalculation.advanceRecovery,
-                otherDeductions: salaryCalculation.otherDeductions,
-              },
-
-              // Summary
-              summary: {
-                grossEarnings: salaryCalculation.grossEarnings,
-                totalDeductions: salaryCalculation.totalDeductions,
-                netSalary: salaryCalculation.netSalary,
-                costToCompany: salaryCalculation.costToCompany,
-              },
-
-              // Attendance
-              attendance: attendanceSummary,
-
-              // Leaves
-              leaves: {
-                paidLeaves: attendanceSummary.paidLeaves,
-                unpaidLeaves: attendanceSummary.unpaidLeaves,
-                sickLeaves: attendanceSummary.sickLeaves,
-                casualLeaves: attendanceSummary.casualLeaves,
-              },
-
-              // Status
-              status: "Generated",
-              generatedBy: req.user._id,
-
-              // Bank Details
-              bankDetails: {
-                accountNumber: employee.bankDetails?.accountNumber,
-                bankName: employee.bankDetails?.bankName,
-                ifscCode: employee.bankDetails?.ifscCode,
-                branch: employee.bankDetails?.branch,
-              },
-            },
-          ],
-          { session }
-        );
-
-        payrollRecords.push(payroll[0]);
+        payrollRecords.push(payroll);
       } catch (error) {
-        errors.push(
-          `Error processing ${employee.firstName} ${employee.lastName}: ${error.message}`
-        );
+        errors.push({
+          employeeId: employee.employeeId,
+          name: `${employee.firstName} ${employee.lastName}`,
+          error: error.message,
+        });
       }
     }
 
-    await session.commitTransaction();
-
-    sendResponse(res, 201, true, "Payroll generated successfully", {
-      generated: payrollRecords.length,
-      errors: errors,
-      payrolls: payrollRecords,
+    sendResponse(res, 201, true, 'Payroll generation completed', {
       summary: {
         totalEmployees: employees.length,
-        processed: payrollRecords.length,
+        generated: payrollRecords.length,
         failed: errors.length,
-        totalPayout: payrollRecords.reduce(
-          (sum, p) => sum + p.summary.netSalary,
-          0
-        ),
+        warnings: warnings.length,
+        totalGrossPayout: payrollRecords.reduce((sum, p) => sum + p.summary.grossEarnings, 0),
+        totalNetPayout: payrollRecords.reduce((sum, p) => sum + p.summary.netSalary, 0),
+        totalDeductions: payrollRecords.reduce((sum, p) => sum + p.summary.totalDeductions, 0),
       },
+      payrolls: payrollRecords,
+      errors,
+      warnings,
     });
   } catch (error) {
-    await session.abortTransaction();
     next(error);
-  } finally {
-    session.endSession();
   }
 };
 
-// Get My Payslips with Advanced Filtering
-exports.getMyPayslips = async (req, res, next) => {
+// ==================== GET ALL PAYROLLS ====================
+exports.getAllPayrolls = async (req, res, next) => {
   try {
-    const { year, month, page = 1, limit = 12 } = req.query;
+    const { year, month, department, status, employeeId, page = 1, limit = 20 } = req.query;
+    const user = req.user;
 
-    const employee = await Employee.findOne({ userId: req.user._id });
-    if (!employee) {
-      return sendResponse(res, 404, false, "Employee not found");
+    let query = {};
+
+    if (user.role === 'employee') {
+      const employee = await Employee.findOne({ userId: user.id });
+      if (!employee) {
+        return sendResponse(res, 404, false, 'Employee record not found');
+      }
+      query.employee = employee._id;
+    } else {
+      if (employeeId) {
+        const employee = await Employee.findOne({ employeeId });
+        if (employee) query.employee = employee._id;
+      }
+      if (department) {
+        const employees = await Employee.find({ department }).select('_id');
+        query.employee = { $in: employees.map(emp => emp._id) };
+      }
     }
 
-    // Build query
-    const query = { employee: employee._id };
-    if (year) query.year = parseInt(year);
-    if (month) query.month = parseInt(month);
+    if (year) query['period.year'] = parseInt(year);
+    if (month) query['period.month'] = parseInt(month);
+    if (status) query.status = status;
 
-    const payslips = await Payroll.find(query)
-      .populate(
-        "employee",
-        "firstName lastName employeeId designation department"
-      )
-      .populate("generatedBy", "firstName lastName")
-      .sort({ year: -1, month: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    const payrolls = await Payroll.find(query)
+      .populate({
+        path: 'employee',
+        select: 'firstName lastName employeeId designation department',
+        populate: [
+          { path: 'designation', select: 'title' },
+          { path: 'department', select: 'name' }
+        ]
+      })
+      .populate('generatedBy', 'firstName lastName')
+      .populate('workflowStatus.approvedBy', 'firstName lastName')
+      .sort({ 'period.year': -1, 'period.month': -1, createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Payroll.countDocuments(query);
 
-    // Calculate summary
+    const summary = await Payroll.aggregate([
+      { $match: query },
+      {
+        $group: {
+          _id: null,
+          totalGrossEarnings: { $sum: '$summary.grossEarnings' },
+          totalDeductions: { $sum: '$summary.totalDeductions' },
+          totalNetSalary: { $sum: '$summary.netSalary' },
+          totalEmployees: { $sum: 1 },
+        },
+      },
+    ]);
+
+    sendResponse(res, 200, true, 'Payrolls fetched successfully', {
+      payrolls,
+      summary: summary[0] || {
+        totalGrossEarnings: 0,
+        totalDeductions: 0,
+        totalNetSalary: 0,
+        totalEmployees: 0,
+      },
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalRecords: total,
+        hasNext: parseInt(page) * parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== GET MY PAYSLIPS (EMPLOYEE) ====================
+exports.getMyPayslips = async (req, res, next) => {
+  try {
+    const { year, month, page = 1, limit = 12 } = req.query;
+    
+    const employee = await Employee.findOne({ userId: req.user.id });
+    if (!employee) {
+      return sendResponse(res, 404, false, 'Employee not found');
+    }
+
+    const query = { employee: employee._id };
+    if (year) query['period.year'] = parseInt(year);
+    if (month) query['period.month'] = parseInt(month);
+
+    const payslips = await Payroll.find(query)
+      .populate('employee', 'firstName lastName employeeId designation department')
+      .populate('generatedBy', 'firstName lastName')
+      .sort({ 'period.year': -1, 'period.month': -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await Payroll.countDocuments(query);
+
     const currentYear = moment().year();
     const yearlySummary = await Payroll.aggregate([
       {
         $match: {
           employee: employee._id,
-          year: currentYear,
+          'period.year': currentYear,
         },
       },
       {
         $group: {
           _id: null,
-          totalEarnings: { $sum: "$summary.grossEarnings" },
-          totalDeductions: { $sum: "$summary.totalDeductions" },
-          totalNetSalary: { $sum: "$summary.netSalary" },
+          totalEarnings: { $sum: '$summary.grossEarnings' },
+          totalDeductions: { $sum: '$summary.totalDeductions' },
+          totalNetSalary: { $sum: '$summary.netSalary' },
           count: { $sum: 1 },
         },
       },
     ]);
 
-    sendResponse(res, 200, true, "Payslips fetched successfully", {
+    sendResponse(res, 200, true, 'Payslips fetched successfully', {
       payslips,
       summary: yearlySummary[0] || {
         totalEarnings: 0,
@@ -259,10 +456,10 @@ exports.getMyPayslips = async (req, res, next) => {
       },
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / parseInt(limit)),
         totalRecords: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
+        hasNext: parseInt(page) * parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1,
       },
     });
   } catch (error) {
@@ -270,19 +467,31 @@ exports.getMyPayslips = async (req, res, next) => {
   }
 };
 
-// Get Salary Structure with Detailed Breakdown
+// ==================== GET SALARY STRUCTURE (EMPLOYEE) ====================
 exports.getSalaryStructure = async (req, res, next) => {
   try {
-    const employee = await Employee.findOne({ userId: req.user._id })
-      .populate("designation")
-      .populate("department")
-      .populate("salaryStructure");
+    const employee = await Employee.findOne({ userId: req.user.id })
+      .populate('designation')
+      .populate('department')
+      .populate('currentSalaryStructure');
 
     if (!employee) {
-      return sendResponse(res, 404, false, "Employee not found");
+      return sendResponse(res, 404, false, 'Employee not found');
     }
 
-    const salaryStructure = {
+    let salaryStructure = employee.currentSalaryStructure;
+    if (!salaryStructure) {
+      salaryStructure = await SalaryStructure.findOne({
+        employee: employee._id,
+        isActive: true,
+      }).sort({ effectiveFrom: -1 });
+    }
+
+    if (!salaryStructure) {
+      return sendResponse(res, 404, false, 'No salary structure found');
+    }
+
+    const structureData = {
       employee: {
         name: `${employee.firstName} ${employee.lastName}`,
         employeeId: employee.employeeId,
@@ -290,671 +499,381 @@ exports.getSalaryStructure = async (req, res, next) => {
         department: employee.department?.name,
         joiningDate: employee.joiningDate,
       },
-
-      // Basic Components
-      basic: employee.salaryStructure?.basic || employee.salary?.basic || 0,
-      hra: employee.salaryStructure?.hra || employee.salary?.hra || 0,
-      specialAllowance: employee.salaryStructure?.specialAllowance || 0,
-      conveyance: employee.salaryStructure?.conveyance || 0,
-      medicalAllowance: employee.salaryStructure?.medicalAllowance || 0,
-      otherAllowances: employee.salaryStructure?.otherAllowances || 0,
-
-      // Statutory Components
-      pf: {
-        employeeContribution:
-          employee.salaryStructure?.pf?.employeeContribution || 0,
-        employerContribution:
-          employee.salaryStructure?.pf?.employerContribution || 0,
-        rate: employee.salaryStructure?.pf?.rate || 12,
+      earnings: salaryStructure.earnings,
+      deductions: {
+        pf: {
+          employeeContribution: salaryStructure.deductions.pf.employeeContribution,
+          employerContribution: salaryStructure.deductions.pf.employerContribution,
+          epfNumber: salaryStructure.deductions.pf.epfNumber,
+          uanNumber: salaryStructure.deductions.pf.uanNumber,
+        },
+        esi: {
+          employeeContribution: salaryStructure.deductions.esi.employeeContribution,
+          employerContribution: salaryStructure.deductions.esi.employerContribution,
+          esiNumber: salaryStructure.deductions.esi.esiNumber,
+        },
+        professionalTax: salaryStructure.deductions.professionalTax.amount,
+        tds: salaryStructure.deductions.tds.monthlyTDS,
       },
-
-      esic: {
-        employeeContribution:
-          employee.salaryStructure?.esic?.employeeContribution || 0,
-        employerContribution:
-          employee.salaryStructure?.esic?.employerContribution || 0,
-        rate: employee.salaryStructure?.esic?.rate || 3.25,
-      },
-
-      professionalTax: employee.salaryStructure?.professionalTax || 0,
-
-      // Calculations
-      grossSalary: calculateGrossSalary(employee),
-      totalDeductions: calculateTotalDeductions(employee),
-      netSalary: calculateNetSalary(employee),
-      costToCompany: calculateCTC(employee),
-
-      // Payment Details
+      summary: salaryStructure.summary,
       payment: {
-        mode: employee.salaryStructure?.paymentMode || "Bank Transfer",
+        mode: salaryStructure.paymentSettings.paymentMode,
         bankName: employee.bankDetails?.bankName,
-        accountNumber: employee.bankDetails?.accountNumber?.replace(
-          /\d(?=\d{4})/g,
-          "*"
-        ),
+        accountNumber: employee.bankDetails?.accountNumber?.replace(/\d(?=\d{4})/g, '*'),
         ifscCode: employee.bankDetails?.ifscCode,
       },
-
-      // Tax Information
-      tax: {
-        taxSlab: employee.salaryStructure?.taxSlab || "As per IT Act",
-        declaredInvestments: employee.salaryStructure?.declaredInvestments || 0,
-        taxExemptions: employee.salaryStructure?.taxExemptions || 0,
-      },
+      effectiveFrom: salaryStructure.effectiveFrom,
     };
 
-    sendResponse(
-      res,
-      200,
-      true,
-      "Salary structure fetched successfully",
-      salaryStructure
-    );
+    sendResponse(res, 200, true, 'Salary structure fetched successfully', structureData);
   } catch (error) {
     next(error);
   }
 };
 
-// Download Payslip PDF
-exports.downloadPayslip = async (req, res, next) => {
+// ==================== UPDATE PAYROLL STATUS ====================
+exports.updatePayrollStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
+    const { status, paymentDate, paymentMode, referenceNumber, transactionId, remarks } = req.body;
 
-    const payslip = await Payroll.findById(id)
-      .populate(
-        "employee",
-        "firstName lastName employeeId designation department joiningDate"
-      )
-      .populate("generatedBy", "firstName lastName");
-
-    if (!payslip) {
-      return sendResponse(res, 404, false, "Payslip not found");
+    const payroll = await Payroll.findById(id);
+    if (!payroll) {
+      return sendResponse(res, 404, false, 'Payroll not found');
     }
 
-    // Generate PDF
-    const pdfBuffer = await generatePayslipPDF(payslip);
+    if (status === 'Approved') {
+      await payroll.approve(req.user.id, remarks);
+    } else if (status === 'Paid') {
+      await payroll.markAsPaid(req.user.id, {
+        date: paymentDate,
+        mode: paymentMode,
+        referenceNumber,
+        transactionId,
+      });
+    } else if (status === 'Rejected') {
+      await payroll.reject(req.user.id, remarks);
+    } else {
+      payroll.status = status;
+      payroll.addAuditEntry(`STATUS_CHANGED_TO_${status}`, req.user.id, remarks, req.ip);
+      await payroll.save();
+    }
 
-    // Set response headers
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=payslip-${payslip.employee.employeeId}-${payslip.month}-${payslip.year}.pdf`
-    );
-
-    res.send(pdfBuffer);
+    sendResponse(res, 200, true, `Payroll ${status.toLowerCase()} successfully`, { payroll });
   } catch (error) {
     next(error);
   }
 };
 
-// Download Payroll Report PDF (HR/Admin)
-exports.downloadPayrollReport = async (req, res, next) => {
+// ==================== BULK UPDATE PAYROLL STATUS ====================
+exports.bulkUpdatePayrollStatus = async (req, res, next) => {
   try {
-    const { month, year, department } = req.query;
+    const { payrollIds, status, paymentDate, paymentMode, remarks } = req.body;
 
-    const query = { month: parseInt(month), year: parseInt(year) };
-    if (department) {
-      const employees = await Employee.find({ department }).select("_id");
-      query.employee = { $in: employees.map((emp) => emp._id) };
+    if (!payrollIds || payrollIds.length === 0) {
+      return sendResponse(res, 400, false, 'Payroll IDs are required');
     }
 
-    const payrolls = await Payroll.find(query)
-      .populate(
-        "employee",
-        "firstName lastName employeeId designation department"
-      )
-      .sort({ "employee.department": 1 });
+    const updatedPayrolls = [];
+    const errors = [];
 
-    if (payrolls.length === 0) {
-      return sendResponse(
-        res,
-        404,
-        false,
-        "No payroll records found for the specified period"
-      );
-    }
+    for (const payrollId of payrollIds) {
+      try {
+        const payroll = await Payroll.findById(payrollId);
+        if (!payroll) {
+          errors.push({ payrollId, error: 'Payroll not found' });
+          continue;
+        }
 
-    // Generate PDF report
-    const pdfBuffer = await generatePayrollReportPDF(payrolls, month, year);
+        if (status === 'Approved') {
+          await payroll.approve(req.user.id, remarks);
+        } else if (status === 'Paid') {
+          await payroll.markAsPaid(req.user.id, { date: paymentDate, mode: paymentMode });
+        } else {
+          payroll.status = status;
+          payroll.addAuditEntry(`BULK_STATUS_UPDATE_TO_${status}`, req.user.id, remarks);
+          await payroll.save();
+        }
 
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=payroll-report-${month}-${year}.pdf`
-    );
-
-    res.send(pdfBuffer);
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Get All Payrolls with Advanced Filtering (HR/Admin)
-exports.getAllPayrolls = async (req, res, next) => {
-  try {
-    const {
-      month,
-      year,
-      department,
-      status,
-      employeeId,
-      page = 1,
-      limit = 20,
-    } = req.query;
-
-    // Build query
-    const query = {};
-    if (month) query.month = parseInt(month);
-    if (year) query.year = parseInt(year);
-    if (status) query.status = status;
-
-    // Department filter
-    if (department) {
-      const employees = await Employee.find({ department }).select("_id");
-      query.employee = { $in: employees.map((emp) => emp._id) };
-    }
-
-    // Employee filter
-    if (employeeId) {
-      const employee = await Employee.findOne({ employeeId });
-      if (employee) {
-        query.employee = employee._id;
+        updatedPayrolls.push(payroll);
+      } catch (error) {
+        errors.push({ payrollId, error: error.message });
       }
     }
 
-    const payrolls = await Payroll.find(query)
-      .populate(
-        "employee",
-        "firstName lastName employeeId designation department"
-      )
-      .populate("generatedBy", "firstName lastName")
-      .sort({ year: -1, month: -1, "employee.department": 1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+    sendResponse(res, 200, true, 'Bulk update completed', {
+      updated: updatedPayrolls.length,
+      failed: errors.length,
+      errors,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    const total = await Payroll.countDocuments(query);
+// ==================== GET PAYROLL ANALYTICS ====================
+exports.getPayrollAnalytics = async (req, res, next) => {
+  try {
+    const { year, month, department } = req.query;
+    const currentYear = year ? parseInt(year) : moment().year();
 
-    // Calculate payroll summary
-    const summary = await Payroll.aggregate([
-      { $match: query },
+    const matchQuery = { 'period.year': currentYear };
+    if (month) matchQuery['period.month'] = parseInt(month);
+
+    if (department) {
+      const employees = await Employee.find({ department }).select('_id');
+      matchQuery.employee = { $in: employees.map(e => e._id) };
+    }
+
+    const monthlyTrend = await Payroll.aggregate([
+      { $match: { 'period.year': { $gte: currentYear - 1 } } },
+      {
+        $group: {
+          _id: { year: '$period.year', month: '$period.month' },
+          totalGross: { $sum: '$summary.grossEarnings' },
+          totalNet: { $sum: '$summary.netSalary' },
+          totalDeductions: { $sum: '$summary.totalDeductions' },
+          employeeCount: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } },
+      { $limit: 12 },
+    ]);
+
+    const departmentBreakdown = await Payroll.aggregate([
+      { $match: matchQuery },
+      { $lookup: { from: 'employees', localField: 'employee', foreignField: '_id', as: 'employeeData' } },
+      { $unwind: '$employeeData' },
+      { $lookup: { from: 'departments', localField: 'employeeData.department', foreignField: '_id', as: 'deptData' } },
+      { $unwind: '$deptData' },
+      {
+        $group: {
+          _id: '$deptData.name',
+          totalGross: { $sum: '$summary.grossEarnings' },
+          totalNet: { $sum: '$summary.netSalary' },
+          employeeCount: { $sum: 1 },
+          avgSalary: { $avg: '$summary.netSalary' },
+        },
+      },
+    ]);
+
+    const statusBreakdown = await Payroll.aggregate([
+      { $match: matchQuery },
+      { $group: { _id: '$status', count: { $sum: 1 }, totalAmount: { $sum: '$summary.netSalary' } } },
+    ]);
+
+    const overallSummary = await Payroll.aggregate([
+      { $match: matchQuery },
       {
         $group: {
           _id: null,
-          totalNetSalary: { $sum: "$summary.netSalary" },
-          totalGrossEarnings: { $sum: "$summary.grossEarnings" },
-          totalDeductions: { $sum: "$summary.totalDeductions" },
-          totalEmployees: { $sum: 1 },
-          byStatus: {
-            $push: {
-              status: "$status",
-              amount: "$summary.netSalary",
-            },
-          },
-        },
-      },
-    ]);
-
-    sendResponse(res, 200, true, "Payrolls fetched successfully", {
-      payrolls,
-      summary: summary[0] || {
-        totalNetSalary: 0,
-        totalGrossEarnings: 0,
-        totalDeductions: 0,
-        totalEmployees: 0,
-      },
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalRecords: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// Update Payroll Status with Advanced Options
-exports.updatePayrollStatus = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const { id } = req.params;
-    const { status, paymentDate, paymentMode, remarks } = req.body;
-
-    const payroll = await Payroll.findById(id).session(session);
-    if (!payroll) {
-      await session.abortTransaction();
-      return sendResponse(res, 404, false, "Payroll not found");
-    }
-
-    // Update payroll status
-    payroll.status = status;
-
-    if (status === "Paid") {
-      payroll.payment = {
-        date: paymentDate || new Date(),
-        mode: paymentMode || "Bank Transfer",
-        processedBy: req.user._id,
-        processedAt: new Date(),
-      };
-    }
-
-    if (status === "Rejected") {
-      payroll.remarks = remarks;
-    }
-
-    // Add to audit trail
-    payroll.auditTrail = payroll.auditTrail || [];
-    payroll.auditTrail.push({
-      action: `Status updated to ${status}`,
-      performedBy: req.user._id,
-      timestamp: new Date(),
-      remarks: remarks,
-    });
-
-    await payroll.save({ session });
-    await session.commitTransaction();
-
-    const updatedPayroll = await Payroll.findById(id)
-      .populate("employee", "firstName lastName employeeId")
-      .populate("payment.processedBy", "firstName lastName");
-
-    sendResponse(
-      res,
-      200,
-      true,
-      `Payroll ${status.toLowerCase()} successfully`,
-      updatedPayroll
-    );
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-};
-
-// Bulk Update Payroll Status
-exports.bulkUpdatePayrollStatus = async (req, res, next) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const { payrollIds, status, paymentDate, paymentMode } = req.body;
-
-    const result = await Payroll.updateMany(
-      { _id: { $in: payrollIds } },
-      {
-        $set: {
-          status,
-          ...(status === "Paid" && {
-            payment: {
-              date: paymentDate || new Date(),
-              mode: paymentMode || "Bank Transfer",
-              processedBy: req.user._id,
-              processedAt: new Date(),
-            },
-          }),
-        },
-        $push: {
-          auditTrail: {
-            action: `Bulk status update to ${status}`,
-            performedBy: req.user._id,
-            timestamp: new Date(),
-          },
-        },
-      },
-      { session }
-    );
-
-    await session.commitTransaction();
-
-    sendResponse(
-      res,
-      200,
-      true,
-      `${result.modifiedCount} payrolls updated to ${status}`
-    );
-  } catch (error) {
-    await session.abortTransaction();
-    next(error);
-  } finally {
-    session.endSession();
-  }
-};
-
-// Get Payroll Analytics
-exports.getPayrollAnalytics = async (req, res, next) => {
-  try {
-    const { year = moment().year() } = req.query;
-
-    const analytics = await Payroll.aggregate([
-      {
-        $match: { year: parseInt(year) },
-      },
-      {
-        $group: {
-          _id: "$month",
-          totalNetSalary: { $sum: "$summary.netSalary" },
-          totalGrossEarnings: { $sum: "$summary.grossEarnings" },
-          totalDeductions: { $sum: "$summary.totalDeductions" },
+          totalGross: { $sum: '$summary.grossEarnings' },
+          totalNet: { $sum: '$summary.netSalary' },
+          totalDeductions: { $sum: '$summary.totalDeductions' },
+          totalPF: { $sum: '$deductions.pfEmployee' },
+          totalESI: { $sum: '$deductions.esiEmployee' },
+          totalTax: { $sum: '$deductions.professionalTax' },
+          totalLOP: { $sum: '$deductions.lossOfPay' },
           employeeCount: { $sum: 1 },
-          departments: { $addToSet: "$employee.department" },
-        },
-      },
-      {
-        $sort: { _id: 1 },
-      },
-    ]);
-
-    // Department-wise breakdown
-    const departmentAnalytics = await Payroll.aggregate([
-      {
-        $match: { year: parseInt(year) },
-      },
-      {
-        $lookup: {
-          from: "employees",
-          localField: "employee",
-          foreignField: "_id",
-          as: "employeeData",
-        },
-      },
-      {
-        $unwind: "$employeeData",
-      },
-      {
-        $lookup: {
-          from: "departments",
-          localField: "employeeData.department",
-          foreignField: "_id",
-          as: "departmentData",
-        },
-      },
-      {
-        $unwind: "$departmentData",
-      },
-      {
-        $group: {
-          _id: "$departmentData.name",
-          totalSalary: { $sum: "$summary.netSalary" },
-          employeeCount: { $sum: 1 },
-          avgSalary: { $avg: "$summary.netSalary" },
         },
       },
     ]);
 
-    sendResponse(res, 200, true, "Payroll analytics fetched successfully", {
-      monthlyBreakdown: analytics,
-      departmentBreakdown: departmentAnalytics,
-      year: parseInt(year),
+    sendResponse(res, 200, true, 'Analytics fetched successfully', {
+      monthlyTrend,
+      departmentBreakdown,
+      statusBreakdown,
+      summary: overallSummary[0] || {},
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Helper Functions
-const calculateAttendanceSummary = (attendanceRecords, startDate, endDate) => {
-  const presentDays = attendanceRecords.filter(
-    (a) => a.status === "Present"
-  ).length;
-  const absentDays = attendanceRecords.filter(
-    (a) => a.status === "Absent"
-  ).length;
-  const halfDays = attendanceRecords.filter(
-    (a) => a.status === "Half Day"
-  ).length;
-  const holidays = attendanceRecords.filter(
-    (a) => a.status === "Holiday"
-  ).length;
-
-  const totalWorkingDays = moment(endDate).diff(startDate, "days") + 1;
-  const weekends = calculateWeekends(startDate, endDate);
-  const actualWorkingDays = totalWorkingDays - weekends - holidays;
-
-  return {
-    presentDays,
-    absentDays,
-    halfDays,
-    holidays,
-    weekends,
-    totalWorkingDays: actualWorkingDays,
-    paidLeaves: 0, // This would come from leave records
-    unpaidLeaves: absentDays,
-    attendancePercentage: (presentDays / actualWorkingDays) * 100,
-  };
-};
-
-const calculateSalary = (employee, attendance, month, year) => {
-  const basic = employee.salaryStructure?.basic || employee.salary?.basic || 0;
-  const hra = basic * 0.4; // 40% of basic
-  const specialAllowance = employee.salaryStructure?.specialAllowance || 0;
-  const conveyance = employee.salaryStructure?.conveyance || 0;
-  const medicalAllowance = employee.salaryStructure?.medicalAllowance || 0;
-
-  // Gross Earnings
-  const grossEarnings =
-    basic + hra + specialAllowance + conveyance + medicalAllowance;
-
-  // Deductions
-  const pfEmployee = basic * 0.12; // 12% of basic
-  const pfEmployer = basic * 0.12; // 12% of basic
-  const esicEmployee = grossEarnings <= 21000 ? grossEarnings * 0.0075 : 0; // 0.75%
-  const esicEmployer = grossEarnings <= 21000 ? grossEarnings * 0.0325 : 0; // 3.25%
-  const professionalTax = 200;
-
-  const totalDeductions = pfEmployee + esicEmployee + professionalTax;
-  const netSalary = grossEarnings - totalDeductions;
-  const costToCompany = grossEarnings + pfEmployer + esicEmployer;
-
-  return {
-    basic,
-    hra,
-    specialAllowance,
-    conveyance,
-    medicalAllowance,
-    pfEmployee,
-    pfEmployer,
-    esicEmployee,
-    esicEmployer,
-    professionalTax,
-    grossEarnings,
-    totalDeductions,
-    netSalary,
-    costToCompany,
-    overtime: 0,
-    bonus: 0,
-    incentives: 0,
-    arrears: 0,
-    otherAllowances: 0,
-    tds: 0,
-    loanRecovery: 0,
-    advanceRecovery: 0,
-    otherDeductions: 0,
-  };
-};
-
-const calculateWeekends = (startDate, endDate) => {
-  let weekends = 0;
-  let current = moment(startDate);
-
-  while (current.isSameOrBefore(endDate)) {
-    if (current.day() === 0 || current.day() === 6) {
-      // Sunday or Saturday
-      weekends++;
-    }
-    current.add(1, "day");
-  }
-
-  return weekends;
-};
-
-const calculatePaymentDate = (month, year) => {
-  return moment(`${year}-${month.toString().padStart(2, "0")}-01`)
-    .add(1, "month")
-    .date(7) // 7th of next month
-    .toDate();
-};
-
-const generatePayrollId = async () => {
-  const count = await Payroll.countDocuments();
-  return `PAY${String(count + 1).padStart(6, "0")}`;
-};
-
-// Salary calculation helpers
-const calculateGrossSalary = (employee) => {
-  const basic = employee.salaryStructure?.basic || employee.salary?.basic || 0;
-  const hra = employee.salaryStructure?.hra || employee.salary?.hra || 0;
-  const allowances =
-    employee.salaryStructure?.allowances || employee.salary?.allowances || 0;
-  return basic + hra + allowances;
-};
-
-const calculateTotalDeductions = (employee) => {
-  const pf =
-    employee.salaryStructure?.pf?.employeeContribution ||
-    employee.salary?.deductions?.pf ||
-    0;
-  const tax =
-    employee.salaryStructure?.tax || employee.salary?.deductions?.tax || 0;
-  const other =
-    employee.salaryStructure?.otherDeductions ||
-    employee.salary?.deductions?.other ||
-    0;
-  return pf + tax + other;
-};
-
-const calculateNetSalary = (employee) => {
-  return calculateGrossSalary(employee) - calculateTotalDeductions(employee);
-};
-
-const calculateCTC = (employee) => {
-  const gross = calculateGrossSalary(employee);
-  const employerPf = employee.salaryStructure?.pf?.employerContribution || 0;
-  const employerEsic =
-    employee.salaryStructure?.esic?.employerContribution || 0;
-  const bonus = employee.salaryStructure?.bonus || 0;
-  return gross + employerPf + employerEsic + bonus;
-};
-
-
-
-
-
-
-
-
-// Add this method to your payrollController.js
-
-// Get Eligible Employees for Payroll Generation
+// ==================== GET ELIGIBLE EMPLOYEES ====================
 exports.getEligibleEmployees = async (req, res, next) => {
   try {
-    const { department, includeInactive = false } = req.query;
+    const { department, includeInactive } = req.query;
 
-    // Build employee filter
     const employeeFilter = {
-      status: includeInactive === 'true' ? { $in: ["Active", "Inactive"] } : "Active",
+      status: includeInactive === 'true' ? { $in: ['Active', 'Inactive', 'On Leave'] } : 'Active',
     };
+
     if (department) employeeFilter.department = department;
 
     const employees = await Employee.find(employeeFilter)
-      .populate("salaryStructure")
-      .populate("designation")
-      .populate("department")
-      .select("employeeId firstName lastName designation department salaryStructure status salary");
+      .populate('department', 'name')
+      .populate('designation', 'title')
+      .populate('currentSalaryStructure')
+      .select('employeeId firstName lastName department designation status currentSalaryStructure');
 
-    // Calculate estimated salary for preview
     const employeesWithEstimates = employees.map(emp => {
-      const basic = emp.salaryStructure?.basic || emp.salary?.basic || 0;
-      const hra = basic * 0.4;
-      const specialAllowance = emp.salaryStructure?.specialAllowance || 0;
-      const conveyance = emp.salaryStructure?.conveyance || 0;
-      const medicalAllowance = emp.salaryStructure?.medicalAllowance || 0;
-      
-      const estimatedGross = basic + hra + specialAllowance + conveyance + medicalAllowance;
-      const pfEmployee = basic * 0.12;
-      const esicEmployee = estimatedGross <= 21000 ? estimatedGross * 0.0075 : 0;
-      const professionalTax = 200;
-      const totalDeductions = pfEmployee + esicEmployee + professionalTax;
-      const estimatedNet = estimatedGross - totalDeductions;
-
+      const salaryStructure = emp.currentSalaryStructure;
       return {
         _id: emp._id,
         employeeId: emp.employeeId,
         firstName: emp.firstName,
         lastName: emp.lastName,
-        designation: emp.designation,
         department: emp.department,
+        designation: emp.designation,
         status: emp.status,
-        basicSalary: basic,
-        estimatedGross,
-        estimatedNet,
-        salaryStructure: emp.salaryStructure,
+        basicSalary: salaryStructure?.earnings.basic || 0,
+        estimatedGross: salaryStructure?.summary.grossSalary || 0,
+        estimatedNet: salaryStructure?.summary.netSalary || 0,
+        hasSalaryStructure: !!salaryStructure,
       };
     });
 
-    sendResponse(res, 200, true, "Eligible employees fetched successfully", {
+    const summary = {
+      totalEmployees: employeesWithEstimates.length,
+      withSalaryStructure: employeesWithEstimates.filter(e => e.hasSalaryStructure).length,
+      withoutSalaryStructure: employeesWithEstimates.filter(e => !e.hasSalaryStructure).length,
+      totalEstimatedGross: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedGross, 0),
+      totalEstimatedNet: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedNet, 0),
+    };
+
+    sendResponse(res, 200, true, 'Eligible employees fetched successfully', {
       employees: employeesWithEstimates,
-      count: employeesWithEstimates.length,
-      summary: {
-        totalEmployees: employeesWithEstimates.length,
-        totalEstimatedPayout: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedNet, 0),
-        totalEstimatedGross: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedGross, 0),
-      }
+      summary,
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Get Payroll Generation Summary (for validation before generation)
+// ==================== GET PAYROLL GENERATION SUMMARY ====================
 exports.getPayrollGenerationSummary = async (req, res, next) => {
   try {
     const { month, year, department } = req.query;
 
-    if (!month || !year) {
-      return sendResponse(res, 400, false, "Month and year are required");
-    }
-
-    // Check for existing payrolls in this period
-    const existingQuery = {
-      month: parseInt(month),
-      year: parseInt(year),
+    const summary = {
+      period: { month: parseInt(month), year: parseInt(year) },
+      totalEmployees: 0,
+      alreadyGenerated: 0,
+      pendingGeneration: 0,
+      withoutSalaryStructure: 0,
+      estimatedPayout: 0,
     };
 
-    if (department) {
-      const employees = await Employee.find({ department }).select("_id");
-      existingQuery.employee = { $in: employees.map((emp) => emp._id) };
-    }
-
-    const existingPayrolls = await Payroll.find(existingQuery)
-      .populate("employee", "firstName lastName employeeId");
-
-    // Get eligible employees
-    const employeeFilter = { status: "Active" };
+    const employeeFilter = { status: 'Active' };
     if (department) employeeFilter.department = department;
 
-    const eligibleEmployees = await Employee.find(employeeFilter)
-      .select("employeeId firstName lastName");
+    const employees = await Employee.find(employeeFilter).populate('currentSalaryStructure');
+    summary.totalEmployees = employees.length;
 
-    sendResponse(res, 200, true, "Payroll generation summary", {
-      existingPayrolls: existingPayrolls.length,
-      existingEmployees: existingPayrolls.map(p => ({
-        employeeId: p.employee.employeeId,
-        name: `${p.employee.firstName} ${p.employee.lastName}`,
-        status: p.status,
-      })),
-      eligibleEmployees: eligibleEmployees.length,
-      canGenerate: existingPayrolls.length === 0,
-      message: existingPayrolls.length > 0 
-        ? `Payroll already exists for ${existingPayrolls.length} employees in this period`
-        : `Ready to generate payroll for ${eligibleEmployees.length} employees`,
+    const existingPayrolls = await Payroll.countDocuments({
+      'period.month': parseInt(month),
+      'period.year': parseInt(year),
+      employee: { $in: employees.map(e => e._id) },
     });
+
+    summary.alreadyGenerated = existingPayrolls;
+    summary.pendingGeneration = summary.totalEmployees - existingPayrolls;
+
+    employees.forEach(emp => {
+      if (!emp.currentSalaryStructure) {
+        summary.withoutSalaryStructure++;
+      } else {
+        summary.estimatedPayout += emp.currentSalaryStructure.summary?.netSalary || 0;
+      }
+    });
+
+    sendResponse(res, 200, true, 'Summary fetched successfully', summary);
   } catch (error) {
     next(error);
   }
 };
+
+// ==================== DOWNLOAD PAYSLIP ====================
+exports.downloadPayslip = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const payroll = await Payroll.findById(id)
+      .populate('employee')
+      .populate('employee.department')
+      .populate('employee.designation');
+
+    if (!payroll) {
+      return sendResponse(res, 404, false, 'Payroll not found');
+    }
+
+    // Check access rights
+    if (req.user.role === 'employee') {
+      const employee = await Employee.findOne({ userId: req.user.id });
+      if (!employee || !payroll.employee._id.equals(employee._id)) {
+        return sendResponse(res, 403, false, 'Access denied');
+      }
+    }
+
+    const pdfData = {
+      companyName: 'Your Company Name',
+      employeeName: `${payroll.employee.firstName} ${payroll.employee.lastName}`,
+      employeeId: payroll.employee.employeeId,
+      department: payroll.employee.department?.name,
+      designation: payroll.employee.designation?.title,
+      period: `${moment().month(payroll.period.month - 1).format('MMMM')} ${payroll.period.year}`,
+      earnings: payroll.earnings,
+      deductions: payroll.deductions,
+      summary: payroll.summary,
+      attendance: payroll.attendance,
+      bankDetails: payroll.bankDetails,
+    };
+
+    if (!payroll.notifications.payslipDownloaded) {
+      payroll.notifications.payslipDownloaded = true;
+      payroll.notifications.payslipDownloadedAt = new Date();
+      await payroll.save();
+    }
+
+    sendResponse(res, 200, true, 'Payslip data fetched', pdfData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== DOWNLOAD PAYROLL REPORT ====================
+exports.downloadPayrollReport = async (req, res, next) => {
+  try {
+    const { month, year, department } = req.query;
+
+    const query = {
+      'period.month': parseInt(month),
+      'period.year': parseInt(year),
+    };
+
+    if (department) {
+      const employees = await Employee.find({ department }).select('_id');
+      query.employee = { $in: employees.map(e => e._id) };
+    }
+
+    const payrolls = await Payroll.find(query)
+      .populate('employee', 'employeeId firstName lastName designation department')
+      .populate('employee.designation', 'title')
+      .populate('employee.department', 'name');
+
+    const reportData = payrolls.map(p => ({
+      employeeId: p.employee.employeeId,
+      employeeName: `${p.employee.firstName} ${p.employee.lastName}`,
+      department: p.employee.department?.name,
+      designation: p.employee.designation?.title,
+      basic: p.earnings.basic,
+      hra: p.earnings.hra,
+      grossEarnings: p.summary.grossEarnings,
+      pfEmployee: p.deductions.pfEmployee,
+      esiEmployee: p.deductions.esiEmployee,
+      professionalTax: p.deductions.professionalTax,
+      tds: p.deductions.tds,
+      loanRecovery: p.deductions.loanRecovery,
+      lossOfPay: p.deductions.lossOfPay,
+      totalDeductions: p.summary.totalDeductions,
+      netSalary: p.summary.netSalary,
+      status: p.status,
+    }));
+
+    sendResponse(res, 200, true, 'Payroll report generated', { reportData });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = exports;

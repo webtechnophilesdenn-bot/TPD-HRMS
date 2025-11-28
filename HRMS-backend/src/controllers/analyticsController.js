@@ -12,43 +12,64 @@ exports.getDashboardStats = async (req, res, next) => {
     
     const today = moment().startOf('day').toDate();
     
-    // FIX: Use req.user._id instead of req.user.id
+    // Find current employee
     const currentEmployee = await Employee.findOne({ userId: req.user._id });
     console.log("👤 Current employee found:", currentEmployee ? currentEmployee.employeeId : "Not found");
 
-    // ✅ If employee role, show their personal stats
+    // ==================== FIX: CHECK IF EMPLOYEE EXISTS ====================
     if (req.user.role === 'employee') {
-      // Get employee's attendance for this month
+      // If employee not found, return friendly response
+      if (!currentEmployee) {
+        console.log("⚠️ No employee profile found for user:", req.user._id);
+        return sendResponse(res, 200, true, 'Dashboard stats', {
+          totalEmployees: 0,
+          presentToday: 0,
+          onLeave: 0,
+          pendingLeaves: 0,
+          absentToday: 0,
+          avgAttendance: 0,
+          openPositions: 0,
+          myAttendanceThisMonth: 0,
+          myAbsentDays: 0,
+          myTotalWorkingDays: 0,
+          hasEmployeeProfile: false,
+          message: 'Employee profile not set up. Please contact HR.'
+        });
+      }
+
+      // NOW SAFE - Employee exists, get their attendance
       const myAttendance = await Attendance.find({
-        employee: currentEmployee._id,
+        employee: currentEmployee._id, // ✅ Safe now
         date: { $gte: moment().startOf('month').toDate() }
       });
 
       // Get employee's pending leaves
       const myLeaves = await Leave.find({
-        employee: currentEmployee._id,
+        employee: currentEmployee._id, // ✅ Safe now
         status: 'Pending'
       });
 
       const stats = {
-        totalEmployees: 1, // Just show 1 (themselves)
+        totalEmployees: 1,
         presentToday: myAttendance.filter(a => 
           moment(a.date).isSame(today, 'day') && a.status === 'Present'
         ).length,
-        onLeave: 0, // They can't be on leave if they're logged in
+        onLeave: 0,
         pendingLeaves: myLeaves.length,
         absentToday: 0,
         avgAttendance: 0,
         openPositions: 0,
-        // Additional employee-specific stats
         myAttendanceThisMonth: myAttendance.filter(a => a.status === 'Present').length,
         myAbsentDays: myAttendance.filter(a => a.status === 'Absent').length,
-        myTotalWorkingDays: myAttendance.length
+        myTotalWorkingDays: myAttendance.length,
+        hasEmployeeProfile: true,
+        employeeId: currentEmployee.employeeId
       };
 
       console.log("✅ Employee stats:", stats);
       return sendResponse(res, 200, true, 'Dashboard stats', stats);
     }
+    // ==================== END FIX ====================
 
     // ✅ For HR/Admin/Manager - show full organizational stats
     console.log("📊 Fetching organization-wide stats...");
@@ -82,8 +103,9 @@ exports.getDashboardStats = async (req, res, next) => {
       absentToday: totalEmployees - todayAttendance.length - onLeaveToday,
       avgAttendance: totalEmployees > 0 ? ((todayAttendance.length / totalEmployees) * 100).toFixed(2) : 0,
       pendingLeaves,
-      pendingApprovals: pendingLeaves, // Alias for frontend compatibility
-      openPositions
+      pendingApprovals: pendingLeaves,
+      openPositions,
+      hasEmployeeProfile: true
     };
 
     console.log("✅ Final stats:", stats);

@@ -676,3 +676,178 @@
 {"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-26T21:17:26.674Z"}
 {"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-26T21:17:26.687Z"}
 {"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-26T21:17:26.714Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T17:52:32.286Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T17:52:32.310Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T17:52:32.373Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T17:56:16.811Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T17:56:16.819Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T17:56:16.853Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T18:00:03.341Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T18:00:03.349Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T18:00:03.381Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T18:01:34.708Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T18:01:34.725Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T18:01:34.765Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T18:03:25.474Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T18:03:25.487Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T18:03:25.524Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T18:03:28.123Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T18:03:28.132Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T18:03:28.160Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.login (C:\\HRMS\\HRMS-backend\\src\\controllers\\authController.js:76:24)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T18:12:44.131Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T18:25:45.236Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T18:25:45.247Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T18:25:45.267Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:35:00.199Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:35:00.223Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:35:00.371Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:37:25.834Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:37:25.845Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:37:25.867Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:44:08.186Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:44:08.201Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:44:08.232Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:48:51.988Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:48:52.048Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:48:52.079Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:49:47.697Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:49:47.705Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:49:47.731Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:52:15.022Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:52:15.033Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:52:15.054Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T19:52:59.325Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T19:52:59.338Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T19:52:59.366Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:10:42.593Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:10:42.602Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:10:42.625Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:14:30.511Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:14:30.520Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:14:30.547Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:28:46.980Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:28:46.996Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:28:47.029Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:28:54.994Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:28:55.005Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:28:55.039Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:29:01.119Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:29:01.142Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:29:19.883Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:29:19.901Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:31:28.235Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:31:28.254Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:33:04.425Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:33:04.437Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:33:04.464Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:33:29.782Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:33:29.829Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:33:29.863Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:33:35.991Z"}
+{"level":"error","message":"Cannot read properties of null (reading '_id')","name":"TypeError","stack":"TypeError: Cannot read properties of null (reading '_id')\n    at exports.getDashboardStats (C:\\HRMS\\HRMS-backend\\src\\controllers\\analyticsController.js:23:35)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)","timestamp":"2025-11-27T20:33:36.025Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:34:32.840Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:34:32.847Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:34:32.873Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:36:41.806Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:36:41.817Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:36:41.847Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:38:14.211Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:38:14.220Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:38:14.245Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:40:23.714Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:40:23.722Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:40:23.723Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:40:23.763Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:40:25.796Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:40:25.797Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:41:00.999Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:41:01.007Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:41:01.009Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:41:01.040Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:41:03.027Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:41:03.027Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:41:29.703Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:41:29.706Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:41:29.706Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:41:29.732Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:41:31.762Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:41:31.763Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:42:25.904Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:42:25.908Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:42:25.909Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:42:25.935Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:42:27.993Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:42:27.994Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:42:33.979Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:42:33.982Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:42:33.982Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:42:34.012Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:42:36.075Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:42:36.076Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:43:42.178Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:43:42.183Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:43:42.184Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:43:42.222Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:43:44.217Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:43:44.218Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:44:21.825Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:44:21.828Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:44:21.828Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:44:21.854Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:44:23.905Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:44:23.906Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:44:29.188Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:44:29.192Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:44:29.193Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:44:29.226Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:44:31.263Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:44:31.264Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:47:51.523Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:47:51.533Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:47:51.533Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:47:51.561Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:47:53.605Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:47:53.607Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:50:25.446Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:50:25.448Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:50:25.449Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:50:25.479Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:50:27.472Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:50:27.473Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:51:09.424Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:51:09.426Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:51:09.427Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:51:09.455Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:51:12.344Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:51:12.347Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:51:12.348Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:51:12.374Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:51:14.381Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:51:14.382Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:51:17.170Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:51:17.173Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:51:17.174Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:51:17.201Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:51:19.199Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:51:19.200Z"}
+{"level":"info","message":"🚀 HRMS Server running on port 5000","timestamp":"2025-11-27T20:56:13.887Z"}
+{"level":"info","message":"🌍 Environment: development","timestamp":"2025-11-27T20:56:13.892Z"}
+{"level":"info","message":"📊 Database: Connected","timestamp":"2025-11-27T20:56:13.894Z"}
+{"level":"info","message":"✅ MongoDB Connected Successfully","timestamp":"2025-11-27T20:56:13.923Z"}
+{"level":"info","message":"✅ All cron jobs initialized successfully","timestamp":"2025-11-27T20:56:15.922Z"}
+{"level":"info","message":"✅ Cron jobs initialized","timestamp":"2025-11-27T20:56:15.923Z"}
+{"level":"info","message":"POST /api/v1/auth/login","timestamp":"2025-11-27T20:56:55.603Z"}
+{"level":"info","message":"GET /api/v1/analytics/dashboard","timestamp":"2025-11-27T20:56:56.615Z"}
+{"level":"info","message":"GET /api/v1/analytics/dashboard","timestamp":"2025-11-27T20:56:56.718Z"}
+{"level":"info","message":"GET /api/v1/compliance/dashboard","timestamp":"2025-11-27T20:56:56.733Z"}
+{"level":"info","message":"GET /api/v1/compliance/dashboard","timestamp":"2025-11-27T20:56:56.809Z"}
+{"level":"info","message":"GET /api/v1/payroll/analytics","timestamp":"2025-11-27T20:56:56.825Z"}
+{"level":"info","message":"GET /api/v1/payroll/analytics","timestamp":"2025-11-27T20:56:56.884Z"}
+{"level":"info","message":"GET /api/v1/employees","timestamp":"2025-11-27T20:56:59.429Z"}
+{"level":"info","message":"GET /api/v1/employees","timestamp":"2025-11-27T20:56:59.485Z"}
+{"level":"info","message":"GET /api/v1/payroll","timestamp":"2025-11-27T20:57:03.705Z"}
+{"level":"info","message":"GET /api/v1/payroll/analytics","timestamp":"2025-11-27T20:57:03.718Z"}
+{"level":"info","message":"GET /api/v1/payroll","timestamp":"2025-11-27T20:57:03.748Z"}
+{"level":"info","message":"GET /api/v1/payroll/analytics","timestamp":"2025-11-27T20:57:03.756Z"}
+{"level":"info","message":"POST /api/v1/payroll/generate","timestamp":"2025-11-27T20:57:11.701Z"}
+{"level":"info","message":"GET /api/v1/payroll","timestamp":"2025-11-27T20:57:13.785Z"}

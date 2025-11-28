@@ -1,194 +1,88 @@
-// ============================================
-// CREATE TEST USERS FOR ALL ROLES WITH DIFFERENT EMAILS
-// Save as: createTestUsers.js
-// Run: node createTestUsers.js
-// ============================================
 require('dotenv').config();
-
 const mongoose = require("mongoose");
-const User = require("./src/models/User");
-const Employee = require("./src/models/Employee");
-const Department = require("./src/models/Department");
-const Designation = require("./src/models/Designation");
 
-const MONGODB_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/hrms?replicaSet=rs0";
-
-async function clearExistingTestData() {
-  try {
-    // Delete existing test users and employees
-    const testEmails = [
-      'raj.sharma@company.com',
-      'priya.patel@company.com', 
-      'arjun.kumar@company.com',
-      'neha.gupta@company.com',
-      'anita.desai@company.com',
-      'vivek.mishra@company.com',
-      'admin.user@company.com'
-    ];
-
-    // Delete users with test emails
-    await User.deleteMany({ email: { $in: testEmails } });
-    console.log('✅ Cleared existing test users');
-
-    // Delete employees with test employee IDs
-    const testEmployeeIds = ['EMP001', 'EMP002', 'MGR001', 'MGR002', 'HR001', 'HR002', 'ADM001'];
-    await Employee.deleteMany({ employeeId: { $in: testEmployeeIds } });
-    console.log('✅ Cleared existing test employees');
-
-  } catch (error) {
-    console.log('⚠️  No existing test data to clear or error clearing:', error.message);
-  }
-}
+const MONGODB_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/hrms";
 
 async function createTestUsers() {
   try {
-    // Connect to MongoDB
+    console.log("🔌 Connecting to MongoDB...");
     await mongoose.connect(MONGODB_URI);
-    console.log("✅ Connected to MongoDB");
+    console.log("✅ Connected to MongoDB\n");
 
-    // Clear existing test data first
-    await clearExistingTestData();
+    // Clear mongoose models cache
+    if (mongoose.models.Employee) delete mongoose.models.Employee;
+    if (mongoose.models.User) delete mongoose.models.User;
 
-    // 1. Create Departments if not exists
-    const engDept = await Department.findOneAndUpdate(
-      { code: "ENG" },
-      {
-        name: "Engineering",
-        code: "ENG",
-        description: "Engineering Department",
-      },
-      { upsert: true, new: true }
-    );
+    // Import models
+    const User = require("./src/models/User");
+    const Employee = require("./src/models/Employee");
+    const Department = require("./src/models/Department");
+    const Designation = require("./src/models/Designation");
 
-    const hrDept = await Department.findOneAndUpdate(
-      { code: "HR" },
-      {
-        name: "Human Resources",
-        code: "HR",
-        description: "Human Resources Department",
-      },
-      { upsert: true, new: true }
-    );
+    console.log("📦 Employee model:", Employee.modelName);
+    console.log("📦 User model:", User.modelName);
 
-    const adminDept = await Department.findOneAndUpdate(
-      { code: "ADMIN" },
-      {
-        name: "Administration",
-        code: "ADMIN",
-        description: "Administration Department",
-      },
-      { upsert: true, new: true }
-    );
+    // ==================== CREATE DEPARTMENTS ====================
+    console.log("\n📁 Creating Departments...");
+    const departments = {
+      eng: await Department.findOneAndUpdate(
+        { code: "ENG" },
+        { name: "Engineering", code: "ENG", description: "Engineering Team", isActive: true },
+        { upsert: true, new: true }
+      ),
+      hr: await Department.findOneAndUpdate(
+        { code: "HR" },
+        { name: "Human Resources", code: "HR", description: "HR Department", isActive: true },
+        { upsert: true, new: true }
+      ),
+      admin: await Department.findOneAndUpdate(
+        { code: "ADMIN" },
+        { name: "Administration", code: "ADMIN", description: "Admin Department", isActive: true },
+        { upsert: true, new: true }
+      ),
+    };
 
-    const financeDept = await Department.findOneAndUpdate(
-      { code: "FIN" },
-      {
-        name: "Finance",
-        code: "FIN",
-        description: "Finance Department",
-      },
-      { upsert: true, new: true }
-    );
+    // ==================== CREATE DESIGNATIONS ====================
+    console.log("\n📋 Creating Designations...");
+    const designations = {
+      softwareEngineer: await Designation.findOneAndUpdate(
+        { title: "Software Engineer" },
+        { title: "Software Engineer", level: "Mid", department: departments.eng._id, isActive: true },
+        { upsert: true, new: true }
+      ),
+      projectManager: await Designation.findOneAndUpdate(
+        { title: "Project Manager" },
+        { title: "Project Manager", level: "Senior", department: departments.eng._id, isActive: true },
+        { upsert: true, new: true }
+      ),
+      hrManager: await Designation.findOneAndUpdate(
+        { title: "HR Manager" },
+        { title: "HR Manager", level: "Senior", department: departments.hr._id, isActive: true },
+        { upsert: true, new: true }
+      ),
+      systemAdmin: await Designation.findOneAndUpdate(
+        { title: "System Administrator" },
+        { title: "System Administrator", level: "Senior", department: departments.admin._id, isActive: true },
+        { upsert: true, new: true }
+      ),
+    };
 
-    console.log("✅ Created/Found Departments");
-
-    // 2. Create Designations if not exists
-    const softwareEngineer = await Designation.findOneAndUpdate(
-      { title: "Software Engineer" },
-      {
-        title: "Software Engineer",
-        level: "Mid",
-        department: engDept._id,
-        description: "Software Development",
-      },
-      { upsert: true, new: true }
-    );
-
-    const seniorDeveloper = await Designation.findOneAndUpdate(
-      { title: "Senior Software Engineer" },
-      {
-        title: "Senior Software Engineer",
-        level: "Senior",
-        department: engDept._id,
-        description: "Senior Software Development",
-      },
-      { upsert: true, new: true }
-    );
-
-    const hrManager = await Designation.findOneAndUpdate(
-      { title: "HR Manager" },
-      {
-        title: "HR Manager",
-        level: "Senior",
-        department: hrDept._id,
-        description: "Human Resources Management",
-      },
-      { upsert: true, new: true }
-    );
-
-    const hrExecutive = await Designation.findOneAndUpdate(
-      { title: "HR Executive" },
-      {
-        title: "HR Executive",
-        level: "Junior",
-        department: hrDept._id,
-        description: "HR Operations",
-      },
-      { upsert: true, new: true }
-    );
-
-    const systemAdmin = await Designation.findOneAndUpdate(
-      { title: "System Administrator" },
-      {
-        title: "System Administrator",
-        level: "Senior",
-        department: adminDept._id,
-        description: "System Administration",
-      },
-      { upsert: true, new: true }
-    );
-
-    const projectManager = await Designation.findOneAndUpdate(
-      { title: "Project Manager" },
-      {
-        title: "Project Manager",
-        level: "Senior",
-        department: engDept._id,
-        description: "Project Management",
-      },
-      { upsert: true, new: true }
-    );
-
-    const financeManager = await Designation.findOneAndUpdate(
-      { title: "Finance Manager" },
-      {
-        title: "Finance Manager",
-        level: "Senior",
-        department: financeDept._id,
-        description: "Financial Management",
-      },
-      { upsert: true, new: true }
-    );
-
-    console.log("✅ Created/Found Designations");
-
-    // 3. Define all test users with different emails and passwords
+    // ==================== CREATE COMPLETE TEST USERS ====================
     const testUsers = [
-      // EMPLOYEE 1
       {
-        userData: {
-          email: "raj.sharma@company.com",
-          password: "Raj@2024",
-          role: "employee",
-        },
+        email: "employee@company.com",
+        password: "Employee@123",
+        role: "employee",
+        name: "John Doe",
         employeeData: {
           employeeId: "EMP001",
-          firstName: "Raj",
-          lastName: "Sharma",
+          firstName: "John",
+          lastName: "Doe",
           dateOfBirth: new Date("1995-05-15"),
           gender: "Male",
           phone: "+919876543210",
-          personalEmail: "raj.sharma.personal@gmail.com",
+          alternatePhone: "+919876543211",
+          personalEmail: "john.doe@gmail.com",
           address: {
             street: "123 Main Street",
             city: "Mumbai",
@@ -196,358 +90,263 @@ async function createTestUsers() {
             zipCode: "400001",
             country: "India",
           },
-          department: engDept._id,
-          designation: softwareEngineer._id,
+          department: departments.eng._id,
+          designation: designations.softwareEngineer._id,
           joiningDate: new Date("2024-01-15"),
           employmentType: "Full-Time",
           workLocation: "Mumbai Office",
+          workShift: "Day",
           ctc: 800000,
+          basicSalary: 400000,
           bankDetails: {
-            accountNumber: "1234567890",
+            accountNumber: "12345678901234",
             ifscCode: "HDFC0001234",
             bankName: "HDFC Bank",
             branch: "Mumbai Branch",
+            accountHolderName: "John Doe",
+            accountType: "Savings",
+          },
+          statutoryDetails: {
+            panNumber: "ABCDE1234F",
+            aadharNumber: "123456789012",
+            uanNumber: "123456789012",
           },
           leaveBalance: {
             casual: 12,
             sick: 12,
             earned: 5,
-            maternity: 0,
-            paternity: 5,
+            compOff: 2,
+          },
+          emergencyContact: {
+            name: "Jane Doe",
+            relationship: "Mother",
+            phone: "+919876543200",
           },
           status: "Active",
         },
       },
-
-      // EMPLOYEE 2
       {
-        userData: {
-          email: "priya.patel@company.com",
-          password: "Priya@2024",
-          role: "employee",
-        },
+        email: "manager@company.com",
+        password: "Manager@123",
+        role: "manager",
+        name: "Sarah Wilson",
         employeeData: {
-          employeeId: "EMP002",
-          firstName: "Priya",
-          lastName: "Patel",
-          dateOfBirth: new Date("1993-08-22"),
+          employeeId: "MGR001",
+          firstName: "Sarah",
+          lastName: "Wilson",
+          dateOfBirth: new Date("1985-08-20"),
           gender: "Female",
           phone: "+919876543211",
-          personalEmail: "priya.patel.personal@gmail.com",
+          personalEmail: "sarah.wilson@gmail.com",
           address: {
-            street: "456 Tech Park Road",
+            street: "456 Park Avenue",
             city: "Bangalore",
             state: "Karnataka",
             zipCode: "560001",
             country: "India",
           },
-          department: engDept._id,
-          designation: seniorDeveloper._id,
-          joiningDate: new Date("2023-03-10"),
+          department: departments.eng._id,
+          designation: designations.projectManager._id,
+          reportingManager: null,
+          joiningDate: new Date("2020-06-10"),
           employmentType: "Full-Time",
           workLocation: "Bangalore Office",
-          ctc: 1200000,
+          ctc: 1500000,
+          basicSalary: 750000,
           bankDetails: {
-            accountNumber: "2345678901",
+            accountNumber: "23456789012345",
             ifscCode: "ICIC0001234",
             bankName: "ICICI Bank",
             branch: "Bangalore Branch",
+            accountHolderName: "Sarah Wilson",
+          },
+          statutoryDetails: {
+            panNumber: "FGHIJ5678K",
+            aadharNumber: "234567890123",
           },
           leaveBalance: {
-            casual: 10,
-            sick: 10,
-            earned: 8,
-            maternity: 0,
-            paternity: 5,
+            casual: 15,
+            sick: 12,
+            earned: 20,
+          },
+          emergencyContact: {
+            name: "David Wilson",
+            relationship: "Husband",
+            phone: "+919876543201",
           },
           status: "Active",
         },
       },
-
-      // MANAGER 1
       {
-        userData: {
-          email: "arjun.kumar@company.com",
-          password: "Arjun@2024",
-          role: "manager",
-        },
+        email: "hr@company.com",
+        password: "HR@123",
+        role: "hr",
+        name: "Emily Davis",
         employeeData: {
-          employeeId: "MGR001",
-          firstName: "Arjun",
-          lastName: "Kumar",
-          dateOfBirth: new Date("1985-08-20"),
-          gender: "Male",
+          employeeId: "HR001",
+          firstName: "Emily",
+          lastName: "Davis",
+          dateOfBirth: new Date("1988-03-10"),
+          gender: "Female",
           phone: "+919876543212",
-          personalEmail: "arjun.kumar.personal@gmail.com",
+          personalEmail: "emily.davis@gmail.com",
           address: {
-            street: "789 Manager Avenue",
+            street: "789 Corporate Road",
             city: "Delhi",
             state: "Delhi",
             zipCode: "110001",
             country: "India",
           },
-          department: engDept._id,
-          designation: projectManager._id,
-          joiningDate: new Date("2020-06-10"),
+          department: departments.hr._id,
+          designation: designations.hrManager._id,
+          joiningDate: new Date("2019-08-15"),
           employmentType: "Full-Time",
           workLocation: "Delhi Office",
-          ctc: 1500000,
+          ctc: 1200000,
+          basicSalary: 600000,
           bankDetails: {
-            accountNumber: "3456789012",
+            accountNumber: "34567890123456",
             ifscCode: "SBI0001234",
             bankName: "State Bank of India",
             branch: "Delhi Branch",
+            accountHolderName: "Emily Davis",
+          },
+          statutoryDetails: {
+            panNumber: "KLMNO9012P",
+            aadharNumber: "345678901234",
           },
           leaveBalance: {
-            casual: 12,
+            casual: 15,
             sick: 12,
-            earned: 15,
-            maternity: 0,
-            paternity: 5,
+            earned: 18,
           },
           status: "Active",
         },
       },
-
-      // MANAGER 2
       {
-        userData: {
-          email: "neha.gupta@company.com",
-          password: "Neha@2024",
-          role: "manager",
-        },
+        email: "admin@company.com",
+        password: "Admin@123",
+        role: "admin",
+        name: "Michael Brown",
         employeeData: {
-          employeeId: "MGR002",
-          firstName: "Neha",
-          lastName: "Gupta",
-          dateOfBirth: new Date("1988-03-10"),
-          gender: "Female",
+          employeeId: "ADM001",
+          firstName: "Michael",
+          lastName: "Brown",
+          dateOfBirth: new Date("1980-12-25"),
+          gender: "Male",
           phone: "+919876543213",
-          personalEmail: "neha.gupta.personal@gmail.com",
+          personalEmail: "michael.brown@gmail.com",
           address: {
-            street: "321 Corporate Road",
+            street: "321 Admin Street",
             city: "Hyderabad",
             state: "Telangana",
             zipCode: "500001",
             country: "India",
           },
-          department: financeDept._id,
-          designation: financeManager._id,
-          joiningDate: new Date("2019-08-15"),
+          department: departments.admin._id,
+          designation: designations.systemAdmin._id,
+          joiningDate: new Date("2018-03-01"),
           employmentType: "Full-Time",
           workLocation: "Hyderabad Office",
-          ctc: 1400000,
+          ctc: 1800000,
+          basicSalary: 900000,
           bankDetails: {
-            accountNumber: "4567890123",
+            accountNumber: "45678901234567",
             ifscCode: "AXIS0001234",
             bankName: "Axis Bank",
             branch: "Hyderabad Branch",
+            accountHolderName: "Michael Brown",
+          },
+          statutoryDetails: {
+            panNumber: "PQRST3456U",
+            aadharNumber: "456789012345",
           },
           leaveBalance: {
-            casual: 12,
+            casual: 18,
             sick: 12,
-            earned: 18,
-            maternity: 0,
-            paternity: 5,
-          },
-          status: "Active",
-        },
-      },
-
-      // HR 1
-      {
-        userData: {
-          email: "anita.desai@company.com",
-          password: "Anita@2024",
-          role: "hr",
-        },
-        employeeData: {
-          employeeId: "HR001",
-          firstName: "Anita",
-          lastName: "Desai",
-          dateOfBirth: new Date("1988-11-30"),
-          gender: "Female",
-          phone: "+919876543214",
-          personalEmail: "anita.desai.personal@gmail.com",
-          address: {
-            street: "654 HR Street",
-            city: "Chennai",
-            state: "Tamil Nadu",
-            zipCode: "600001",
-            country: "India",
-          },
-          department: hrDept._id,
-          designation: hrManager._id,
-          joiningDate: new Date("2019-08-15"),
-          employmentType: "Full-Time",
-          workLocation: "Chennai Office",
-          ctc: 1200000,
-          bankDetails: {
-            accountNumber: "5678901234",
-            ifscCode: "HDFC0005678",
-            bankName: "HDFC Bank",
-            branch: "Chennai Branch",
-          },
-          leaveBalance: {
-            casual: 12,
-            sick: 12,
-            earned: 18,
-            maternity: 0,
-            paternity: 5,
-          },
-          status: "Active",
-        },
-      },
-
-      // HR 2
-      {
-        userData: {
-          email: "vivek.mishra@company.com",
-          password: "Vivek@2024",
-          role: "hr",
-        },
-        employeeData: {
-          employeeId: "HR002",
-          firstName: "Vivek",
-          lastName: "Mishra",
-          dateOfBirth: new Date("1990-07-15"),
-          gender: "Male",
-          phone: "+919876543215",
-          personalEmail: "vivek.mishra.personal@gmail.com",
-          address: {
-            street: "987 Talent Avenue",
-            city: "Pune",
-            state: "Maharashtra",
-            zipCode: "411001",
-            country: "India",
-          },
-          department: hrDept._id,
-          designation: hrExecutive._id,
-          joiningDate: new Date("2022-01-20"),
-          employmentType: "Full-Time",
-          workLocation: "Pune Office",
-          ctc: 700000,
-          bankDetails: {
-            accountNumber: "6789012345",
-            ifscCode: "ICIC0006789",
-            bankName: "ICICI Bank",
-            branch: "Pune Branch",
-          },
-          leaveBalance: {
-            casual: 12,
-            sick: 12,
-            earned: 10,
-            maternity: 0,
-            paternity: 5,
-          },
-          status: "Active",
-        },
-      },
-
-      // ADMIN
-      {
-        userData: {
-          email: "admin.user@company.com",
-          password: "Admin@2024",
-          role: "admin",
-        },
-        employeeData: {
-          employeeId: "ADM001",
-          firstName: "Admin",
-          lastName: "User",
-          dateOfBirth: new Date("1980-12-25"),
-          gender: "Male",
-          phone: "+919876543216",
-          personalEmail: "admin.user.personal@gmail.com",
-          address: {
-            street: "321 Admin Street",
-            city: "Gurgaon",
-            state: "Haryana",
-            zipCode: "122001",
-            country: "India",
-          },
-          department: adminDept._id,
-          designation: systemAdmin._id,
-          joiningDate: new Date("2018-03-01"),
-          employmentType: "Full-Time",
-          workLocation: "Gurgaon Office",
-          ctc: 1800000,
-          bankDetails: {
-            accountNumber: "7890123456",
-            ifscCode: "AXIS0007890",
-            bankName: "Axis Bank",
-            branch: "Gurgaon Branch",
-          },
-          leaveBalance: {
-            casual: 12,
-            sick: 12,
-            earned: 20,
-            maternity: 0,
-            paternity: 5,
+            earned: 25,
           },
           status: "Active",
         },
       },
     ];
 
-    // 4. Create users and their employee profiles
-    let createdCount = 0;
-    let skippedCount = 0;
+    console.log("\n👥 Creating Complete Test Users...\n");
 
-    for (const { userData, employeeData } of testUsers) {
-      try {
-        // Check if user already exists (even though we cleared, just in case)
-        const existingUser = await User.findOne({ email: userData.email });
-        const existingEmployee = await Employee.findOne({ employeeId: employeeData.employeeId });
+    let created = 0;
+    let skipped = 0;
 
-        if (existingUser || existingEmployee) {
-          console.log(`⚠️  User or Employee already exists: ${userData.email} (${employeeData.employeeId})`);
-          skippedCount++;
-          continue;
-        }
+    for (const testUser of testUsers) {
+      console.log(`🔄 Processing: ${testUser.email} (${testUser.role})`);
 
-        // Create user
-        const user = await User.create(userData);
-        console.log(`✅ Created User: ${userData.email} (${userData.role})`);
-
-        // Create employee profile
-        await Employee.create({
-          ...employeeData,
-          userId: user._id,
+      // Check if user exists
+      let user = await User.findOne({ email: testUser.email });
+      
+      if (!user) {
+        console.log(`  📝 Creating user...`);
+        user = await User.create({
+          email: testUser.email,
+          password: testUser.password,
+          role: testUser.role,
+          name: testUser.name,
         });
-        console.log(
-          `✅ Created Employee Profile for: ${employeeData.firstName} ${employeeData.lastName} (${employeeData.employeeId})`
-        );
-        createdCount++;
-      } catch (error) {
-        console.log(`❌ Error creating ${userData.email}:`, error.message);
-        skippedCount++;
+        console.log(`  ✅ Created user: ${user.email}`);
+      } else {
+        console.log(`  ⚠️  User exists: ${user.email}`);
       }
+
+      // Check if employee exists
+      let emp = await Employee.findOne({ userId: user._id });
+      
+      if (emp) {
+        console.log(`  ✅ Employee exists: ${emp.employeeId}`);
+        skipped++;
+        continue;
+      }
+
+      console.log(`  📝 Creating employee profile...`);
+      
+      const employeeData = {
+        ...testUser.employeeData,
+        userId: user._id,
+      };
+
+      emp = new Employee(employeeData);
+      await emp.save();
+
+      console.log(`  ✅ Created employee: ${emp.employeeId}`);
+      created++;
     }
 
-    console.log("\n🎉 TEST USERS CREATION COMPLETED!");
+    console.log("\n🎉 SUCCESS! Test Users Created!");
     console.log("═══════════════════════════════════════════");
-    console.log(`📊 Created: ${createdCount} users`);
-    console.log(`📊 Skipped: ${skippedCount} users`);
+    console.log("📋 TEST ACCOUNTS - LOGIN CREDENTIALS:");
     console.log("═══════════════════════════════════════════");
-    console.log("\n🔐 TEST ACCOUNTS:");
+    testUsers.forEach(user => {
+      console.log(`👤 ${user.role.toUpperCase()}:`);
+      console.log(`   Email: ${user.email}`);
+      console.log(`   Password: ${user.password}`);
+      console.log(`   Employee ID: ${user.employeeData.employeeId}`);
+      console.log("");
+    });
     console.log("═══════════════════════════════════════════");
-    console.log("👤 EMPLOYEES:");
-    console.log("   raj.sharma@company.com    / Raj@2024");
-    console.log("   priya.patel@company.com   / Priya@2024");
-    console.log("\n👨‍💼 MANAGERS:");
-    console.log("   arjun.kumar@company.com   / Arjun@2024");
-    console.log("   neha.gupta@company.com    / Neha@2024");
-    console.log("\n👩‍💼 HR:");
-    console.log("   anita.desai@company.com   / Anita@2024");
-    console.log("   vivek.mishra@company.com  / Vivek@2024");
-    console.log("\n👨‍💻 ADMIN:");
-    console.log("   admin.user@company.com    / Admin@2024");
-    console.log("═══════════════════════════════════════════\n");
 
+    await mongoose.connection.close();
+    console.log("✅ Database connection closed");
     process.exit(0);
+
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("\n❌ Error:", error.message);
+    
+    if (error.name === 'ValidationError') {
+      console.error("\n🔍 Validation Errors:");
+      Object.keys(error.errors).forEach(key => {
+        console.error(`  - ${key}: ${error.errors[key].message}`);
+      });
+    }
+    
+    console.error("\n📚 Full error:", error);
+    await mongoose.connection.close();
     process.exit(1);
   }
 }

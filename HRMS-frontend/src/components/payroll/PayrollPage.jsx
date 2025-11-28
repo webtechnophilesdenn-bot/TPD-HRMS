@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Download,
   Calendar,
@@ -13,557 +13,193 @@ import {
   Send,
   FileText,
   TrendingUp,
-  Settings,
   RefreshCw,
   PlayCircle,
-  Clock,
-  Mail,
-  X,
-} from "lucide-react";
+} from 'lucide-react';
+import { apiService } from '../../services/apiService';
+import { useNotification } from '../../hooks/useNotification';
+import { useAuth } from '../../hooks/useAuth';
+import PayrollGenerationSystem from './PayrollGenerationSystem';
 
-// Mock API Service
-const mockApiService = {
-  getAllEmployees: async (filters) => ({
-    data: {
-      employees: [
-        {
-          _id: "1",
-          employeeId: "EMP001",
-          firstName: "John",
-          lastName: "Doe",
-          department: { _id: "1", name: "Engineering" },
-          designation: { title: "Senior Developer" },
-          salaryStructure: { basic: 60000 },
-          status: "Active",
-        },
-        {
-          _id: "2",
-          employeeId: "EMP002",
-          firstName: "Jane",
-          lastName: "Smith",
-          department: { _id: "2", name: "Marketing" },
-          designation: { title: "Marketing Manager" },
-          salaryStructure: { basic: 80000 },
-          status: "Active",
-        },
-        {
-          _id: "3",
-          employeeId: "EMP003",
-          firstName: "Mike",
-          lastName: "Johnson",
-          department: { _id: "1", name: "Engineering" },
-          designation: { title: "Junior Developer" },
-          salaryStructure: { basic: 45000 },
-          status: "Active",
-        },
-      ],
-    },
-  }),
-  getDepartments: async () => ({
-    data: {
-      departments: [
-        { _id: "1", name: "Engineering" },
-        { _id: "2", name: "Marketing" },
-        { _id: "3", name: "Sales" },
-        { _id: "4", name: "HR" },
-      ],
-    },
-  }),
-  generatePayroll: async (data) => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return {
-      data: {
-        generated: data.employees?.length || 10,
-        errors: [],
-        payrolls: [],
-        summary: {
-          totalEmployees: data.employees?.length || 10,
-          processed: data.employees?.length || 10,
-          failed: 0,
-          totalPayout: 1250000,
-        },
-      },
-    };
-  },
-  getAllPayrolls: async (filters) => ({
-    data: {
-      payrolls: [
-        {
-          _id: "1",
-          payrollId: "PAY000001",
-          month: 10,
-          year: 2024,
-          status: "Generated",
-          employee: {
-            firstName: "John",
-            lastName: "Doe",
-            employeeId: "EMP001",
-          },
-          summary: {
-            grossEarnings: 95000,
-            totalDeductions: 13000,
-            netSalary: 82000,
-          },
-        },
-      ],
-      summary: {
-        totalNetSalary: 4500000,
-        totalGrossEarnings: 5200000,
-        totalDeductions: 700000,
-        totalEmployees: 45,
-      },
-    },
-  }),
-};
-
-// PayrollGenerationSystem Component
-const PayrollGenerationSystem = ({ onClose, showNotification }) => {
-  const [generating, setGenerating] = useState(false);
-  const [generationProgress, setGenerationProgress] = useState(null);
-  const [config, setConfig] = useState({
+const PayrollPage = () => {
+  const { user } = useAuth();
+  const { showSuccess, showError } = useNotification();
+  
+  const [payrolls, setPayrolls] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [selectedPayroll, setSelectedPayroll] = useState(null);
+  const [showPayslipModal, setShowPayslipModal] = useState(false);
+  
+  // Filters
+  const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    department: "",
-    includeInactive: false,
-    autoApprove: false,
-    sendNotifications: true,
-    processOvertime: true,
+    department: '',
+    status: '',
+    page: 1,
+    limit: 20,
+  });
+
+  const [summary, setSummary] = useState({
+    totalNetSalary: 0,
+    totalGrossEarnings: 0,
+    totalDeductions: 0,
+    totalEmployees: 0,
   });
 
   const [departments, setDepartments] = useState([]);
-  const [employeePreview, setEmployeePreview] = useState([]);
-  const [showPreview, setShowPreview] = useState(false);
 
-  const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
+  // Load initial data
   useEffect(() => {
     loadDepartments();
-  }, []);
-
-  useEffect(() => {
-    if (showPreview) {
-      loadEmployeePreview();
-    }
-  }, [config.department, showPreview]);
+    loadPayrolls();
+  }, [filters]);
 
   const loadDepartments = async () => {
     try {
-      const response = await mockApiService.getDepartments();
-      setDepartments(response.data.departments || []);
+      const response = await apiService.getDepartments();
+      setDepartments(response.data || []);
     } catch (error) {
-      console.error("Failed to load departments:", error);
+      console.error('Failed to load departments:', error);
     }
   };
 
-  const loadEmployeePreview = async () => {
+const loadPayrolls = async () => {
+  setLoading(true);
+  try {
+    // Clean up filters - remove empty values
+    const cleanFilters = {};
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
+        cleanFilters[key] = filters[key];
+      }
+    });
+
+    console.log('Loading payrolls with filters:', cleanFilters); // Debug log
+    
+    const response = await apiService.getAllPayrolls(cleanFilters);
+    
+    console.log('Payroll response:', response); // Debug log
+    
+    setPayrolls(response.data?.payrolls || []);
+    setSummary(response.data?.summary || {
+      totalNetSalary: 0,
+      totalGrossEarnings: 0,
+      totalDeductions: 0,
+      totalEmployees: 0,
+    });
+  } catch (error) {
+    console.error('Load payrolls error:', error); // Debug log
+    showError(error.message || 'Failed to load payrolls');
+    setPayrolls([]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
+  };
+
+  const handleGenerationComplete = () => {
+    setShowGenerateModal(false);
+    loadPayrolls(); // Reload payrolls after generation
+    showSuccess('Payroll generated successfully!');
+  };
+
+  const handleUpdateStatus = async (payrollId, status) => {
     try {
-      const response = await mockApiService.getAllEmployees({
-        department: config.department,
-        status: config.includeInactive ? "" : "Active",
+      await apiService.updatePayrollStatus(payrollId, {
+        status,
+        paymentDate: new Date(),
+        paymentMode: 'Bank Transfer',
       });
-      setEmployeePreview(response.data.employees || []);
+      showSuccess(`Payroll ${status.toLowerCase()} successfully`);
+      loadPayrolls();
     } catch (error) {
-      console.error("Failed to load employee preview:", error);
+      showError(error.message || `Failed to ${status.toLowerCase()} payroll`);
     }
   };
 
-  const handleGeneratePayroll = async () => {
-    if (!config.month || !config.year) {
-      alert("Please select month and year");
+  const handleBulkStatusUpdate = async (status) => {
+    const selectedIds = payrolls
+      .filter((p) => p.status === 'Generated')
+      .map((p) => p._id);
+
+    if (selectedIds.length === 0) {
+      showError('No generated payrolls to update');
       return;
     }
 
-    setGenerating(true);
-    setGenerationProgress({
-      stage: "initializing",
-      current: 0,
-      total: employeePreview.length || 10,
-      message: "Initializing payroll generation...",
-    });
-
     try {
-      setGenerationProgress({
-        stage: "validating",
-        current: 0,
-        total: employeePreview.length || 10,
-        message: "Validating employee data...",
+      await apiService.bulkUpdatePayrollStatus({
+        payrollIds: selectedIds,
+        status,
+        paymentDate: new Date(),
+        paymentMode: 'Bank Transfer',
       });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setGenerationProgress({
-        stage: "fetching",
-        current: 0,
-        total: employeePreview.length || 10,
-        message: "Fetching attendance records...",
-      });
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      setGenerationProgress({
-        stage: "calculating",
-        current: 0,
-        total: employeePreview.length || 10,
-        message: "Calculating salaries...",
-      });
-
-      const response = await mockApiService.generatePayroll({
-        month: config.month,
-        year: config.year,
-        department: config.department,
-        includeInactive: config.includeInactive,
-      });
-
-      setGenerationProgress({
-        stage: "completed",
-        current: employeePreview.length || 10,
-        total: employeePreview.length || 10,
-        message: "Payroll generated successfully!",
-      });
-
-      setTimeout(() => {
-        setGenerating(false);
-        setGenerationProgress(null);
-        setShowPreview(false);
-        if (showNotification) {
-          showNotification(
-            `Payroll generated successfully for ${response.data.summary.processed} employees!`,
-            "success"
-          );
-        }
-        if (onClose) {
-          onClose();
-        }
-      }, 2000);
+      showSuccess(`${selectedIds.length} payrolls updated to ${status}`);
+      loadPayrolls();
     } catch (error) {
-      setGenerationProgress({
-        stage: "error",
-        message: error.message || "Failed to generate payroll",
-      });
-      setTimeout(() => {
-        setGenerating(false);
-        setGenerationProgress(null);
-      }, 3000);
+      showError(error.message || 'Failed to update payrolls');
     }
   };
 
+  const handleDownloadPayslip = async (payrollId) => {
+    try {
+      await apiService.downloadPayslip(payrollId);
+      showSuccess('Payslip downloaded successfully');
+    } catch (error) {
+      showError(error.message || 'Failed to download payslip');
+    }
+  };
+
+  const handleViewPayslip = async (payroll) => {
+    setSelectedPayroll(payroll);
+    setShowPayslipModal(true);
+  };
+
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
       minimumFractionDigits: 0,
     }).format(amount || 0);
   };
 
-  const getStageIcon = (stage) => {
-    switch (stage) {
-      case "initializing":
-        return <Clock className="h-6 w-6 text-blue-600 animate-pulse" />;
-      case "validating":
-        return (
-          <CheckCircle className="h-6 w-6 text-yellow-600 animate-pulse" />
-        );
-      case "fetching":
-        return <RefreshCw className="h-6 w-6 text-indigo-600 animate-spin" />;
-      case "calculating":
-        return <DollarSign className="h-6 w-6 text-green-600 animate-pulse" />;
-      case "completed":
-        return <CheckCircle className="h-6 w-6 text-green-600" />;
-      case "error":
-        return <XCircle className="h-6 w-6 text-red-600" />;
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Generated':
+        return 'bg-blue-100 text-blue-800';
+      case 'Approved':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Paid':
+        return 'bg-green-100 text-green-800';
+      case 'Rejected':
+        return 'bg-red-100 text-red-800';
       default:
-        return <Clock className="h-6 w-6 text-gray-600" />;
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Configuration Card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center">
-          <Settings className="h-5 w-5 mr-2 text-indigo-600" />
-          Payroll Configuration
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Month */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="h-4 w-4 inline mr-1" />
-              Month *
-            </label>
-            <select
-              value={config.month}
-              onChange={(e) =>
-                setConfig({ ...config, month: parseInt(e.target.value) })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              {months.map((month, index) => (
-                <option key={index} value={index + 1}>
-                  {month}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Year */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Calendar className="h-4 w-4 inline mr-1" />
-              Year *
-            </label>
-            <select
-              value={config.year}
-              onChange={(e) =>
-                setConfig({ ...config, year: parseInt(e.target.value) })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              {[2025, 2024, 2023, 2022].map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Department */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Building className="h-4 w-4 inline mr-1" />
-              Department
-            </label>
-            <select
-              value={config.department}
-              onChange={(e) =>
-                setConfig({ ...config, department: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept._id} value={dept._id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Options */}
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={config.includeInactive}
-              onChange={(e) =>
-                setConfig({ ...config, includeInactive: e.target.checked })
-              }
-              className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-gray-700">
-              Include Inactive Employees
-            </span>
-          </label>
-
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={config.sendNotifications}
-              onChange={(e) =>
-                setConfig({
-                  ...config,
-                  sendNotifications: e.target.checked,
-                })
-              }
-              className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-gray-700">
-              Send Email Notifications
-            </span>
-          </label>
-
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={config.processOvertime}
-              onChange={(e) =>
-                setConfig({ ...config, processOvertime: e.target.checked })
-              }
-              className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="text-sm text-gray-700">Process Overtime</span>
-          </label>
-        </div>
-
-        {/* Actions */}
-        <div className="mt-6 flex space-x-4">
-          <button
-            onClick={() => {
-              loadEmployeePreview();
-              setShowPreview(true);
-            }}
-            className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium flex items-center"
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            Preview Employees
-          </button>
-          <button
-            onClick={handleGeneratePayroll}
-            disabled={generating}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <DollarSign className="h-4 w-4 mr-2" />
-            {generating ? "Generating..." : "Generate Payroll"}
-          </button>
-        </div>
-      </div>
-
-      {/* Employee Preview */}
-      {showPreview && employeePreview.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold flex items-center">
-              <Users className="h-5 w-5 mr-2 text-indigo-600" />
-              Employee Preview ({employeePreview.length} employees)
-            </h3>
-            <button
-              onClick={() => setShowPreview(false)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Employee
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Designation
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Department
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Basic Salary
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {employeePreview.map((emp) => (
-                  <tr key={emp._id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="text-sm font-medium text-gray-900">
-                        {emp.firstName} {emp.lastName}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {emp.employeeId}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {emp.designation?.title}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {emp.department?.name}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                      {formatCurrency(emp.salaryStructure?.basic || 0)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          emp.status === "Active"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {emp.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Generation Progress Modal */}
-      {generating && generationProgress && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-            <div className="text-center">
-              <div className="flex justify-center mb-4">
-                {getStageIcon(generationProgress.stage)}
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                {generationProgress.stage === "completed"
-                  ? "Completed!"
-                  : "Generating Payroll..."}
-              </h3>
-              <p className="text-gray-600 mb-6">{generationProgress.message}</p>
-
-              {generationProgress.stage !== "completed" &&
-                generationProgress.stage !== "error" && (
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                    <div
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${
-                          (generationProgress.current /
-                            generationProgress.total) *
-                          100
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
-                )}
-
-              {generationProgress.stage === "completed" && (
-                <div className="text-green-600 font-medium">
-                  Payroll generated successfully!
-                </div>
-              )}
-
-              {generationProgress.stage === "error" && (
-                <div className="text-red-600 font-medium">
-                  {generationProgress.message}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Demo Page Component
-const PayrollPageDemo = () => {
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const user = { role: "hr" }; // Mock user with HR role
-
-  const showNotification = (message, type) => {
-    alert(`${type.toUpperCase()}: ${message}`);
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Generated':
+        return <FileText className="h-4 w-4" />;
+      case 'Approved':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'Paid':
+        return <DollarSign className="h-4 w-4" />;
+      case 'Rejected':
+        return <XCircle className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
+    }
   };
+
+  const isHROrAdmin = user?.role === 'hr' || user?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -572,63 +208,486 @@ const PayrollPageDemo = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Payroll Management
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">Payroll Management</h1>
               <p className="text-gray-600 mt-1">
                 Manage and process employee payroll
               </p>
             </div>
-            {(user?.role === "hr" || user?.role === "admin") && (
-              <button
-                onClick={() => setShowGenerateModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 shadow-sm"
-              >
-                <DollarSign className="h-5 w-5" />
-                <span>Generate Payroll</span>
-              </button>
+            {isHROrAdmin && (
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowGenerateModal(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 shadow-sm"
+                >
+                  <PlayCircle className="h-5 w-5" />
+                  <span>Generate Payroll</span>
+                </button>
+                <button
+                  onClick={() => apiService.downloadPayrollReport(filters)}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 shadow-sm"
+                >
+                  <Download className="h-5 w-5" />
+                  <span>Download Report</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Demo Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold mb-4">Recent Payrolls</h2>
-          <p className="text-gray-600">
-            Click "Generate Payroll" button above to open the payroll generation modal.
-          </p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Employees</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {summary.totalEmployees}
+                </p>
+              </div>
+              <Users className="h-10 w-10 text-indigo-600 opacity-75" />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Gross Earnings</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(summary.totalGrossEarnings)}
+                </p>
+              </div>
+              <TrendingUp className="h-10 w-10 text-green-600 opacity-75" />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total Deductions</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(summary.totalDeductions)}
+                </p>
+              </div>
+              <AlertCircle className="h-10 w-10 text-red-600 opacity-75" />
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Net Salary</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">
+                  {formatCurrency(summary.totalNetSalary)}
+                </p>
+              </div>
+              <DollarSign className="h-10 w-10 text-blue-600 opacity-75" />
+            </div>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Filter className="h-5 w-5 text-gray-600" />
+            <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {/* Month */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Month
+              </label>
+              <select
+                value={filters.month}
+                onChange={(e) => handleFilterChange('month', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                  <option key={month} value={month}>
+                    {new Date(2024, month - 1).toLocaleString('default', {
+                      month: 'long',
+                    })}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Year
+              </label>
+              <select
+                value={filters.year}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                {[2024, 2025, 2026].map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Department */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Department
+              </label>
+              <select
+                value={filters.department}
+                onChange={(e) => handleFilterChange('department', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept._id} value={dept._id}>
+                    {dept.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Status */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
+              <select
+                value={filters.status}
+                onChange={(e) => handleFilterChange('status', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">All Status</option>
+                <option value="Generated">Generated</option>
+                <option value="Approved">Approved</option>
+                <option value="Paid">Paid</option>
+                <option value="Rejected">Rejected</option>
+              </select>
+            </div>
+
+            {/* Apply Button */}
+            <div className="flex items-end">
+              <button
+                onClick={loadPayrolls}
+                disabled={loading}
+                className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Filter className="h-5 w-5" />
+                )}
+                Apply
+              </button>
+            </div>
+          </div>
+
+          {/* Bulk Actions */}
+          {isHROrAdmin && payrolls.some((p) => p.status === 'Generated') && (
+            <div className="mt-4 flex items-center gap-3">
+              <span className="text-sm font-medium text-gray-700">Bulk Actions:</span>
+              <button
+                onClick={() => handleBulkStatusUpdate('Approved')}
+                className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 text-sm font-medium"
+              >
+                Approve All Generated
+              </button>
+              <button
+                onClick={() => handleBulkStatusUpdate('Paid')}
+                className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium"
+              >
+                Mark All as Paid
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Payroll Table */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <RefreshCw className="h-8 w-8 text-indigo-600 animate-spin" />
+                <span className="ml-3 text-gray-600">Loading payrolls...</span>
+              </div>
+            ) : payrolls.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">No payroll records found</p>
+                <p className="text-gray-500 text-sm mt-1">
+                  Generate payroll or adjust filters to view records
+                </p>
+              </div>
+            ) : (
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Period
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Gross
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Deductions
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Net Salary
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {payrolls.map((payroll) => (
+                    <tr key={payroll._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {payroll.employee?.firstName} {payroll.employee?.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {payroll.employee?.employeeId}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {new Date(2024, payroll.month - 1).toLocaleString('default', {
+                            month: 'long',
+                          })}{' '}
+                          {payroll.year}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatCurrency(payroll.summary?.grossEarnings)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-red-600">
+                          {formatCurrency(payroll.summary?.totalDeductions)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-green-600">
+                          {formatCurrency(payroll.summary?.netSalary)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(
+                            payroll.status
+                          )}`}
+                        >
+                          <span className="mr-1">{getStatusIcon(payroll.status)}</span>
+                          {payroll.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleViewPayslip(payroll)}
+                            className="text-indigo-600 hover:text-indigo-900"
+                            title="View Payslip"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadPayslip(payroll._id)}
+                            className="text-green-600 hover:text-green-900"
+                            title="Download Payslip"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                          {isHROrAdmin && payroll.status === 'Generated' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateStatus(payroll._id, 'Approved')}
+                                className="text-yellow-600 hover:text-yellow-900"
+                                title="Approve"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(payroll._id, 'Rejected')}
+                                className="text-red-600 hover:text-red-900"
+                                title="Reject"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          {isHROrAdmin && payroll.status === 'Approved' && (
+                            <button
+                              onClick={() => handleUpdateStatus(payroll._id, 'Paid')}
+                              className="text-green-600 hover:text-green-900"
+                              title="Mark as Paid"
+                            >
+                              <DollarSign className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
         {/* Generate Payroll Modal */}
         {showGenerateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl max-w-7xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <PayrollGenerationSystem
+                onClose={() => setShowGenerateModal(false)}
+                onComplete={handleGenerationComplete}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Payslip View Modal */}
+        {showPayslipModal && selectedPayroll && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-8">
+              <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">
-                    Generate Payroll
-                  </h2>
-                  <p className="text-gray-600 mt-1">
-                    Generate monthly payroll for employees
+                  <h2 className="text-2xl font-bold text-gray-900">Payslip</h2>
+                  <p className="text-gray-600">
+                    {new Date(2024, selectedPayroll.month - 1).toLocaleString('default', {
+                      month: 'long',
+                    })}{' '}
+                    {selectedPayroll.year}
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowGenerateModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => setShowPayslipModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <X className="h-6 w-6" />
+                  <XCircle className="h-6 w-6" />
                 </button>
               </div>
-              <div
-                className="overflow-y-auto p-6"
-                style={{ maxHeight: "calc(90vh - 100px)" }}
-              >
-                <PayrollGenerationSystem
-                  onClose={() => {
-                    setShowGenerateModal(false);
-                  }}
-                  showNotification={showNotification}
-                />
+
+              {/* Employee Details */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-2">Employee Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Name</p>
+                    <p className="font-medium">
+                      {selectedPayroll.employee?.firstName} {selectedPayroll.employee?.lastName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Employee ID</p>
+                    <p className="font-medium">{selectedPayroll.employee?.employeeId}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Department</p>
+                    <p className="font-medium">{selectedPayroll.employee?.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Designation</p>
+                    <p className="font-medium">{selectedPayroll.employee?.designation}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Earnings & Deductions */}
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Earnings</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Basic Salary</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.basic)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">HRA</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.hra)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Special Allowance</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.specialAllowance)}
+                      </span>
+                    </div>
+                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                      <span>Gross Earnings</span>
+                      <span>{formatCurrency(selectedPayroll.summary?.grossEarnings)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Deductions</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">PF (Employee)</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.pfEmployee)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ESIC</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.esicEmployee)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Professional Tax</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.professionalTax)}
+                      </span>
+                    </div>
+                    <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                      <span>Total Deductions</span>
+                      <span className="text-red-600">
+                        {formatCurrency(selectedPayroll.summary?.totalDeductions)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Salary */}
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-semibold text-gray-900">Net Salary</span>
+                  <span className="text-2xl font-bold text-indigo-600">
+                    {formatCurrency(selectedPayroll.summary?.netSalary)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Download Button */}
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => handleDownloadPayslip(selectedPayroll._id)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+                >
+                  <Download className="h-5 w-5" />
+                  Download Payslip
+                </button>
               </div>
             </div>
           </div>
@@ -638,4 +697,4 @@ const PayrollPageDemo = () => {
   );
 };
 
-export default PayrollPageDemo;
+export default PayrollPage;
