@@ -8,12 +8,12 @@ import Dashboard from "./components/dashboard/Dashboard";
 import EmployeesPage from "./components/employees/EmployeesPage";
 import AttendancePage from "./components/attendance/AttendancePage";
 import LeavesPage from "./components/leaves/LeavesPage";
+import ContractsPage from "./components/legal/ContractsPage";
 
-// ==================== NEW IMPROVED PAYROLL PAGES ====================
+// Payroll Pages
 import PayrollDashboard from "./components/payroll/PayrollDashboard";
 import EmployeePayslipView from "./components/payroll/EmployeePayslipView";
 import SalaryStructureView from "./components/payroll/SalaryStructureView";
-// ==================== END NEW PAYROLL PAGES ====================
 
 import RecruitmentPage from "./components/recruitment/RecruitmentPage";
 import AssetsPage from "./components/assets/AssetsPage";
@@ -25,6 +25,7 @@ import ChatbotPage from "./components/chatbot/ChatbotPage";
 import OnboardingPage from "./components/onboarding/OnboardingPage";
 import OffboardingPage from "./components/offboarding/OffboardingPage";
 import CompliancePage from "./components/compliancePage/CompliancePage";
+import EventsPage from "./components/Events/EventsPage"; // ✅ Already imported
 
 const AppContent = () => {
   const { user, loading } = useAuth();
@@ -35,13 +36,16 @@ const AppContent = () => {
     switch (activeMenu) {
       case "dashboard":
         return <Dashboard />;
+
       case "employees":
         return <EmployeesPage />;
+
       case "attendance":
         return <AttendancePage />;
+
       case "leaves":
         return <LeavesPage />;
-      
+
       // ==================== PAYROLL ROUTES ====================
       case "payroll":
         // Show different views based on user role
@@ -57,27 +61,49 @@ const AppContent = () => {
       case "payroll-management":
         return <PayrollDashboard />;
       // ==================== END PAYROLL ROUTES ====================
-      
+
       case "recruitment":
         return <RecruitmentPage />;
+
+      // ✅ ADD EVENTS ROUTE
+      case "events":
+        return <EventsPage />;
+
+      case "contracts":
+        return (
+          <ContractsPage
+            isAdmin={user?.role === "admin" || user?.role === "hr"}
+          />
+        );
+      // ==================== END EVENTS ROUTE ====================
+
       case "onboarding":
         return <OnboardingPage />;
+
       case "offboarding":
         return <OffboardingPage />;
+
       case "assets":
         return <AssetsPage />;
+
       case "training":
         return <TrainingPage />;
+
       case "announcements":
         return <AnnouncementsPage />;
+
       case "recognition":
         return <RecognitionPage />;
+
       case "compliance":
         return <CompliancePage />;
+
       case "reports":
         return <ReportsPage />;
+
       case "chatbot":
         return <ChatbotPage />;
+
       default:
         return <Dashboard />;
     }

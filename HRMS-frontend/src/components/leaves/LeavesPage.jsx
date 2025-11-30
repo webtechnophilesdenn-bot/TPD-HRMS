@@ -1,93 +1,81 @@
-import React, { useState, useEffect } from "react";
-import {
-  Plus,
-  Calendar,
-  Filter,
-  Search,
-  Download,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  Eye,
-  Trash2,
-  RefreshCw,
-  ThumbsUp,
-  ThumbsDown,
-} from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { useNotification } from "../../context/NotificationContext";
-import { apiService } from "../../services/apiService";
+import React, { useState, useEffect } from 'react';
+import { Plus, Calendar, Filter, Search, Download, Clock, AlertCircle, CheckCircle, XCircle, Eye, Trash2, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext'; // ✅ Fixed path
+import { useNotification } from '../../context/NotificationContext'; // ✅ Fixed path
+import { apiService } from '../../services/apiService'; // ✅ Changed to named import
+import AdminLeaveBalanceManager from './AdminLeaveBalanceManager';
 
 const LeavesPage = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
-  
+
   // State for employee's own leaves
   const [leaves, setLeaves] = useState([]);
   const [summary, setSummary] = useState({});
   const [leaveBalance, setLeaveBalance] = useState([]);
-  
+
   // State for pending leaves (admin/HR)
   const [pendingLeaves, setPendingLeaves] = useState([]);
   const [pendingCount, setPendingCount] = useState(0);
-  
+
   const [loading, setLoading] = useState(true);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
-  
-  const [activeTab, setActiveTab] = useState("my-leaves"); // "my-leaves" or "pending-approvals"
-  
+
+  // Active tab: 'my-leaves', 'pending-approvals', or 'manage-balance'
+  const [activeTab, setActiveTab] = useState('my-leaves');
+
   const [filters, setFilters] = useState({
     year: new Date().getFullYear(),
-    status: "",
-    leaveType: "",
+    status: '',
+    leaveType: '',
     page: 1,
     limit: 10,
   });
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const isAdminOrHR = user?.role === "admin" || user?.role === "hr" || user?.role === "manager";
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const isAdminOrHR = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
+  const isAdminOrHROnly = user?.role === 'admin' || user?.role === 'hr';
 
   useEffect(() => {
-    if (activeTab === "my-leaves") {
+    if (activeTab === 'my-leaves') {
       loadLeaves();
       loadLeaveBalance();
-    } else if (activeTab === "pending-approvals" && isAdminOrHR) {
+    } else if (activeTab === 'pending-approvals' && isAdminOrHR) {
       loadPendingLeaves();
     }
+    // No need to load anything for 'manage-balance' - the AdminLeaveBalanceManager handles its own data
   }, [filters.year, filters.status, filters.leaveType, filters.page, activeTab]);
 
   const loadLeaves = async () => {
     try {
-      console.log("📥 Loading my leaves...");
+      console.log('Loading my leaves...');
       const response = await apiService.getMyLeaves(filters);
-      console.log("✅ My leaves response:", response);
-      
+      console.log('My leaves response:', response);
       setLeaves(response.data?.leaves || []);
       setSummary(response.data?.summary || {});
       setLoading(false);
     } catch (error) {
-      console.error("❌ Failed to load leaves:", error);
-      showError("Failed to load leaves");
+      console.error('Failed to load leaves', error);
+      showError('Failed to load leaves');
       setLoading(false);
     }
   };
 
   const loadPendingLeaves = async () => {
     try {
-      console.log("📥 Loading pending leaves for approval...");
+      console.log('Loading pending leaves for approval...');
       const response = await apiService.getPendingLeaves(filters);
-      console.log("✅ Pending leaves response:", response);
-      
+      console.log('Pending leaves response:', response);
       setPendingLeaves(response.data?.leaves || []);
       setPendingCount(response.data?.pagination?.totalRecords || 0);
       setLoading(false);
     } catch (error) {
-      console.error("❌ Failed to load pending leaves:", error);
-      showError("Failed to load pending leaves");
+      console.error('Failed to load pending leaves', error);
+      showError('Failed to load pending leaves');
       setLoading(false);
     }
   };
@@ -97,100 +85,89 @@ const LeavesPage = () => {
       const response = await apiService.getLeaveBalance();
       setLeaveBalance(response.data?.balance || []);
     } catch (error) {
-      console.error("Failed to load leave balance");
+      console.error('Failed to load leave balance');
     }
   };
 
   const handleApplyLeave = async (formData) => {
     try {
-      console.log("📤 Applying leave:", formData);
+      console.log('Applying leave', formData);
       await apiService.applyLeave(formData);
-      showSuccess("Leave application submitted successfully!");
+      showSuccess('Leave application submitted successfully!');
       setShowApplyModal(false);
       loadLeaves();
       loadLeaveBalance();
-      
+
       // Refresh pending leaves if admin is viewing
-      if (isAdminOrHR && activeTab === "pending-approvals") {
+      if (isAdminOrHR && activeTab === 'pending-approvals') {
         loadPendingLeaves();
       }
     } catch (error) {
-      console.error("❌ Apply leave error:", error);
-      showError(error.message || "Failed to apply leave");
+      console.error('Apply leave error:', error);
+      showError(error.message || 'Failed to apply leave');
     }
   };
 
   const handleApproveReject = async (leaveId, status, comments) => {
     try {
-      console.log(`📝 ${status} leave:`, leaveId);
-      await apiService.updateLeaveStatus(leaveId, status, comments);
+      console.log(`${status} leave`, leaveId);
+      await apiService.updateLeaveStatus(leaveId, { status, comments });
       showSuccess(`Leave ${status.toLowerCase()} successfully!`);
       setShowApprovalModal(false);
       setSelectedLeave(null);
       loadPendingLeaves();
     } catch (error) {
-      console.error(`❌ Failed to ${status.toLowerCase()} leave:`, error);
+      console.error(`Failed to ${status.toLowerCase()} leave`, error);
       showError(error.message || `Failed to ${status.toLowerCase()} leave`);
     }
   };
 
   const handleCancelLeave = async (leaveId) => {
-    if (window.confirm("Are you sure you want to cancel this leave application?")) {
+    if (window.confirm('Are you sure you want to cancel this leave application?')) {
       try {
         await apiService.cancelLeave(leaveId);
-        showSuccess("Leave application cancelled successfully!");
+        showSuccess('Leave application cancelled successfully!');
         loadLeaves();
         loadLeaveBalance();
       } catch (error) {
-        showError(error.message || "Failed to cancel leave");
+        showError(error.message || 'Failed to cancel leave');
       }
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Approved":
-        return "bg-green-100 text-green-800";
-      case "Rejected":
-        return "bg-red-100 text-red-800";
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "Cancelled":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+      case 'Approved': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelled': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "Approved":
-        return <CheckCircle className="h-4 w-4" />;
-      case "Rejected":
-        return <XCircle className="h-4 w-4" />;
-      case "Pending":
-        return <Clock className="h-4 w-4" />;
-      default:
-        return <AlertCircle className="h-4 w-4" />;
+      case 'Approved': return <CheckCircle className="h-4 w-4" />;
+      case 'Rejected': return <XCircle className="h-4 w-4" />;
+      case 'Pending': return <Clock className="h-4 w-4" />;
+      default: return <AlertCircle className="h-4 w-4" />;
     }
   };
 
-  const filteredLeaves = leaves.filter(
-    (leave) =>
-      leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leave.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leave.status?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLeaves = leaves.filter(leave =>
+    leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPendingLeaves = pendingLeaves.filter(
-    (leave) =>
-      leave.employee?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leave.employee?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leave.employee?.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPendingLeaves = pendingLeaves.filter(leave =>
+    leave.employee?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.employee?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.employee?.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) {
+  if (loading && activeTab !== 'manage-balance') {
     return (
       <div className="p-6 flex justify-center">
         <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
@@ -205,52 +182,55 @@ const LeavesPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
           <p className="text-gray-600 mt-1">
-            {activeTab === "my-leaves" 
-              ? "Manage your leave applications and balance"
-              : "Review and approve pending leave requests"}
+            {activeTab === 'my-leaves' ? 'Manage your leave applications and balance' : 
+             activeTab === 'pending-approvals' ? 'Review and approve pending leave requests' :
+             'Manage employee leave balances'}
           </p>
         </div>
-        <div className="flex space-x-3">
-          <button
-            onClick={() => setShowApplyModal(true)}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-all"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Apply Leave</span>
-          </button>
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Download className="h-5 w-5" />
-            <span>Export</span>
-          </button>
-        </div>
+        {activeTab !== 'manage-balance' && (
+          <div className="flex space-x-3">
+            <button
+              onClick={() => setShowApplyModal(true)}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-all"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Apply Leave</span>
+            </button>
+            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
+              <Download className="h-5 w-5" />
+              <span>Export</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Tabs for Admin/HR */}
-      {isAdminOrHR && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="flex border-b">
+      {/* Tabs for Admin/HR/Manager */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="flex border-b">
+          <button
+            onClick={() => {
+              setActiveTab('my-leaves');
+              setFilters({ ...filters, page: 1 });
+            }}
+            className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+              activeTab === 'my-leaves'
+                ? 'border-b-2 border-indigo-600 text-indigo-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            My Leaves
+          </button>
+
+          {isAdminOrHR && (
             <button
               onClick={() => {
-                setActiveTab("my-leaves");
-                setFilters({ ...filters, page: 1 });
-              }}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === "my-leaves"
-                  ? "border-b-2 border-indigo-600 text-indigo-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              My Leaves
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab("pending-approvals");
+                setActiveTab('pending-approvals');
                 setFilters({ ...filters, page: 1 });
               }}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors relative ${
-                activeTab === "pending-approvals"
-                  ? "border-b-2 border-indigo-600 text-indigo-600"
-                  : "text-gray-600 hover:text-gray-900"
+                activeTab === 'pending-approvals'
+                  ? 'border-b-2 border-indigo-600 text-indigo-600'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               Pending Approvals
@@ -260,12 +240,27 @@ const LeavesPage = () => {
                 </span>
               )}
             </button>
-          </div>
+          )}
+
+          {isAdminOrHROnly && (
+            <button
+              onClick={() => {
+                setActiveTab('manage-balance');
+              }}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'manage-balance'
+                  ? 'border-b-2 border-indigo-600 text-indigo-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Manage Balance
+            </button>
+          )}
         </div>
-      )}
+      </div>
 
       {/* My Leaves Tab Content */}
-      {activeTab === "my-leaves" && (
+      {activeTab === 'my-leaves' && (
         <>
           {/* Leave Balance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -273,21 +268,21 @@ const LeavesPage = () => {
               <div key={balance.code} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold text-gray-900 text-sm">{balance.name}</h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    balance.currentBalance > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      balance.currentBalance > 0
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}
+                  >
                     {balance.isPaid ? 'Paid' : 'Unpaid'}
                   </span>
                 </div>
-                
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-gray-900">
-                      {balance.currentBalance}
-                    </span>
-                    <span className="text-sm text-gray-500">/ {balance.maxBalance || '∞'}</span>
+                    <span className="text-2xl font-bold text-gray-900">{balance.currentBalance}</span>
+                    <span className="text-sm text-gray-500">/ {balance.maxBalance}</span>
                   </div>
-                  
                   <div className="text-xs text-gray-600 space-y-1">
                     <div className="flex justify-between">
                       <span>Available:</span>
@@ -318,7 +313,6 @@ const LeavesPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -330,7 +324,6 @@ const LeavesPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -342,7 +335,6 @@ const LeavesPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -378,15 +370,14 @@ const LeavesPage = () => {
       )}
 
       {/* Pending Approvals Tab Content */}
-      {activeTab === "pending-approvals" && isAdminOrHR && (
+      {activeTab === 'pending-approvals' && isAdminOrHR && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h2 className="text-lg font-semibold mb-2">Pending Leave Requests</h2>
             <p className="text-gray-600">
-              {pendingCount} leave{pendingCount !== 1 ? "s" : ""} waiting for your approval
+              {pendingCount} {pendingCount !== 1 ? 'leaves' : 'leave'} waiting for your approval
             </p>
           </div>
-
           <LeaveHistoryTable
             leaves={filteredPendingLeaves}
             filters={filters}
@@ -403,13 +394,18 @@ const LeavesPage = () => {
             onRefresh={loadPendingLeaves}
             showEmployeeColumn={true}
             showApprovalActions={true}
-            onApprove={(leave) => handleApproveReject(leave._id, "Approved", "")}
+            onApprove={(leave) => handleApproveReject(leave._id, 'Approved', '')}
             onReject={(leave) => {
               setSelectedLeave(leave);
               setShowApprovalModal(true);
             }}
           />
         </>
+      )}
+
+      {/* Manage Balance Tab - Show AdminLeaveBalanceManager Component */}
+      {activeTab === 'manage-balance' && isAdminOrHROnly && (
+        <AdminLeaveBalanceManager />
       )}
 
       {/* Modals */}
@@ -439,8 +435,8 @@ const LeavesPage = () => {
             setShowApprovalModal(false);
             setSelectedLeave(null);
           }}
-          onApprove={(comments) => handleApproveReject(selectedLeave._id, "Approved", comments)}
-          onReject={(comments) => handleApproveReject(selectedLeave._id, "Rejected", comments)}
+          onApprove={(comments) => handleApproveReject(selectedLeave._id, 'Approved', comments)}
+          onReject={(comments) => handleApproveReject(selectedLeave._id, 'Rejected', comments)}
         />
       )}
     </div>

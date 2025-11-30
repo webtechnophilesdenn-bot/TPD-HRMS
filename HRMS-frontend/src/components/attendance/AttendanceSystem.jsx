@@ -4,23 +4,27 @@ import {
   MapPin,
   Calendar,
   Users,
+  Filter,
   Download,
   RefreshCw,
   AlertCircle,
+  CheckCircle,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
-import { apiService } from "../../services/apiService";
-import { useNotification } from "../../context/NotificationContext";
-import { useAuth } from "../../context/AuthContext";
 
-const AttendancePage = () => {
-  const { user } = useAuth();
-  const { showSuccess, showError } = useNotification();
+import { apiService } from "../../services/apiService";
+
+
+
+
+const AttendanceSystem = () => {
+  // State for user role
+  const [userRole, setUserRole] = useState("employee"); // "employee" or "admin"
+  const [activeTab, setActiveTab] = useState("myAttendance"); // "myAttendance" or "teamAttendance"
   
-  // Determine user role - adjust based on your auth structure
-  const userRole = user?.role === "admin" || user?.role === "hr" ? "admin" : "employee";
-  const [activeTab, setActiveTab] = useState("myAttendance");
-  
+  // Common states
   const [loading, setLoading] = useState(true);
   const [attendance, setAttendance] = useState([]);
   const [stats, setStats] = useState({});
@@ -32,6 +36,14 @@ const AttendancePage = () => {
     status: "",
     search: "",
   });
+
+  // Notification state
+  const [notification, setNotification] = useState({ show: false, type: "", message: "" });
+
+  const showNotification = (type, message) => {
+    setNotification({ show: true, type, message });
+    setTimeout(() => setNotification({ show: false, type: "", message: "" }), 3000);
+  };
 
   useEffect(() => {
     loadData();
@@ -47,32 +59,20 @@ const AttendancePage = () => {
         await loadTeamAttendance();
       }
     } catch (error) {
-      showError("Failed to load data");
+      showNotification("error", "Failed to load data");
     } finally {
       setLoading(false);
     }
   };
 
   const loadMyAttendance = async () => {
-    const response = await apiService.getMyAttendance(
-      filters.month,
-      filters.year,
-      null,
-      null,
-      filters.status
-    );
+    const response = await apiService.getMyAttendance(filters.month, filters.year);
     setAttendance(response.data?.attendance || []);
     setStats(response.data?.summary || {});
   };
 
   const loadTeamAttendance = async () => {
-    const response = await apiService.getTeamAttendance(
-      filters.month,
-      filters.year,
-      null,
-      filters.search,
-      filters.status
-    );
+    const response = await apiService.getTeamAttendance(filters.month, filters.year);
     setAttendance(response.data?.attendance || []);
     setStats(response.data?.summary || {});
   };
@@ -82,94 +82,38 @@ const AttendancePage = () => {
     setTodayStatus(response.data?.today || {});
   };
 
-  const getIPAddress = async () => {
-    try {
-      const response = await fetch("https://api.ipify.org?format=json");
-      const data = await response.json();
-      return data.ip;
-    } catch (error) {
-      return "Unknown";
-    }
-  };
-
   const handleCheckIn = async () => {
     try {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              address: "Captured via GPS",
-            };
-            const deviceInfo = navigator.userAgent;
-            const ipAddress = await getIPAddress();
-            
-            await apiService.checkIn(location, ipAddress, deviceInfo);
-            showSuccess("Checked in successfully!");
-            loadData();
-          },
-          async (error) => {
-            const deviceInfo = navigator.userAgent;
-            const ipAddress = await getIPAddress();
-            await apiService.checkIn(
-              { lat: 0, lng: 0, address: "Location not available" },
-              ipAddress,
-              deviceInfo
-            );
-            showSuccess("Checked in successfully!");
-            loadData();
-          }
-        );
-      }
+      const location = { lat: 0, lng: 0, address: "Office Location" };
+      await apiService.checkIn(location, "192.168.1.1", navigator.userAgent);
+      showNotification("success", "Checked in successfully!");
+      setTodayStatus({ ...todayStatus, checkedIn: true });
+      loadData();
     } catch (error) {
-      showError(error.message || "Failed to check in");
+      showNotification("error", "Failed to check in");
     }
   };
 
   const handleCheckOut = async () => {
     try {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const location = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-              address: "Captured via GPS",
-            };
-            const deviceInfo = navigator.userAgent;
-            const ipAddress = await getIPAddress();
-            
-            await apiService.checkOut(location, ipAddress, deviceInfo);
-            showSuccess("Checked out successfully!");
-            loadData();
-          },
-          async (error) => {
-            const deviceInfo = navigator.userAgent;
-            const ipAddress = await getIPAddress();
-            await apiService.checkOut(
-              { lat: 0, lng: 0, address: "Location not available" },
-              ipAddress,
-              deviceInfo
-            );
-            showSuccess("Checked out successfully!");
-            loadData();
-          }
-        );
-      }
+      const location = { lat: 0, lng: 0, address: "Office Location" };
+      await apiService.checkOut(location, "192.168.1.1", navigator.userAgent);
+      showNotification("success", "Checked out successfully!");
+      setTodayStatus({ ...todayStatus, checkedOut: true });
+      loadData();
     } catch (error) {
-      showError(error.message || "Failed to check out");
+      showNotification("error", "Failed to check out");
     }
   };
 
   const handleRegularize = async (formData) => {
     try {
       await apiService.regularizeAttendance(formData);
-      showSuccess("Regularization request submitted!");
+      showNotification("success", "Regularization request submitted!");
       setShowRegularizeModal(false);
       loadData();
     } catch (error) {
-      showError(error.message || "Failed to submit regularization");
+      showNotification("error", "Failed to submit regularization");
     }
   };
 
@@ -189,18 +133,62 @@ const AttendancePage = () => {
 
   if (loading) {
     return (
-      <div className="p-6 flex justify-center items-center min-h-screen">
+      <div className="min-h-screen bg-gray-50 p-6 flex justify-center items-center">
         <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6">
+      {/* Notification */}
+      {notification.show && (
+        <div className={`fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+          notification.type === "success" ? "bg-green-500" : "bg-red-500"
+        } text-white`}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* Role Switcher (Demo Only) */}
+      <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">Demo Mode:</span>
+          <button
+            onClick={() => {
+              setUserRole("employee");
+              setActiveTab("myAttendance");
+            }}
+            className={`px-4 py-2 rounded-lg ${
+              userRole === "employee"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            Employee View
+          </button>
+          <button
+            onClick={() => {
+              setUserRole("admin");
+              setActiveTab("myAttendance");
+            }}
+            className={`px-4 py-2 rounded-lg ${
+              userRole === "admin"
+                ? "bg-indigo-600 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            Admin View
+          </button>
+        </div>
+      </div>
+
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Attendance Management
+          </h1>
           <p className="text-gray-600 mt-1">
             {userRole === "admin" ? "Manage team attendance" : "Track your attendance"}
           </p>
@@ -224,7 +212,7 @@ const AttendancePage = () => {
 
       {/* Admin Tabs */}
       {userRole === "admin" && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
+        <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-2">
           <div className="flex space-x-2">
             <button
               onClick={() => setActiveTab("myAttendance")}
@@ -254,7 +242,7 @@ const AttendancePage = () => {
 
       {/* Today's Status Card - Show for My Attendance */}
       {(activeTab === "myAttendance" || userRole === "employee") && (
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white mb-6">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold">Today's Attendance</h2>
@@ -288,7 +276,7 @@ const AttendancePage = () => {
 
       {/* Quick Actions - Show for My Attendance */}
       {(activeTab === "myAttendance" || userRole === "employee") && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold mb-4">Mark Attendance</h2>
             <div className="space-y-4">
@@ -379,7 +367,7 @@ const AttendancePage = () => {
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
           <div className="flex items-center space-x-4">
             <select
@@ -561,7 +549,9 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
         <h2 className="text-xl font-bold mb-4">Regularize Attendance</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date
+            </label>
             <input
               type="date"
               value={formData.date}
@@ -573,7 +563,9 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check In</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check In
+              </label>
               <input
                 type="time"
                 value={formData.checkIn}
@@ -583,7 +575,9 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check Out</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check Out
+              </label>
               <input
                 type="time"
                 value={formData.checkOut}
@@ -595,7 +589,9 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Reason
+            </label>
             <textarea
               value={formData.reason}
               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
@@ -627,4 +623,4 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
   );
 };
 
-export default AttendancePage;
+export default AttendanceSystem

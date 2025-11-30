@@ -1,3 +1,4 @@
+// controllers/payrollController.js
 const Payroll = require('../models/Payroll');
 const Employee = require('../models/Employee');
 const SalaryStructure = require('../models/SalaryStructure');
@@ -89,17 +90,23 @@ const calculateLoanRecovery = async (employeeId, month, year) => {
   });
 
   let totalRecovery = 0;
-  let loanId = null;
-  let remaining = 0;
+  const loanDetails = [];
 
-  if (activeLoans.length > 0) {
-    const loan = activeLoans[0];
-    totalRecovery = loan.repayment?.emiAmount || 0;
-    loanId = loan._id;
-    remaining = loan.outstandingAmount || 0;
+  for (const loan of activeLoans) {
+    if (loan.outstandingAmount > 0) {
+      const emiAmount = Math.min(loan.repayment?.emiAmount || 0, loan.outstandingAmount);
+      totalRecovery += emiAmount;
+      
+      loanDetails.push({
+        loanId: loan._id,
+        emiAmount,
+        outstandingBefore: loan.outstandingAmount,
+        outstandingAfter: loan.outstandingAmount - emiAmount
+      });
+    }
   }
 
-  return { amount: totalRecovery, loanId, remaining };
+  return { amount: totalRecovery, loanDetails };
 };
 
 /**
@@ -108,29 +115,40 @@ const calculateLoanRecovery = async (employeeId, month, year) => {
 const calculateAdvanceRecovery = async (employeeId, month, year) => {
   const activeAdvances = await Advance.find({
     employee: employeeId,
-    status: 'Approved',
+    status: 'Active',
     'recovery.startDate': { $lte: new Date(year, month - 1, 1) },
     'recovery.endDate': { $gte: new Date(year, month - 1, 1) },
   });
 
   let totalRecovery = 0;
-  let advanceId = null;
-  let remaining = 0;
+  const advanceDetails = [];
 
-  if (activeAdvances.length > 0) {
-    const advance = activeAdvances[0];
-    totalRecovery = advance.recovery?.monthlyRecovery || 0;
-    advanceId = advance._id;
-    remaining = advance.outstandingAmount || 0;
+  for (const advance of activeAdvances) {
+    if (advance.outstandingAmount > 0) {
+      const recoveryAmount = Math.min(
+        advance.recovery?.monthlyRecovery || 0,
+        advance.outstandingAmount
+      );
+      totalRecovery += recoveryAmount;
+      
+      advanceDetails.push({
+        advanceId: advance._id,
+        recoveryAmount,
+        outstandingBefore: advance.outstandingAmount,
+        outstandingAfter: advance.outstandingAmount - recoveryAmount
+      });
+    }
   }
 
-  return { amount: totalRecovery, advanceId, remaining };
+  return { amount: totalRecovery, advanceDetails };
 };
 
 // ==================== GENERATE MONTHLY PAYROLL ====================
 exports.generatePayroll = async (req, res, next) => {
   try {
     const { month, year, department, includeInactive = false, employeeIds } = req.body;
+
+    console.log('🔄 Generating payroll for', { month, year, department });
 
     if (!month || !year) {
       return sendResponse(res, 400, false, 'Month and year are required');
@@ -203,8 +221,12 @@ exports.generatePayroll = async (req, res, next) => {
         });
 
         const attendanceSummary = calculateAttendanceSummary(attendanceRecords, startDate, endDate);
+        
+        // ✅ Calculate Loan & Advance recovery
         const loanRecovery = await calculateLoanRecovery(employee._id, month, year);
         const advanceRecovery = await calculateAdvanceRecovery(employee._id, month, year);
+
+        console.log(`💰 Employee ${employee.employeeId} - Loan: ₹${loanRecovery.amount}, Advance: ₹${advanceRecovery.amount}`);
 
         const payrollCalc = salaryStructure.calculateMonthlyPayroll(
           attendanceSummary.paidDays,
@@ -266,16 +288,8 @@ exports.generatePayroll = async (req, res, next) => {
             sickLeaves: attendanceSummary.sickLeaves,
             casualLeaves: attendanceSummary.casualLeaves,
           },
-          loanDetails: loanRecovery.loanId ? {
-            loanId: loanRecovery.loanId,
-            emiAmount: loanRecovery.amount,
-            remainingAmount: loanRecovery.remaining,
-          } : undefined,
-          advanceDetails: advanceRecovery.advanceId ? {
-            advanceId: advanceRecovery.advanceId,
-            recoveryAmount: advanceRecovery.amount,
-            remainingAmount: advanceRecovery.remaining,
-          } : undefined,
+          loanDetails: loanRecovery.loanDetails.length > 0 ? loanRecovery.loanDetails[0] : undefined,
+          advanceDetails: advanceRecovery.advanceDetails.length > 0 ? advanceRecovery.advanceDetails[0] : undefined,
           status: 'Generated',
           generatedBy: req.user.id,
           generatedAt: new Date(),
@@ -296,7 +310,10 @@ exports.generatePayroll = async (req, res, next) => {
         });
 
         payrollRecords.push(payroll);
+        console.log(`✅ Payroll generated for ${employee.employeeId}`);
+
       } catch (error) {
+        console.error(`❌ Error for employee ${employee.employeeId}:`, error);
         errors.push({
           employeeId: employee.employeeId,
           name: `${employee.firstName} ${employee.lastName}`,
@@ -314,12 +331,118 @@ exports.generatePayroll = async (req, res, next) => {
         totalGrossPayout: payrollRecords.reduce((sum, p) => sum + p.summary.grossEarnings, 0),
         totalNetPayout: payrollRecords.reduce((sum, p) => sum + p.summary.netSalary, 0),
         totalDeductions: payrollRecords.reduce((sum, p) => sum + p.summary.totalDeductions, 0),
+        totalLoanRecovery: payrollRecords.reduce((sum, p) => sum + (p.deductions.loanRecovery || 0), 0),
+        totalAdvanceRecovery: payrollRecords.reduce((sum, p) => sum + (p.deductions.advanceRecovery || 0), 0),
       },
       payrolls: payrollRecords,
       errors,
       warnings,
     });
   } catch (error) {
+    console.error('❌ Error in generatePayroll:', error);
+    next(error);
+  }
+};
+
+// ==================== APPROVE PAYROLL (Process Loan & Advance Deductions) ====================
+exports.approvePayroll = async (req, res, next) => {
+  try {
+    const { payrollIds, paymentDate, remarks } = req.body;
+
+    console.log(`🔄 Approving payroll for ${payrollIds.length} records`);
+
+    const results = [];
+    const errors = [];
+
+    for (const payrollId of payrollIds) {
+      try {
+        const payroll = await Payroll.findById(payrollId);
+        
+        if (!payroll) {
+          errors.push({ payrollId, error: "Payroll not found" });
+          continue;
+        }
+
+        if (payroll.status !== "Generated" && payroll.status !== "Pending") {
+          errors.push({ payrollId, error: "Payroll is not in pending state" });
+          continue;
+        }
+
+        // ✅ DEDUCT LOAN EMI
+        if (payroll.loanDetails && payroll.loanDetails.loanId) {
+          const loan = await Loan.findById(payroll.loanDetails.loanId);
+          if (loan && loan.status === "Active") {
+            loan.deductEMI(payroll.loanDetails.emiAmount);
+            loan.addHistory(
+              "EMI deducted from payroll",
+              payroll.loanDetails.emiAmount,
+              req.user.id,
+              `Payroll ${payroll.period.month}/${payroll.period.year}`
+            );
+            await loan.save();
+            console.log(`✅ Loan EMI deducted: ₹${payroll.loanDetails.emiAmount}`);
+          }
+        }
+
+        // ✅ RECOVER ADVANCE
+        if (payroll.advanceDetails && payroll.advanceDetails.advanceId) {
+          const advance = await Advance.findById(payroll.advanceDetails.advanceId);
+          if (advance && advance.status === "Active") {
+            advance.recoverInstallment(payroll.advanceDetails.recoveryAmount);
+            advance.addHistory(
+              "Recovery from payroll",
+              payroll.advanceDetails.recoveryAmount,
+              req.user.id,
+              `Payroll ${payroll.period.month}/${payroll.period.year}`
+            );
+            await advance.save();
+            console.log(`✅ Advance recovered: ₹${payroll.advanceDetails.recoveryAmount}`);
+          }
+        }
+
+        // Update payroll status
+        payroll.status = "Approved";
+        payroll.workflowStatus = {
+          ...payroll.workflowStatus,
+          approvedBy: req.user.id,
+          approvedAt: new Date(),
+          approvalRemarks: remarks
+        };
+        payroll.auditTrail.push({
+          action: "PAYROLL_APPROVED",
+          performedBy: req.user.id,
+          timestamp: new Date(),
+          remarks: remarks || "Payroll approved"
+        });
+
+        if (paymentDate) {
+          payroll.period.paymentDate = paymentDate;
+        }
+
+        await payroll.save();
+
+        results.push({ payrollId, status: "success" });
+        console.log(`✅ Payroll approved: ${payrollId}`);
+
+      } catch (error) {
+        console.error(`❌ Error approving payroll ${payrollId}:`, error);
+        errors.push({ payrollId, error: error.message });
+      }
+    }
+
+    console.log(`✅ Approval complete: ${results.length} successful, ${errors.length} errors`);
+
+    sendResponse(res, 200, true, "Payroll approved successfully", {
+      successful: results,
+      failed: errors,
+      summary: {
+        total: payrollIds.length,
+        successful: results.length,
+        failed: errors.length
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error in approvePayroll:", error);
     next(error);
   }
 };
@@ -378,6 +501,8 @@ exports.getAllPayrolls = async (req, res, next) => {
           totalGrossEarnings: { $sum: '$summary.grossEarnings' },
           totalDeductions: { $sum: '$summary.totalDeductions' },
           totalNetSalary: { $sum: '$summary.netSalary' },
+          totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
+          totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
           totalEmployees: { $sum: 1 },
         },
       },
@@ -389,6 +514,8 @@ exports.getAllPayrolls = async (req, res, next) => {
         totalGrossEarnings: 0,
         totalDeductions: 0,
         totalNetSalary: 0,
+        totalLoanRecovery: 0,
+        totalAdvanceRecovery: 0,
         totalEmployees: 0,
       },
       pagination: {
@@ -400,6 +527,7 @@ exports.getAllPayrolls = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Error in getAllPayrolls:', error);
     next(error);
   }
 };
@@ -463,6 +591,7 @@ exports.getMyPayslips = async (req, res, next) => {
       },
     });
   } catch (error) {
+    console.error('Error in getMyPayslips:', error);
     next(error);
   }
 };
@@ -527,6 +656,7 @@ exports.getSalaryStructure = async (req, res, next) => {
 
     sendResponse(res, 200, true, 'Salary structure fetched successfully', structureData);
   } catch (error) {
+    console.error('Error in getSalaryStructure:', error);
     next(error);
   }
 };
@@ -561,6 +691,7 @@ exports.updatePayrollStatus = async (req, res, next) => {
 
     sendResponse(res, 200, true, `Payroll ${status.toLowerCase()} successfully`, { payroll });
   } catch (error) {
+    console.error('Error in updatePayrollStatus:', error);
     next(error);
   }
 };
@@ -607,6 +738,7 @@ exports.bulkUpdatePayrollStatus = async (req, res, next) => {
       errors,
     });
   } catch (error) {
+    console.error('Error in bulkUpdatePayrollStatus:', error);
     next(error);
   }
 };
@@ -633,6 +765,8 @@ exports.getPayrollAnalytics = async (req, res, next) => {
           totalGross: { $sum: '$summary.grossEarnings' },
           totalNet: { $sum: '$summary.netSalary' },
           totalDeductions: { $sum: '$summary.totalDeductions' },
+          totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
+          totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
           employeeCount: { $sum: 1 },
         },
       },
@@ -674,6 +808,8 @@ exports.getPayrollAnalytics = async (req, res, next) => {
           totalESI: { $sum: '$deductions.esiEmployee' },
           totalTax: { $sum: '$deductions.professionalTax' },
           totalLOP: { $sum: '$deductions.lossOfPay' },
+          totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
+          totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
           employeeCount: { $sum: 1 },
         },
       },
@@ -686,6 +822,7 @@ exports.getPayrollAnalytics = async (req, res, next) => {
       summary: overallSummary[0] || {},
     });
   } catch (error) {
+    console.error('Error in getPayrollAnalytics:', error);
     next(error);
   }
 };
@@ -737,6 +874,7 @@ exports.getEligibleEmployees = async (req, res, next) => {
       summary,
     });
   } catch (error) {
+    console.error('Error in getEligibleEmployees:', error);
     next(error);
   }
 };
@@ -780,6 +918,7 @@ exports.getPayrollGenerationSummary = async (req, res, next) => {
 
     sendResponse(res, 200, true, 'Summary fetched successfully', summary);
   } catch (error) {
+    console.error('Error in getPayrollGenerationSummary:', error);
     next(error);
   }
 };
@@ -827,6 +966,7 @@ exports.downloadPayslip = async (req, res, next) => {
 
     sendResponse(res, 200, true, 'Payslip data fetched', pdfData);
   } catch (error) {
+    console.error('Error in downloadPayslip:', error);
     next(error);
   }
 };
@@ -864,6 +1004,7 @@ exports.downloadPayrollReport = async (req, res, next) => {
       professionalTax: p.deductions.professionalTax,
       tds: p.deductions.tds,
       loanRecovery: p.deductions.loanRecovery,
+      advanceRecovery: p.deductions.advanceRecovery,
       lossOfPay: p.deductions.lossOfPay,
       totalDeductions: p.summary.totalDeductions,
       netSalary: p.summary.netSalary,
@@ -872,8 +1013,22 @@ exports.downloadPayrollReport = async (req, res, next) => {
 
     sendResponse(res, 200, true, 'Payroll report generated', { reportData });
   } catch (error) {
+    console.error('Error in downloadPayrollReport:', error);
     next(error);
   }
 };
 
-module.exports = exports;
+module.exports = {
+  generatePayroll: exports.generatePayroll,
+  approvePayroll: exports.approvePayroll,
+  getMyPayslips: exports.getMyPayslips,
+  getSalaryStructure: exports.getSalaryStructure,
+  downloadPayslip: exports.downloadPayslip,
+  getAllPayrolls: exports.getAllPayrolls,
+  updatePayrollStatus: exports.updatePayrollStatus,
+  bulkUpdatePayrollStatus: exports.bulkUpdatePayrollStatus,
+  getPayrollAnalytics: exports.getPayrollAnalytics,
+  getEligibleEmployees: exports.getEligibleEmployees,
+  getPayrollGenerationSummary: exports.getPayrollGenerationSummary,
+  downloadPayrollReport: exports.downloadPayrollReport
+};

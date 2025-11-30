@@ -23,6 +23,14 @@ exports.applyLeave = async (req, res, next) => {
       attachments,
     } = req.body;
 
+    console.log("📝 Received leave application:", {
+      leaveType,
+      startDate,
+      endDate,
+      isHalfDay,
+      reason
+    });
+
     // FIX 1: Use req.user._id instead of req.user.id
     const employee = await Employee.findOne({ userId: req.user._id });
 
@@ -32,12 +40,49 @@ exports.applyLeave = async (req, res, next) => {
 
     console.log("📝 Employee found:", employee.employeeId, employee.firstName);
 
-    // Validate leave type
-    const leaveTypeConfig = await LeaveType.findOne({
-      code: leaveType,
-    });
-    if (!leaveTypeConfig || !leaveTypeConfig.isActive) {
-      return sendResponse(res, 400, false, "Invalid leave type");
+    // FIX 2: Enhanced leave type validation with debugging
+    console.log("🔍 Searching for leave type with code:", leaveType);
+    
+    let leaveTypeConfig;
+    try {
+      // Try exact match first
+      leaveTypeConfig = await LeaveType.findOne({
+        code: leaveType.toUpperCase(),
+        isActive: true
+      });
+
+      // If not found, try case-insensitive search
+      if (!leaveTypeConfig) {
+        console.log("🔄 Trying case-insensitive search...");
+        leaveTypeConfig = await LeaveType.findOne({
+          $or: [
+            { code: new RegExp(`^${leaveType}$`, 'i') },
+            { name: new RegExp(leaveType, 'i') }
+          ],
+          isActive: true
+        });
+      }
+
+      console.log("🔍 Leave type search result:", leaveTypeConfig ? {
+        code: leaveTypeConfig.code,
+        name: leaveTypeConfig.name,
+        isActive: leaveTypeConfig.isActive
+      } : 'Not found');
+
+    } catch (error) {
+      console.error("❌ Error searching for leave type:", error);
+      return sendResponse(res, 500, false, "Error validating leave type");
+    }
+
+    if (!leaveTypeConfig) {
+      // Get available leave types for better error message
+      const availableTypes = await LeaveType.find({ isActive: true }).select('code name -_id');
+      console.log("📋 Available leave types:", availableTypes);
+      
+      const availableCodes = availableTypes.map(t => t.code).join(', ');
+      return sendResponse(res, 400, false, 
+        `Invalid leave type "${leaveType}". Available types: ${availableCodes || 'None found'}`
+      );
     }
 
     console.log("✓ Leave type validated:", leaveTypeConfig.name);
@@ -99,11 +144,11 @@ exports.applyLeave = async (req, res, next) => {
     console.log("💰 Leave balance record:", leaveBalance ? "Found" : "Not found");
 
     const currentBalances = leaveBalance ? leaveBalance.getCurrentBalance() : {};
-    const availableBalance = currentBalances[leaveType.toLowerCase()] || 0;
+    const availableBalance = currentBalances[leaveTypeConfig.code.toLowerCase()] || 0;
 
     console.log(
       "Balance check - Type:",
-      leaveType,
+      leaveTypeConfig.code,
       "Available:",
       availableBalance,
       "Required:",
@@ -142,7 +187,7 @@ exports.applyLeave = async (req, res, next) => {
 
     console.log("🆕 Leave object created with status:", leave.status);
 
-    // FIX 2: Add await and proper workflow setup
+    // FIX 3: Add await and proper workflow setup
     if (leaveTypeConfig.requiresApproval) {
       console.log("⚙️ Setting up approval workflow...");
       await setupApprovalWorkflow(leave, employee, leaveTypeConfig);
@@ -157,14 +202,14 @@ exports.applyLeave = async (req, res, next) => {
     // Add to history
     leave.addHistory("Applied", employee._id, "Leave application submitted");
 
-    // FIX 3: Save the leave BEFORE any other operations
+    // FIX 4: Save the leave BEFORE any other operations
     console.log("💾 Saving leave to database...");
     await leave.save();
     console.log("✅ Leave saved successfully with ID:", leave._id);
 
     // If auto-approved, update balance immediately
     if (leave.status === "Approved") {
-      await updateLeaveBalance(employee._id, leaveType, totalDays, "debit");
+      await updateLeaveBalance(employee._id, leaveTypeConfig.code, totalDays, "debit");
     }
 
     // Populate before sending response
@@ -458,11 +503,235 @@ exports.getPendingLeaves = async (req, res, next) => {
   }
 };
 
+// Admin: Get employee leave balance
+// Admin: Get employee leave balance
+exports.getEmployeeLeaveBalance = async (req, res, next) => {
+  try {
+    const { employeeId } = req.params;
+    const { year = moment().year() } = req.query;
+
+    console.log('🔍 Fetching leave balance for employee:', employeeId, 'year:', year);
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return sendResponse(res, 404, false, 'Employee not found');
+    }
+
+    let leaveBalance = await LeaveBalance.findOne({ 
+      employee: employeeId, 
+      year: parseInt(year) 
+    });
+
+    if (!leaveBalance) {
+      console.log('📝 No balance found, initializing...');
+      leaveBalance = await initializeLeaveBalance(employeeId, year);
+    }
+
+    // ✅ FIX: Ensure we have a proper Mongoose document with methods
+    if (!leaveBalance.getCurrentBalance) {
+      console.warn('⚠️ Document missing methods, refetching...');
+      leaveBalance = await LeaveBalance.findById(leaveBalance._id);
+    }
+
+    const leaveTypes = await LeaveType.find({ isActive: true });
+    
+    const detailedBalance = leaveTypes.map(leaveType => {
+      const balanceData = leaveBalance.getBalanceForType(leaveType.code);
+      
+      // ✅ FIX: Calculate current balance manually if method fails
+      let currentBalance = 0;
+      if (leaveBalance.getCurrentBalance && typeof leaveBalance.getCurrentBalance === 'function') {
+        const currentBalances = leaveBalance.getCurrentBalance();
+        currentBalance = currentBalances[leaveType.code.toLowerCase()] || 0;
+      } else {
+        // Fallback: calculate manually from balanceData
+        currentBalance = (balanceData.opening || 0) +
+                        (balanceData.accrued || 0) +
+                        (balanceData.adjusted || 0) +
+                        (balanceData.carryForward || 0) -
+                        (balanceData.used || 0) -
+                        (balanceData.lapsed || 0);
+      }
+
+      return {
+        code: leaveType.code,
+        name: leaveType.name,
+        currentBalance: currentBalance,
+        opening: balanceData.opening || 0,
+        accrued: balanceData.accrued || 0,
+        used: balanceData.used || 0,
+        adjusted: balanceData.adjusted || 0,
+        carryForward: balanceData.carryForward || 0,
+        lapsed: balanceData.lapsed || 0,
+        current: currentBalance // Add both fields for compatibility
+      };
+    });
+
+    console.log('✅ Returning balance data for', detailedBalance.length, 'leave types');
+
+    sendResponse(res, 200, true, 'Employee leave balance fetched', {
+      employee: {
+        id: employee._id,
+        name: `${employee.firstName} ${employee.lastName}`,
+        employeeId: employee.employeeId
+      },
+      year: parseInt(year),
+      balance: detailedBalance
+    });
+  } catch (error) {
+    console.error('❌ Error in getEmployeeLeaveBalance:', error);
+    next(error);
+  }
+};
+
+
+// Admin: Adjust employee leave balance
+exports.adjustLeaveBalance = async (req, res, next) => {
+  try {
+    const { employeeId } = req.params;
+    const { leaveType, amount, operation, reason } = req.body;
+
+    console.log('🔧 Adjusting balance:', { employeeId, leaveType, amount, operation, reason });
+
+    if (!['add', 'deduct'].includes(operation)) {
+      return sendResponse(res, 400, false, 'Invalid operation. Use "add" or "deduct"');
+    }
+
+    if (!amount || amount <= 0) {
+      return sendResponse(res, 400, false, 'Amount must be greater than 0');
+    }
+
+    if (!reason || !reason.trim()) {
+      return sendResponse(res, 400, false, 'Reason is required');
+    }
+
+    const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      return sendResponse(res, 404, false, 'Employee not found');
+    }
+
+    const currentYear = moment().year();
+    let leaveBalance = await LeaveBalance.findOne({ 
+      employee: employeeId, 
+      year: currentYear 
+    });
+
+    if (!leaveBalance) {
+      leaveBalance = await initializeLeaveBalance(employeeId, currentYear);
+    }
+
+    const balanceData = leaveBalance.getBalanceForType(leaveType);
+    const currentAdjusted = balanceData.adjusted || 0;
+    
+    const adjustmentAmount = operation === 'add' ? amount : -amount;
+    const newAdjusted = currentAdjusted + adjustmentAmount;
+
+    console.log('📊 Balance before:', balanceData);
+    console.log('🔢 Adjustment:', { currentAdjusted, adjustmentAmount, newAdjusted });
+
+    // Update the adjusted value
+    leaveBalance.updateBalanceForType(leaveType, { 
+      adjusted: newAdjusted 
+    });
+
+    // ✅ CRITICAL: Save the document
+    await leaveBalance.save();
+    console.log('✅ Balance saved successfully');
+
+    // ✅ Refetch to ensure methods are attached
+    leaveBalance = await LeaveBalance.findById(leaveBalance._id);
+
+    const updatedBalanceData = leaveBalance.getBalanceForType(leaveType);
+    
+    // Calculate current balance manually as fallback
+    const calculatedCurrent = (updatedBalanceData.opening || 0) +
+                              (updatedBalanceData.accrued || 0) +
+                              (updatedBalanceData.adjusted || 0) +
+                              (updatedBalanceData.carryForward || 0) -
+                              (updatedBalanceData.used || 0) -
+                              (updatedBalanceData.lapsed || 0);
+
+    console.log('📊 Balance after:', updatedBalanceData);
+    console.log('💰 Calculated current:', calculatedCurrent);
+
+    console.log(`✅ Admin ${req.user.id} ${operation}ed ${amount} days to ${employee.employeeId}'s ${leaveType}. Reason: ${reason}`);
+
+    sendResponse(res, 200, true, `Leave balance ${operation}ed successfully`, {
+      leaveType,
+      previousAdjusted: currentAdjusted,
+      newAdjusted,
+      currentBalance: calculatedCurrent,
+      fullBalance: updatedBalanceData
+    });
+  } catch (error) {
+    console.error('❌ Error in adjustLeaveBalance:', error);
+    next(error);
+  }
+};
+
+
+// Admin: Bulk adjust leave balances
+exports.bulkAdjustLeaveBalance = async (req, res, next) => {
+  try {
+    const { adjustments } = req.body;
+
+    if (!adjustments || !Array.isArray(adjustments) || adjustments.length === 0) {
+      return sendResponse(res, 400, false, 'Adjustments array is required');
+    }
+
+    const results = [];
+    
+    for (const adjustment of adjustments) {
+      try {
+        const { employeeId, leaveType, amount, operation, reason } = adjustment;
+        
+        const currentYear = moment().year();
+        let leaveBalance = await LeaveBalance.findOne({ 
+          employee: employeeId, 
+          year: currentYear 
+        });
+
+        if (!leaveBalance) {
+          leaveBalance = await initializeLeaveBalance(employeeId, currentYear);
+        }
+
+        const balanceData = leaveBalance.getBalanceForType(leaveType);
+        const currentAdjusted = balanceData.adjusted || 0;
+        const adjustmentAmount = operation === 'add' ? amount : -amount;
+        
+        leaveBalance.updateBalanceForType(leaveType, { 
+          adjusted: currentAdjusted + adjustmentAmount 
+        });
+
+        await leaveBalance.save();
+
+        results.push({
+          employeeId,
+          success: true,
+          message: `Adjusted ${amount} days`
+        });
+      } catch (error) {
+        results.push({
+          employeeId: adjustment.employeeId,
+          success: false,
+          message: error.message
+        });
+      }
+    }
+
+    sendResponse(res, 200, true, 'Bulk adjustment completed', { results });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Update Leave Status
 exports.updateLeaveStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { status, comments } = req.body;
+
+    console.log(`🔍 Processing leave status update: ${id}, new status: ${status}`);
 
     const approver = await Employee.findOne({ userId: req.user._id });
 
@@ -474,6 +743,13 @@ exports.updateLeaveStatus = async (req, res, next) => {
     if (!leave) {
       return sendResponse(res, 404, false, "Leave not found");
     }
+
+    console.log(`📋 Leave details:`, {
+      employeeId: leave.employee._id,
+      leaveType: leave.leaveTypeCode,
+      days: leave.totalDays,
+      currentStatus: leave.status
+    });
 
     // Check if approver has permission
     const canApprove = await checkApprovalPermission(
@@ -488,6 +764,54 @@ exports.updateLeaveStatus = async (req, res, next) => {
         false,
         "Not authorized to approve this leave"
       );
+    }
+
+    // ✅ FIX: Check and initialize balance BEFORE approval
+    if (status === "Approved") {
+      const currentYear = moment().year();
+      let leaveBalance = await LeaveBalance.findOne({
+        employee: leave.employee._id,
+        year: currentYear,
+      });
+
+      // Initialize balance if doesn't exist
+      if (!leaveBalance) {
+        console.log('⚠️ No balance found, initializing...');
+        leaveBalance = await initializeLeaveBalance(leave.employee._id, currentYear);
+      }
+
+      // Verify balance is sufficient
+      const balanceData = leaveBalance.getBalanceForType(leave.leaveTypeCode);
+      const currentBalances = leaveBalance.getCurrentBalance();
+      const availableBalance = currentBalances[leave.leaveTypeCode.toLowerCase()] || 0;
+
+      console.log(`💰 Balance check:`, {
+        leaveType: leave.leaveTypeCode,
+        available: availableBalance,
+        required: leave.totalDays,
+        balanceData: balanceData
+      });
+
+      // ✅ If balance is insufficient, try to reinitialize
+      if (availableBalance < leave.totalDays) {
+        console.warn(`⚠️ Insufficient balance (${availableBalance}), reinitializing...`);
+        leaveBalance = await initializeLeaveBalance(leave.employee._id, currentYear);
+        
+        // Check again after reinitialization
+        const newBalances = leaveBalance.getCurrentBalance();
+        const newAvailable = newBalances[leave.leaveTypeCode.toLowerCase()] || 0;
+        
+        console.log(`💰 After reinitialization: ${newAvailable} days available`);
+        
+        if (newAvailable < leave.totalDays) {
+          return sendResponse(
+            res,
+            400,
+            false,
+            `Insufficient leave balance. Available: ${newAvailable} days, Required: ${leave.totalDays} days`
+          );
+        }
+      }
     }
 
     // Update approval based on current stage and role
@@ -508,12 +832,14 @@ exports.updateLeaveStatus = async (req, res, next) => {
         leave.status = requiresHrApproval ? "Pending" : "Approved";
         
         if (!requiresHrApproval) {
+          console.log('💾 Updating leave balance (Manager final approval)...');
           await updateLeaveBalance(
             leave.employee._id,
             leave.leaveTypeCode,
             leave.totalDays,
             "debit"
           );
+          console.log('✅ Balance updated successfully');
         }
       } else {
         leave.status = "Rejected";
@@ -534,12 +860,14 @@ exports.updateLeaveStatus = async (req, res, next) => {
       leave.currentStage = "Completed";
 
       if (status === "Approved") {
+        console.log('💾 Updating leave balance (HR approval)...');
         await updateLeaveBalance(
           leave.employee._id,
           leave.leaveTypeCode,
           leave.totalDays,
           "debit"
         );
+        console.log('✅ Balance updated successfully');
       }
     }
 
@@ -561,6 +889,8 @@ exports.updateLeaveStatus = async (req, res, next) => {
     await leave.populate("managerApproval.approvedBy", "firstName lastName");
     await leave.populate("hrApproval.approvedBy", "firstName lastName");
 
+    console.log(`✅ Leave ${status.toLowerCase()} successfully`);
+
     sendResponse(
       res,
       200,
@@ -569,6 +899,115 @@ exports.updateLeaveStatus = async (req, res, next) => {
       { leave }
     );
   } catch (error) {
+    console.error('❌ Error in updateLeaveStatus:', error);
+    next(error);
+  }
+};
+
+
+// controllers/leaveController.js
+
+// Get all active leave types
+exports.getLeaveTypes = async (req, res, next) => {
+  try {
+    console.log('🔍 Fetching all active leave types');
+    
+    const leaveTypes = await LeaveType.find({ isActive: true })
+      .select('code name description isPaid requiresApproval defaultBalance maxAccrual minDuration maxDuration minNoticePeriod')
+      .sort({ name: 1 });
+
+    console.log(`✅ Found ${leaveTypes.length} active leave types`);
+
+    sendResponse(res, 200, true, "Leave types fetched successfully", leaveTypes);
+  } catch (error) {
+    console.error("❌ Error in getLeaveTypes:", error);
+    next(error);
+  }
+};
+
+// Create new leave type (Admin/HR only)
+exports.createLeaveType = async (req, res, next) => {
+  try {
+    const leaveTypeData = req.body;
+    
+    // Check if leave type with same code already exists
+    const existingType = await LeaveType.findOne({ 
+      code: leaveTypeData.code.toUpperCase() 
+    });
+    
+    if (existingType) {
+      return sendResponse(res, 400, false, `Leave type with code ${leaveTypeData.code} already exists`);
+    }
+
+    const leaveType = new LeaveType({
+      ...leaveTypeData,
+      createdBy: req.user._id,
+      lastModifiedBy: req.user._id
+    });
+
+    await leaveType.save();
+    
+    console.log(`✅ Created new leave type: ${leaveType.name} (${leaveType.code})`);
+    
+    sendResponse(res, 201, true, "Leave type created successfully", { leaveType });
+  } catch (error) {
+    console.error("❌ Error in createLeaveType:", error);
+    next(error);
+  }
+};
+
+// Update leave type (Admin/HR only)
+exports.updateLeaveType = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const leaveType = await LeaveType.findById(id);
+    
+    if (!leaveType) {
+      return sendResponse(res, 404, false, "Leave type not found");
+    }
+
+    // Update fields
+    Object.keys(updates).forEach(key => {
+      if (key !== 'code' && updates[key] !== undefined) {
+        leaveType[key] = updates[key];
+      }
+    });
+
+    leaveType.lastModifiedBy = req.user._id;
+    await leaveType.save();
+
+    console.log(`✅ Updated leave type: ${leaveType.name} (${leaveType.code})`);
+    
+    sendResponse(res, 200, true, "Leave type updated successfully", { leaveType });
+  } catch (error) {
+    console.error("❌ Error in updateLeaveType:", error);
+    next(error);
+  }
+};
+
+// Delete leave type (Admin/HR only) - Soft delete by setting isActive to false
+exports.deleteLeaveType = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const leaveType = await LeaveType.findById(id);
+    
+    if (!leaveType) {
+      return sendResponse(res, 404, false, "Leave type not found");
+    }
+
+    // Soft delete by setting isActive to false
+    leaveType.isActive = false;
+    leaveType.lastModifiedBy = req.user._id;
+    await leaveType.save();
+
+    console.log(`✅ Deactivated leave type: ${leaveType.name} (${leaveType.code})`);
+    
+    sendResponse(res, 200, true, "Leave type deleted successfully", { leaveType });
+  } catch (error) {
+    console.error("❌ Error in deleteLeaveType:", error);
     next(error);
   }
 };
@@ -681,6 +1120,43 @@ exports.getLeaveAnalytics = async (req, res, next) => {
     );
   } catch (error) {
     next(error);
+  }
+};
+
+// NEW: Debug route to check leave types
+exports.getLeaveTypesDebug = async (req, res, next) => {
+  try {
+    const leaveTypes = await LeaveType.find({});
+    const activeLeaveTypes = await LeaveType.find({ isActive: true });
+    
+    console.log("🔍 All leave types in database:", leaveTypes);
+    console.log("✅ Active leave types:", activeLeaveTypes);
+
+    sendResponse(res, 200, true, "Leave types debug info", {
+      allLeaveTypes: leaveTypes,
+      activeLeaveTypes: activeLeaveTypes,
+      count: {
+        all: leaveTypes.length,
+        active: activeLeaveTypes.length
+      }
+    });
+  } catch (error) {
+    console.error("❌ Error in getLeaveTypesDebug:", error);
+    next(error);
+  }
+};
+
+// NEW: Seed default leave types
+exports.seedLeaveTypes = async (req, res, next) => {
+  try {
+    const results = await LeaveType.seedDefaultLeaveTypes(req.user._id);
+    
+    sendResponse(res, 200, true, "Leave types seeded successfully", {
+      results
+    });
+  } catch (error) {
+    console.error("❌ Error seeding leave types:", error);
+    sendResponse(res, 500, false, "Error seeding leave types");
   }
 };
 
@@ -884,18 +1360,26 @@ const updateLeaveBalance = async (employeeId, leaveType, days, operation) => {
 
 const initializeLeaveBalance = async (employeeId, year) => {
   try {
-    console.log(`Initializing leave balance for employee: ${employeeId}, year: ${year}`);
+    console.log(`🔄 Initializing leave balance for employee: ${employeeId}, year: ${year}`);
     
     const employee = await Employee.findById(employeeId);
+    if (!employee) {
+      throw new Error('Employee not found');
+    }
+
     const leaveTypes = await LeaveType.find({ isActive: true });
+    console.log(`📋 Found ${leaveTypes.length} active leave types`);
 
     const joiningDate = moment(employee.joiningDate);
     const yearStart = moment(`${year}-01-01`);
     
     let monthsWorked = 12;
     if (joiningDate.isAfter(yearStart)) {
-      monthsWorked = 12 - joiningDate.month() + 1;
+      monthsWorked = moment().month() - joiningDate.month() + 1;
+      if (monthsWorked < 0) monthsWorked = 0;
     }
+
+    console.log(`📅 Months worked: ${monthsWorked}`);
 
     const balances = {
       CASUAL: { opening: 0, accrued: 0, used: 0, adjusted: 0, carryForward: 0, lapsed: 0, current: 0 },
@@ -909,6 +1393,7 @@ const initializeLeaveBalance = async (employeeId, year) => {
     leaveTypes.forEach((type) => {
       let openingBalance = type.defaultBalance || 0;
       
+      // Pro-rate based on joining date
       if (type.code === 'CASUAL' || type.code === 'SICK') {
         openingBalance = Math.floor((type.defaultBalance * monthsWorked) / 12);
       }
@@ -924,10 +1409,42 @@ const initializeLeaveBalance = async (employeeId, year) => {
         adjusted: 0,
         carryForward: 0,
         lapsed: 0,
-        current: openingBalance
+        current: openingBalance // ✅ Set current to opening balance initially
       };
+
+      console.log(`✅ ${type.code}: ${openingBalance} days`);
     });
 
+    // Check if balance already exists
+    let existingBalance = await LeaveBalance.findOne({
+      employee: employeeId,
+      year
+    });
+
+    if (existingBalance) {
+      console.log('⚠️ Balance already exists, updating...');
+      // Update existing balance
+      Object.keys(balances).forEach(code => {
+        if (existingBalance.balances && existingBalance.balances[code]) {
+          // Keep existing used/adjusted values, update opening if needed
+          if (existingBalance.balances[code].opening === 0) {
+            existingBalance.balances[code].opening = balances[code].opening;
+            existingBalance.balances[code].current = 
+              balances[code].opening - (existingBalance.balances[code].used || 0);
+          }
+        } else {
+          if (!existingBalance.balances) existingBalance.balances = {};
+          existingBalance.balances[code] = balances[code];
+        }
+      });
+      existingBalance.lastCalculated = new Date();
+      existingBalance.markModified('balances');
+      await existingBalance.save();
+      console.log('✅ Existing balance updated');
+      return existingBalance;
+    }
+
+    // Create new balance
     const newBalance = await LeaveBalance.create({
       employee: employeeId,
       year,
@@ -935,13 +1452,17 @@ const initializeLeaveBalance = async (employeeId, year) => {
       lastCalculated: new Date(),
     });
 
-    console.log('Created new leave balance with data:', newBalance.balances);
+    console.log('✅ New leave balance created with opening balances:', 
+      Object.keys(balances).map(k => `${k}: ${balances[k].opening}`).join(', ')
+    );
+    
     return newBalance;
   } catch (error) {
-    console.error('Error in initializeLeaveBalance:', error);
+    console.error('❌ Error in initializeLeaveBalance:', error);
     throw error;
   }
 };
+
 
 const checkApprovalPermission = async (leave, approver, role) => {
   if (role === "admin") return true;
@@ -1004,12 +1525,4 @@ const calculateLeavesByStatus = (leaves) => {
   }, {});
 };
 
-module.exports = {
-  applyLeave: exports.applyLeave,
-  getMyLeaves: exports.getMyLeaves,
-  getLeaveBalance: exports.getLeaveBalance,
-  getPendingLeaves: exports.getPendingLeaves,
-  updateLeaveStatus: exports.updateLeaveStatus,
-  cancelLeave: exports.cancelLeave,
-  getLeaveAnalytics: exports.getLeaveAnalytics,
-};
+module.exports = exports;

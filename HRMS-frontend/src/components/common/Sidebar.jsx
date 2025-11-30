@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
+// src/components/common/Sidebar.jsx
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Home,
   Users,
@@ -17,9 +18,9 @@ import {
   Shield,
   ChevronDown,
   ChevronRight,
-  ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
+  FileSignature,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -31,13 +32,13 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   });
   
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(256); // 16rem = 256px
+  const [sidebarWidth, setSidebarWidth] = useState(256);
   const sidebarRef = useRef(null);
   const isResizing = useRef(false);
 
-  const MIN_WIDTH = 74; // Minimum width (collapsed state)
-  const MAX_WIDTH = 400; // Maximum width
-  const DEFAULT_WIDTH = 256; // Default width (16rem)
+  const MIN_WIDTH = 74;
+  const MAX_WIDTH = 400;
+  const DEFAULT_WIDTH = 256;
 
   const isAdminOrHR =
     user?.role === "admin" || user?.role === "hr" || user?.role === "manager";
@@ -56,7 +57,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     setSidebarWidth(isCollapsed ? DEFAULT_WIDTH : MIN_WIDTH);
   };
 
-  // Mouse resize handlers
   const handleMouseDown = (e) => {
     e.preventDefault();
     isResizing.current = true;
@@ -64,23 +64,24 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     document.body.style.userSelect = 'none';
   };
 
-  const handleMouseMove = (e) => {
+  // ✅ Wrapped in useCallback to fix ESLint warning
+  const handleMouseMove = useCallback((e) => {
     if (!isResizing.current) return;
 
     const newWidth = e.clientX;
     if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
       setSidebarWidth(newWidth);
-      setIsCollapsed(newWidth <= 80); // Auto-collapse if dragged too small
+      setIsCollapsed(newWidth <= 80);
     }
-  };
+  }, [MIN_WIDTH, MAX_WIDTH]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (isResizing.current) {
       isResizing.current = false;
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     }
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -90,9 +91,8 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [handleMouseMove, handleMouseUp]); // ✅ Fixed dependencies
 
-  // Update CSS variable for main content margin
   useEffect(() => {
     document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
   }, [sidebarWidth]);
@@ -113,6 +113,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         { id: "leaves", label: "Leave Management", icon: Calendar },
         { id: "payroll", label: "Payroll", icon: DollarSign },
         { id: "recruitment", label: "Recruitment", icon: UserPlus },
+        { id: "events", label: "Events Calendar", icon: Calendar }, // ✅ Using Calendar icon
         ...(isAdminOrHR
           ? [
               { id: "onboarding", label: "Onboarding", icon: UserCheck },
@@ -143,13 +144,13 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       items: [
         { id: "compliance", label: "Compliance & Policy", icon: Shield },
         { id: "reports", label: "Reports", icon: FileText },
+        { id: "contracts", label: "Legal & Contracts", icon: FileSignature },
       ],
     },
   ];
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
@@ -157,7 +158,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         />
       )}
 
-      {/* Sidebar - Fixed Position with Dynamic Width */}
       <aside
         ref={sidebarRef}
         style={{ width: `${sidebarWidth}px` }}
@@ -166,7 +166,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col relative">
-          {/* Collapse/Expand Button */}
           <button
             onClick={toggleCollapse}
             className="absolute -right-3 top-6 z-20 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
@@ -179,7 +178,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
             )}
           </button>
 
-          {/* Fixed Header - User Profile */}
           <div className="flex-shrink-0 px-4 py-4 border-b border-gray-200">
             <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
               <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
@@ -200,7 +198,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
             </div>
           </div>
 
-          {/* Scrollable Navigation Menu */}
           <nav
             className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1"
             style={{ overscrollBehavior: "contain" }}
@@ -235,7 +232,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
 
               return (
                 <div key={group.key} className="space-y-1">
-                  {/* Section Header */}
                   {!isCollapsed && (
                     <button
                       onClick={() => toggleSection(group.key)}
@@ -246,12 +242,10 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                     </button>
                   )}
 
-                  {/* Divider for collapsed state */}
                   {isCollapsed && (
                     <div className="border-t border-gray-200 my-2"></div>
                   )}
 
-                  {/* Section Items */}
                   {(isExpanded || isCollapsed) && (
                     <div className="space-y-1">
                       {group.items.map((item) => {
@@ -284,7 +278,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
             })}
           </nav>
 
-          {/* Fixed Footer - AI Assistant Button */}
           <div className="flex-shrink-0 p-4 border-t border-gray-200">
             <button
               onClick={() => {
@@ -301,7 +294,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
             </button>
           </div>
 
-          {/* Resize Handle */}
           <div
             onMouseDown={handleMouseDown}
             className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-indigo-400 transition-colors group"

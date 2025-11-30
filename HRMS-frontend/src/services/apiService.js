@@ -106,35 +106,34 @@ export const apiService = {
   },
 
   // ==================== OFFBOARDING APIs ====================
- // OFFBOARDING APIs
-initiateOffboarding: async (data) => {
-  return await apiService.request("/offboarding", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-},
+  // OFFBOARDING APIs
+  initiateOffboarding: async (data) => {
+    return await apiService.request("/offboarding", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
 
-// FIX: getAllOffboardings with proper query params
-getAllOffboardings: async (status = "", page = 1, limit = 10) => {
-  const params = new URLSearchParams();
-  if (status && status !== 'all') params.append("status", status);
-  if (page) params.append("page", page);
-  if (limit) params.append("limit", limit);
-  
-  return await apiService.request(`/offboarding?${params.toString()}`);
-},
+  // FIX: getAllOffboardings with proper query params
+  getAllOffboardings: async (status = "", page = 1, limit = 10) => {
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.append("status", status);
+    if (page) params.append("page", page);
+    if (limit) params.append("limit", limit);
 
-getMyOffboarding: async () => {
-  try {
-    return await apiService.request("/offboarding/my-offboarding");
-  } catch (error) {
-    if (error.message.includes("404")) {
-      return { data: null };
+    return await apiService.request(`/offboarding?${params.toString()}`);
+  },
+
+  getMyOffboarding: async () => {
+    try {
+      return await apiService.request("/offboarding/my-offboarding");
+    } catch (error) {
+      if (error.message.includes("404")) {
+        return { data: null };
+      }
+      throw error;
     }
-    throw error;
-  }
-},
-
+  },
 
   updateOffboardingProgress: async (id, updates) => {
     return await apiService.request(`/offboarding/${id}`, {
@@ -296,6 +295,11 @@ getMyOffboarding: async () => {
     });
   },
 
+// Add new method
+getMyFullProfile: () => {
+  return apiClient.get('/employees/my-full-profile');
+},
+
   // ==================== ATTENDANCE ====================
   checkIn: async (location, ipAddress = "", deviceInfo = "") => {
     return await apiService.request("/attendance/check-in", {
@@ -370,56 +374,692 @@ getMyOffboarding: async () => {
     });
   },
 
-  // ==================== LEAVE MANAGEMENT ====================
+  // // ==================== LEAVE MANAGEMENT ====================
+  // applyLeave: async (leaveData) => {
+  //   return await apiService.request("/leaves/apply", {
+  //     method: "POST",
+  //     body: JSON.stringify(leaveData),
+  //   });
+  // },
+
+  // getMyLeaves: async (filters = {}) => {
+  //   const params = new URLSearchParams();
+  //   Object.keys(filters).forEach((key) => {
+  //     if (filters[key]) params.append(key, filters[key]);
+  //   });
+
+  //   return await apiService.request(`/leaves/my-leaves?${params.toString()}`);
+  // },
+
+  // getLeaveBalance: async () => {
+  //   return await apiService.request("/leaves/balance");
+  // },
+
+  // getPendingLeaves: async (filters = {}) => {
+  //   const params = new URLSearchParams();
+  //   Object.keys(filters).forEach((key) => {
+  //     if (filters[key]) params.append(key, filters[key]);
+  //   });
+
+  //   return await apiService.request(`/leaves/pending?${params.toString()}`);
+  // },
+
+  // updateLeaveStatus: async (leaveId, status, comments) => {
+  //   return await apiService.request(`/leaves/${leaveId}/status`, {
+  //     method: "PATCH",
+  //     body: JSON.stringify({ status, comments }),
+  //   });
+  // },
+
+  // cancelLeave: async (leaveId) => {
+  //   return await apiService.request(`/leaves/${leaveId}/cancel`, {
+  //     method: "PATCH",
+  //   });
+  // },
+
+  // getLeaveAnalytics: async (filters = {}) => {
+  //   const params = new URLSearchParams();
+  //   Object.keys(filters).forEach((key) => {
+  //     if (filters[key]) params.append(key, filters[key]);
+  //   });
+
+  //   return await apiService.request(`/leaves/analytics?${params.toString()}`);
+  // },
+
+  // // ADMIN LEAVE BALANCE MANAGEMENT
+  // getEmployeeLeaveBalance: async (employeeId, year) => {
+  //   const params = year ? `?year=${year}` : '';
+  //   return await apiService.request(`/leaves/balance/${employeeId}${params}`); // ✅ Added leading /
+  // },
+
+  // adjustLeaveBalance: async (employeeId, adjustmentData) => {
+  //   return await apiService.request(`/leaves/balance/${employeeId}/adjust`, { // ✅ Added leading /
+  //     method: 'PATCH',
+  //     body: JSON.stringify(adjustmentData)
+  //   });
+  // },
+
+  // bulkAdjustLeaveBalance: async (adjustments) => {
+  //   return await apiService.request('/leaves/balance/bulk-adjust', { // ✅ Added leading /
+  //     method: 'POST',
+  //     body: JSON.stringify({ adjustments })
+  //   });
+  // },
+
+  // // Add to your existing apiService.js in the LEAVE MANAGEMENT section
+
+  // // ==================== LEAVE TYPES ====================
+  // getLeaveTypes: async () => {
+  //   return await apiService.request("/leaves/types");
+  // },
+
+  // getLeaveTypesDebug: async () => {
+  //   return await apiService.request("/leaves/debug/leave-types");
+  // },
+
+  // seedLeaveTypes: async () => {
+  //   return await apiService.request("/leaves/seed-leave-types", {
+  //     method: "POST",
+  //   });
+  // },
+
+  // ==================== LEAVE MANAGEMENT APIs ====================
+
+  // Apply for leave
   applyLeave: async (leaveData) => {
+    console.log("🔄 Sending leave application:", leaveData);
     return await apiService.request("/leaves/apply", {
       method: "POST",
       body: JSON.stringify(leaveData),
     });
   },
 
+  // Get employee's own leaves with filters
   getMyLeaves: async (filters = {}) => {
     const params = new URLSearchParams();
     Object.keys(filters).forEach((key) => {
-      if (filters[key]) params.append(key, filters[key]);
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
     });
 
-    return await apiService.request(`/leaves/my-leaves?${params.toString()}`);
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/my-leaves?${queryString}`
+      : "/leaves/my-leaves";
+
+    console.log("🔄 Fetching my leaves:", url);
+    return await apiService.request(url);
   },
 
+  // Get employee's leave balance
   getLeaveBalance: async () => {
+    console.log("🔄 Fetching leave balance");
     return await apiService.request("/leaves/balance");
   },
 
+  // Get pending leaves for approval (Manager/HR/Admin)
   getPendingLeaves: async (filters = {}) => {
     const params = new URLSearchParams();
     Object.keys(filters).forEach((key) => {
-      if (filters[key]) params.append(key, filters[key]);
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
     });
 
-    return await apiService.request(`/leaves/pending?${params.toString()}`);
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/pending?${queryString}`
+      : "/leaves/pending";
+
+    console.log("🔄 Fetching pending leaves:", url);
+    return await apiService.request(url);
   },
 
-  updateLeaveStatus: async (leaveId, status, comments) => {
+  // Update leave status (Approve/Reject)
+  updateLeaveStatus: async (leaveId, statusData) => {
+    console.log(`🔄 Updating leave status for ${leaveId}:`, statusData);
     return await apiService.request(`/leaves/${leaveId}/status`, {
       method: "PATCH",
-      body: JSON.stringify({ status, comments }),
+      body: JSON.stringify(statusData),
     });
   },
 
+  // Cancel leave application
   cancelLeave: async (leaveId) => {
+    console.log(`🔄 Canceling leave: ${leaveId}`);
     return await apiService.request(`/leaves/${leaveId}/cancel`, {
       method: "PATCH",
     });
   },
 
+  // Get leave analytics (HR/Admin only)
   getLeaveAnalytics: async (filters = {}) => {
     const params = new URLSearchParams();
     Object.keys(filters).forEach((key) => {
-      if (filters[key]) params.append(key, filters[key]);
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
     });
 
-    return await apiService.request(`/leaves/analytics?${params.toString()}`);
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/analytics?${queryString}`
+      : "/leaves/analytics";
+
+    console.log("🔄 Fetching leave analytics:", url);
+    return await apiService.request(url);
+  },
+
+  // ==================== LEAVE TYPES MANAGEMENT ====================
+
+  // Get all active leave types
+// In apiService.js - Enhanced getLeaveTypes with multiple fallbacks
+getLeaveTypes: async () => {
+  console.log('🔄 Fetching leave types...');
+  
+  try {
+    // Try the main leave types endpoint
+    const response = await apiService.request("/leaves/types");
+    console.log('✅ Leave types API response:', response);
+    return response;
+    
+  } catch (error) {
+    console.log('⚠️ Leave types endpoint failed, trying fallbacks...');
+    
+    // Fallback 1: Try debug endpoint
+    try {
+      console.log('🔄 Trying debug endpoint...');
+      const debugResponse = await apiService.request("/leaves/debug/leave-types");
+      if (debugResponse.data && debugResponse.data.activeLeaveTypes) {
+        console.log('✅ Using debug endpoint data');
+        return { 
+          success: true, 
+          data: debugResponse.data.activeLeaveTypes 
+        };
+      }
+    } catch (debugError) {
+      console.log('⚠️ Debug endpoint also failed');
+    }
+    
+    // Fallback 2: Try to extract from leave balance
+    try {
+      console.log('🔄 Trying to get leave types from balance data...');
+      const balanceResponse = await apiService.request("/leaves/balance");
+      
+      if (balanceResponse.data && balanceResponse.data.balance) {
+        const leaveTypes = balanceResponse.data.balance.map(balance => ({
+          id: balance.code,
+          code: balance.code,
+          name: balance.name,
+          description: balance.description || `${balance.name} - Available: ${balance.currentBalance} days`,
+          isPaid: balance.isPaid !== undefined ? balance.isPaid : true,
+          requiresApproval: balance.requiresApproval !== undefined ? balance.requiresApproval : true,
+          currentBalance: balance.currentBalance || 0,
+          maxBalance: balance.maxBalance || balance.currentBalance || 30,
+          defaultBalance: balance.maxBalance || balance.currentBalance || 30,
+          maxAccrual: balance.maxBalance || 30,
+          minDuration: 0.5,
+          maxDuration: balance.maxBalance || 30,
+          minNoticePeriod: 1
+        }));
+        
+        console.log(`✅ Created ${leaveTypes.length} leave types from balance data`);
+        return { success: true, data: leaveTypes };
+      }
+    } catch (balanceError) {
+      console.log('⚠️ Balance endpoint also failed');
+    }
+    
+    // Fallback 3: Return hardcoded default leave types
+    console.log('🔄 Using hardcoded default leave types');
+    const defaultLeaveTypes = [
+      {
+        id: 'casual',
+        code: 'CASUAL',
+        name: 'Casual Leave',
+        description: 'For personal work, family functions, and casual purposes',
+        isPaid: true,
+        requiresApproval: true,
+        currentBalance: 12,
+        maxBalance: 15,
+        defaultBalance: 12,
+        maxAccrual: 15,
+        minDuration: 0.5,
+        maxDuration: 5,
+        minNoticePeriod: 1
+      },
+      {
+        id: 'sick',
+        code: 'SICK',
+        name: 'Sick Leave',
+        description: 'For medical reasons and health-related issues',
+        isPaid: true,
+        requiresApproval: false,
+        currentBalance: 12,
+        maxBalance: 15,
+        defaultBalance: 12,
+        maxAccrual: 15,
+        minDuration: 1,
+        maxDuration: 15,
+        minNoticePeriod: 0
+      },
+      {
+        id: 'earned',
+        code: 'EARNED',
+        name: 'Earned Leave',
+        description: 'Privilege or earned leave based on months worked',
+        isPaid: true,
+        requiresApproval: true,
+        currentBalance: 0,
+        maxBalance: 30,
+        defaultBalance: 0,
+        maxAccrual: 45,
+        minDuration: 1,
+        maxDuration: 30,
+        minNoticePeriod: 7
+      },
+      {
+        id: 'maternity',
+        code: 'MATERNITY',
+        name: 'Maternity Leave',
+        description: 'For pregnancy and childbirth',
+        isPaid: true,
+        requiresApproval: true,
+        currentBalance: 180,
+        maxBalance: 180,
+        defaultBalance: 180,
+        maxAccrual: 180,
+        minDuration: 84,
+        maxDuration: 180,
+        minNoticePeriod: 30
+      },
+      {
+        id: 'paternity',
+        code: 'PATERNITY',
+        name: 'Paternity Leave',
+        description: 'For new fathers',
+        isPaid: true,
+        requiresApproval: true,
+        currentBalance: 15,
+        maxBalance: 15,
+        defaultBalance: 15,
+        maxAccrual: 15,
+        minDuration: 5,
+        maxDuration: 15,
+        minNoticePeriod: 15
+      }
+    ];
+    
+    return { success: true, data: defaultLeaveTypes };
+  }
+},
+
+  // Debug endpoint to check all leave types
+  getLeaveTypesDebug: async () => {
+    console.log("🔄 Fetching leave types debug info");
+    return await apiService.request("/leaves/debug/leave-types");
+  },
+
+  // Seed default leave types (Admin/HR only)
+  seedLeaveTypes: async () => {
+    console.log("🔄 Seeding leave types");
+    return await apiService.request("/leaves/seed-leave-types", {
+      method: "POST",
+    });
+  },
+
+  // Create new leave type (Admin/HR only)
+  createLeaveType: async (leaveTypeData) => {
+    console.log("🔄 Creating leave type:", leaveTypeData);
+    return await apiService.request("/leaves/types", {
+      method: "POST",
+      body: JSON.stringify(leaveTypeData),
+    });
+  },
+
+  // Update leave type (Admin/HR only)
+  updateLeaveType: async (leaveTypeId, updates) => {
+    console.log(`🔄 Updating leave type ${leaveTypeId}:`, updates);
+    return await apiService.request(`/leaves/types/${leaveTypeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete leave type (Admin/HR only)
+  deleteLeaveType: async (leaveTypeId) => {
+    console.log(`🔄 Deleting leave type: ${leaveTypeId}`);
+    return await apiService.request(`/leaves/types/${leaveTypeId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ==================== ADMIN LEAVE BALANCE MANAGEMENT ====================
+
+  // Get specific employee's leave balance (Admin/HR only)
+  getEmployeeLeaveBalance: async (
+    employeeId,
+    year = new Date().getFullYear()
+  ) => {
+    console.log(
+      `🔄 Fetching leave balance for employee ${employeeId}, year ${year}`
+    );
+    return await apiService.request(
+      `/leaves/balance/${employeeId}?year=${year}`
+    );
+  },
+
+  // Adjust employee's leave balance (Admin/HR only)
+  adjustLeaveBalance: async (employeeId, adjustmentData) => {
+    console.log(
+      `🔄 Adjusting leave balance for employee ${employeeId}:`,
+      adjustmentData
+    );
+    return await apiService.request(`/leaves/balance/${employeeId}/adjust`, {
+      method: "PATCH",
+      body: JSON.stringify(adjustmentData),
+    });
+  },
+
+  // Bulk adjust leave balances (Admin/HR only)
+  bulkAdjustLeaveBalance: async (adjustments) => {
+    console.log("🔄 Bulk adjusting leave balances:", adjustments);
+    return await apiService.request("/leaves/balance/bulk-adjust", {
+      method: "POST",
+      body: JSON.stringify({ adjustments }),
+    });
+  },
+
+  // Initialize leave balance for employee (Admin/HR only)
+  initializeEmployeeLeaveBalance: async (
+    employeeId,
+    year = new Date().getFullYear()
+  ) => {
+    console.log(
+      `🔄 Initializing leave balance for employee ${employeeId}, year ${year}`
+    );
+    return await apiService.request(
+      `/leaves/balance/${employeeId}/initialize`,
+      {
+        method: "POST",
+        body: JSON.stringify({ year }),
+      }
+    );
+  },
+
+  // ==================== LEAVE REPORTS & EXPORTS ====================
+
+  // Export leaves to Excel/PDF
+  exportLeaves: async (filters = {}, format = "excel") => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
+    params.append("format", format);
+
+    const token = localStorage.getItem("token");
+    const queryString = params.toString();
+    const url = `${API_BASE_URL}/leaves/export?${queryString}&token=${token}`;
+
+    console.log("🔄 Exporting leaves:", url);
+    window.open(url, "_blank");
+  },
+
+  // Get leave utilization report
+  getLeaveUtilizationReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/reports/utilization?${queryString}`
+      : "/leaves/reports/utilization";
+
+    console.log("🔄 Fetching leave utilization report:", url);
+    return await apiService.request(url);
+  },
+
+  // Get leave trends report
+  getLeaveTrendsReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/reports/trends?${queryString}`
+      : "/leaves/reports/trends";
+
+    console.log("🔄 Fetching leave trends report:", url);
+    return await apiService.request(url);
+  },
+
+  // ==================== LEAVE WORKFLOW & APPROVALS ====================
+
+  // Get leave approval workflow
+  getLeaveWorkflow: async (leaveTypeId) => {
+    console.log(`🔄 Fetching leave workflow for type: ${leaveTypeId}`);
+    return await apiService.request(`/leaves/workflow/${leaveTypeId}`);
+  },
+
+  // Update leave approval workflow (Admin/HR only)
+  updateLeaveWorkflow: async (leaveTypeId, workflowData) => {
+    console.log(
+      `🔄 Updating leave workflow for type ${leaveTypeId}:`,
+      workflowData
+    );
+    return await apiService.request(`/leaves/workflow/${leaveTypeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(workflowData),
+    });
+  },
+
+  // Get my approval queue (for managers/HR)
+  getMyApprovalQueue: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/my-approvals?${queryString}`
+      : "/leaves/my-approvals";
+
+    console.log("🔄 Fetching my approval queue:", url);
+    return await apiService.request(url);
+  },
+
+  // Bulk approve/reject leaves
+  bulkUpdateLeaveStatus: async (updates) => {
+    console.log("🔄 Bulk updating leave status:", updates);
+    return await apiService.request("/leaves/bulk-status", {
+      method: "PATCH",
+      body: JSON.stringify({ updates }),
+    });
+  },
+
+  // ==================== LEAVE SETTINGS & CONFIGURATION ====================
+
+  // Get leave system settings (Admin/HR only)
+  getLeaveSettings: async () => {
+    console.log("🔄 Fetching leave settings");
+    return await apiService.request("/leaves/settings");
+  },
+
+  // Update leave system settings (Admin/HR only)
+  updateLeaveSettings: async (settings) => {
+    console.log("🔄 Updating leave settings:", settings);
+    return await apiService.request("/leaves/settings", {
+      method: "PATCH",
+      body: JSON.stringify(settings),
+    });
+  },
+
+  // Get holiday calendar
+  getHolidayCalendar: async (year = new Date().getFullYear()) => {
+    console.log(`🔄 Fetching holiday calendar for year: ${year}`);
+    return await apiService.request(`/leaves/holidays?year=${year}`);
+  },
+
+  // Add holiday to calendar (Admin/HR only)
+  addHoliday: async (holidayData) => {
+    console.log("🔄 Adding holiday:", holidayData);
+    return await apiService.request("/leaves/holidays", {
+      method: "POST",
+      body: JSON.stringify(holidayData),
+    });
+  },
+
+  // Update holiday (Admin/HR only)
+  updateHoliday: async (holidayId, updates) => {
+    console.log(`🔄 Updating holiday ${holidayId}:`, updates);
+    return await apiService.request(`/leaves/holidays/${holidayId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  // Delete holiday (Admin/HR only)
+  deleteHoliday: async (holidayId) => {
+    console.log(`🔄 Deleting holiday: ${holidayId}`);
+    return await apiService.request(`/leaves/holidays/${holidayId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ==================== LEAVE QUOTAS & ENTITLEMENTS ====================
+
+  // Get leave entitlements for employee
+  getLeaveEntitlements: async (employeeId, year = new Date().getFullYear()) => {
+    console.log(
+      `🔄 Fetching leave entitlements for employee ${employeeId}, year ${year}`
+    );
+    return await apiService.request(
+      `/leaves/entitlements/${employeeId}?year=${year}`
+    );
+  },
+
+  // Update leave entitlements (Admin/HR only)
+  updateLeaveEntitlements: async (employeeId, entitlements) => {
+    console.log(
+      `🔄 Updating leave entitlements for employee ${employeeId}:`,
+      entitlements
+    );
+    return await apiService.request(`/leaves/entitlements/${employeeId}`, {
+      method: "PATCH",
+      body: JSON.stringify(entitlements),
+    });
+  },
+
+  // Get carry forward rules
+  getCarryForwardRules: async () => {
+    console.log("🔄 Fetching carry forward rules");
+    return await apiService.request("/leaves/carry-forward-rules");
+  },
+
+  // Update carry forward rules (Admin/HR only)
+  updateCarryForwardRules: async (rules) => {
+    console.log("🔄 Updating carry forward rules:", rules);
+    return await apiService.request("/leaves/carry-forward-rules", {
+      method: "PATCH",
+      body: JSON.stringify(rules),
+    });
+  },
+
+  // ==================== LEAVE DASHBOARD & WIDGETS ====================
+
+  // Get leave dashboard data
+  getLeaveDashboard: async () => {
+    console.log("🔄 Fetching leave dashboard data");
+    return await apiService.request("/leaves/dashboard");
+  },
+
+  // Get team leave calendar
+  getTeamLeaveCalendar: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key] !== undefined &&
+        filters[key] !== "" &&
+        filters[key] !== null
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/leaves/team-calendar?${queryString}`
+      : "/leaves/team-calendar";
+
+    console.log("🔄 Fetching team leave calendar:", url);
+    return await apiService.request(url);
+  },
+
+  // Get upcoming leaves
+  getUpcomingLeaves: async (days = 30) => {
+    console.log(`🔄 Fetching upcoming leaves for next ${days} days`);
+    return await apiService.request(`/leaves/upcoming?days=${days}`);
+  },
+
+  // ==================== LEAVE INTEGRATIONS ====================
+
+  // Sync leave data with calendar
+  syncWithCalendar: async (calendarType = "google") => {
+    console.log(`🔄 Syncing leaves with ${calendarType} calendar`);
+    return await apiService.request(
+      `/leaves/calendar-sync?type=${calendarType}`,
+      {
+        method: "POST",
+      }
+    );
+  },
+
+  // Get calendar sync status
+  getCalendarSyncStatus: async () => {
+    console.log("🔄 Fetching calendar sync status");
+    return await apiService.request("/leaves/calendar-sync/status");
   },
 
   // ==================== PAYROLL ====================
@@ -488,23 +1128,26 @@ getMyOffboarding: async () => {
     );
   },
 
-getAllPayrolls: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    // Only add non-empty values
-    if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
-      params.append(key, filters[key]);
-    }
-  });
-  
-  const queryString = params.toString();
-  const url = queryString ? `/payroll?${queryString}` : '/payroll';
-  
-  console.log('API Call URL:', url); // Debug log
-  
-  return await apiService.request(url);
-},
+  getAllPayrolls: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      // Only add non-empty values
+      if (
+        filters[key] !== "" &&
+        filters[key] !== null &&
+        filters[key] !== undefined
+      ) {
+        params.append(key, filters[key]);
+      }
+    });
 
+    const queryString = params.toString();
+    const url = queryString ? `/payroll?${queryString}` : "/payroll";
+
+    console.log("API Call URL:", url); // Debug log
+
+    return await apiService.request(url);
+  },
 
   updatePayrollStatus: async (payrollId, statusData) => {
     return await apiService.request(`/payroll/${payrollId}/status`, {
@@ -526,6 +1169,177 @@ getAllPayrolls: async (filters = {}) => {
       if (filters[key]) params.append(key, filters[key]);
     });
     return await apiService.request(`/payroll/analytics?${params.toString()}`);
+  },
+
+
+
+  // Add to your apiService.js
+
+// ==================== LOAN MANAGEMENT ====================
+requestLoan: async (loanData) => {
+  return await apiService.request("/loans/request", {
+    method: "POST",
+    body: JSON.stringify(loanData),
+  });
+},
+
+getMyLoans: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/loans/my-loans?${params.toString()}`);
+},
+
+getAllLoans: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/loans?${params.toString()}`);
+},
+
+updateLoanStatus: async (loanId, statusData) => {
+  return await apiService.request(`/loans/${loanId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(statusData),
+  });
+},
+
+cancelLoan: async (loanId, reason) => {
+  return await apiService.request(`/loans/${loanId}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+},
+
+getLoanAnalytics: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/loans/analytics?${params.toString()}`);
+},
+
+// ==================== ADVANCE MANAGEMENT ====================
+requestAdvance: async (advanceData) => {
+  return await apiService.request("/advances/request", {
+    method: "POST",
+    body: JSON.stringify(advanceData),
+  });
+},
+
+getMyAdvances: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/advances/my-advances?${params.toString()}`);
+},
+
+getAllAdvances: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/advances?${params.toString()}`);
+},
+
+updateAdvanceStatus: async (advanceId, statusData) => {
+  return await apiService.request(`/advances/${advanceId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(statusData),
+  });
+},
+
+cancelAdvance: async (advanceId, reason) => {
+  return await apiService.request(`/advances/${advanceId}/cancel`, {
+    method: "PATCH",
+    body: JSON.stringify({ reason }),
+  });
+},
+
+getAdvanceAnalytics: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/advances/analytics?${params.toString()}`);
+},
+
+// ==================== ENHANCED PAYROLL ====================
+approvePayroll: async (payrollData) => {
+  return await apiService.request("/payroll/approve", {
+    method: "POST",
+    body: JSON.stringify(payrollData),
+  });
+},
+
+
+  // Add to your existing apiService.js
+
+  // ==================== ORG CHART ====================
+  getOrgChart: async (department) => {
+    const params = department ? `?department=${department}` : "";
+    return await apiService.request(`/employees/org-chart${params}`);
+  },
+
+  getMyTeam: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/employees/my-team?${params.toString()}`);
+  },
+
+  // ==================== EVENT CALENDAR ====================
+  createEvent: async (eventData) => {
+    return await apiService.request("/events", {
+      method: "POST",
+      body: JSON.stringify(eventData),
+    });
+  },
+
+  getAllEvents: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/events?${params.toString()}`);
+  },
+
+  getEventById: async (id) => {
+    return await apiService.request(`/events/${id}`);
+  },
+
+  updateEvent: async (id, updates) => {
+    return await apiService.request(`/events/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
+  deleteEvent: async (id) => {
+    return await apiService.request(`/events/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  rsvpToEvent: async (id, status) => {
+    return await apiService.request(`/events/${id}/rsvp`, {
+      method: "POST",
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  getMyEvents: async () => {
+    return await apiService.request("/events/my-events");
+  },
+
+  sendEventReminders: async (id) => {
+    return await apiService.request(`/events/${id}/reminders`, {
+      method: "POST",
+    });
   },
 
   // ==================== RECRUITMENT ====================
@@ -978,53 +1792,46 @@ getAllPayrolls: async (filters = {}) => {
     });
   },
 
+  // ==================== REPORTS ====================
+  getAttendanceReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/reports/attendance?${params.toString()}`);
+  },
 
+  getLeaveReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/reports/leave?${params.toString()}`);
+  },
 
+  getPayrollReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/reports/payroll?${params.toString()}`);
+  },
 
+  getEmployeeReport: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/reports/employee?${params.toString()}`);
+  },
 
+  getDepartmentReport: async () => {
+    return await apiService.request("/reports/department");
+  },
 
-// ==================== REPORTS ====================
-getAttendanceReport: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/reports/attendance?${params.toString()}`);
-},
-
-getLeaveReport: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/reports/leave?${params.toString()}`);
-},
-
-getPayrollReport: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/reports/payroll?${params.toString()}`);
-},
-
-getEmployeeReport: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/reports/employee?${params.toString()}`);
-},
-
-getDepartmentReport: async () => {
-  return await apiService.request('/reports/department');
-},
-
-getDashboardReport: async () => {
-  return await apiService.request('/reports/dashboard');
-},
-
-  
+  getDashboardReport: async () => {
+    return await apiService.request("/reports/dashboard");
+  },
 
   // ==================== COMPLIANCE & POLICY ====================
   createPolicy: async (policyData) => {
@@ -1188,8 +1995,3 @@ getDashboardReport: async () => {
     return await apiService.upload("/compliance/signature/upload", formData);
   },
 };
-
-
-
-
-

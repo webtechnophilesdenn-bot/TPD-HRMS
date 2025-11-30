@@ -52,6 +52,10 @@ app.use("/api/v1/leaves", require("./src/routes/leave.routes"));
 // Payroll
 app.use("/api/v1/payroll", require("./src/routes/payroll.routes"));
 
+// Loan & Advance Management
+app.use("/api/v1/loans", require("./src/routes/loan.routes"));
+app.use("/api/v1/advances", require("./src/routes/advance.routes"));
+
 // Recruitment
 app.use("/api/v1/recruitment", require("./src/routes/recruitment.routes"));
 
@@ -78,6 +82,14 @@ app.use("/api/v1/reports", require("./src/routes/reportRoutes"));
 
 // AI Chatbot
 app.use("/api/v1/chatbot", require("./src/routes/chatbot.routes"));
+
+// Events Calendar
+app.use('/api/v1/events', require('./src/routes/event.routes'));
+
+
+// contract
+app.use("/api/v1/contracts", require("./src/routes/contract.routes"));
+
 
 // ==================== 404 HANDLER ====================
 app.use((req, res) => {
@@ -122,7 +134,6 @@ const server = app.listen(PORT, () => {
 });
 
 // ==================== INITIALIZE CRON JOBS ====================
-// Load cron jobs after server starts
 setTimeout(() => {
   try {
     const cronJobs = require("./src/jobs");
