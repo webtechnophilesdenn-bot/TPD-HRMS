@@ -273,15 +273,23 @@ export const apiService = {
     return await apiService.request(`/employees/team-hierarchy${params}`);
   },
 
+  // In apiService.js - add these methods
   getDepartments: async () => {
     return await apiService.request("/departments");
   },
 
+  getDesignations: async () => {
+    return await apiService.request("/designations");
+  },
   createDepartment: async (departmentData) => {
     return await apiService.request("/departments", {
       method: "POST",
       body: JSON.stringify(departmentData),
     });
+  },
+
+  getReportingManagers: async () => {
+    return await apiService.request("/employees/reporting-managers");
   },
 
   getDesignations: async () => {
@@ -295,10 +303,10 @@ export const apiService = {
     });
   },
 
-// Add new method
-getMyFullProfile: () => {
-  return apiClient.get('/employees/my-full-profile');
-},
+  // Add new method
+  getMyFullProfile: () => {
+    return apiClient.get("/employees/my-full-profile");
+  },
 
   // ==================== ATTENDANCE ====================
   checkIn: async (location, ipAddress = "", deviceInfo = "") => {
@@ -566,146 +574,155 @@ getMyFullProfile: () => {
   // ==================== LEAVE TYPES MANAGEMENT ====================
 
   // Get all active leave types
-// In apiService.js - Enhanced getLeaveTypes with multiple fallbacks
-getLeaveTypes: async () => {
-  console.log('🔄 Fetching leave types...');
-  
-  try {
-    // Try the main leave types endpoint
-    const response = await apiService.request("/leaves/types");
-    console.log('✅ Leave types API response:', response);
-    return response;
-    
-  } catch (error) {
-    console.log('⚠️ Leave types endpoint failed, trying fallbacks...');
-    
-    // Fallback 1: Try debug endpoint
+  // In apiService.js - Enhanced getLeaveTypes with multiple fallbacks
+  getLeaveTypes: async () => {
+    console.log("🔄 Fetching leave types...");
+
     try {
-      console.log('🔄 Trying debug endpoint...');
-      const debugResponse = await apiService.request("/leaves/debug/leave-types");
-      if (debugResponse.data && debugResponse.data.activeLeaveTypes) {
-        console.log('✅ Using debug endpoint data');
-        return { 
-          success: true, 
-          data: debugResponse.data.activeLeaveTypes 
-        };
+      // Try the main leave types endpoint
+      const response = await apiService.request("/leaves/types");
+      console.log("✅ Leave types API response:", response);
+      return response;
+    } catch (error) {
+      console.log("⚠️ Leave types endpoint failed, trying fallbacks...");
+
+      // Fallback 1: Try debug endpoint
+      try {
+        console.log("🔄 Trying debug endpoint...");
+        const debugResponse = await apiService.request(
+          "/leaves/debug/leave-types"
+        );
+        if (debugResponse.data && debugResponse.data.activeLeaveTypes) {
+          console.log("✅ Using debug endpoint data");
+          return {
+            success: true,
+            data: debugResponse.data.activeLeaveTypes,
+          };
+        }
+      } catch (debugError) {
+        console.log("⚠️ Debug endpoint also failed");
       }
-    } catch (debugError) {
-      console.log('⚠️ Debug endpoint also failed');
-    }
-    
-    // Fallback 2: Try to extract from leave balance
-    try {
-      console.log('🔄 Trying to get leave types from balance data...');
-      const balanceResponse = await apiService.request("/leaves/balance");
-      
-      if (balanceResponse.data && balanceResponse.data.balance) {
-        const leaveTypes = balanceResponse.data.balance.map(balance => ({
-          id: balance.code,
-          code: balance.code,
-          name: balance.name,
-          description: balance.description || `${balance.name} - Available: ${balance.currentBalance} days`,
-          isPaid: balance.isPaid !== undefined ? balance.isPaid : true,
-          requiresApproval: balance.requiresApproval !== undefined ? balance.requiresApproval : true,
-          currentBalance: balance.currentBalance || 0,
-          maxBalance: balance.maxBalance || balance.currentBalance || 30,
-          defaultBalance: balance.maxBalance || balance.currentBalance || 30,
-          maxAccrual: balance.maxBalance || 30,
+
+      // Fallback 2: Try to extract from leave balance
+      try {
+        console.log("🔄 Trying to get leave types from balance data...");
+        const balanceResponse = await apiService.request("/leaves/balance");
+
+        if (balanceResponse.data && balanceResponse.data.balance) {
+          const leaveTypes = balanceResponse.data.balance.map((balance) => ({
+            id: balance.code,
+            code: balance.code,
+            name: balance.name,
+            description:
+              balance.description ||
+              `${balance.name} - Available: ${balance.currentBalance} days`,
+            isPaid: balance.isPaid !== undefined ? balance.isPaid : true,
+            requiresApproval:
+              balance.requiresApproval !== undefined
+                ? balance.requiresApproval
+                : true,
+            currentBalance: balance.currentBalance || 0,
+            maxBalance: balance.maxBalance || balance.currentBalance || 30,
+            defaultBalance: balance.maxBalance || balance.currentBalance || 30,
+            maxAccrual: balance.maxBalance || 30,
+            minDuration: 0.5,
+            maxDuration: balance.maxBalance || 30,
+            minNoticePeriod: 1,
+          }));
+
+          console.log(
+            `✅ Created ${leaveTypes.length} leave types from balance data`
+          );
+          return { success: true, data: leaveTypes };
+        }
+      } catch (balanceError) {
+        console.log("⚠️ Balance endpoint also failed");
+      }
+
+      // Fallback 3: Return hardcoded default leave types
+      console.log("🔄 Using hardcoded default leave types");
+      const defaultLeaveTypes = [
+        {
+          id: "casual",
+          code: "CASUAL",
+          name: "Casual Leave",
+          description:
+            "For personal work, family functions, and casual purposes",
+          isPaid: true,
+          requiresApproval: true,
+          currentBalance: 12,
+          maxBalance: 15,
+          defaultBalance: 12,
+          maxAccrual: 15,
           minDuration: 0.5,
-          maxDuration: balance.maxBalance || 30,
-          minNoticePeriod: 1
-        }));
-        
-        console.log(`✅ Created ${leaveTypes.length} leave types from balance data`);
-        return { success: true, data: leaveTypes };
-      }
-    } catch (balanceError) {
-      console.log('⚠️ Balance endpoint also failed');
+          maxDuration: 5,
+          minNoticePeriod: 1,
+        },
+        {
+          id: "sick",
+          code: "SICK",
+          name: "Sick Leave",
+          description: "For medical reasons and health-related issues",
+          isPaid: true,
+          requiresApproval: false,
+          currentBalance: 12,
+          maxBalance: 15,
+          defaultBalance: 12,
+          maxAccrual: 15,
+          minDuration: 1,
+          maxDuration: 15,
+          minNoticePeriod: 0,
+        },
+        {
+          id: "earned",
+          code: "EARNED",
+          name: "Earned Leave",
+          description: "Privilege or earned leave based on months worked",
+          isPaid: true,
+          requiresApproval: true,
+          currentBalance: 0,
+          maxBalance: 30,
+          defaultBalance: 0,
+          maxAccrual: 45,
+          minDuration: 1,
+          maxDuration: 30,
+          minNoticePeriod: 7,
+        },
+        {
+          id: "maternity",
+          code: "MATERNITY",
+          name: "Maternity Leave",
+          description: "For pregnancy and childbirth",
+          isPaid: true,
+          requiresApproval: true,
+          currentBalance: 180,
+          maxBalance: 180,
+          defaultBalance: 180,
+          maxAccrual: 180,
+          minDuration: 84,
+          maxDuration: 180,
+          minNoticePeriod: 30,
+        },
+        {
+          id: "paternity",
+          code: "PATERNITY",
+          name: "Paternity Leave",
+          description: "For new fathers",
+          isPaid: true,
+          requiresApproval: true,
+          currentBalance: 15,
+          maxBalance: 15,
+          defaultBalance: 15,
+          maxAccrual: 15,
+          minDuration: 5,
+          maxDuration: 15,
+          minNoticePeriod: 15,
+        },
+      ];
+
+      return { success: true, data: defaultLeaveTypes };
     }
-    
-    // Fallback 3: Return hardcoded default leave types
-    console.log('🔄 Using hardcoded default leave types');
-    const defaultLeaveTypes = [
-      {
-        id: 'casual',
-        code: 'CASUAL',
-        name: 'Casual Leave',
-        description: 'For personal work, family functions, and casual purposes',
-        isPaid: true,
-        requiresApproval: true,
-        currentBalance: 12,
-        maxBalance: 15,
-        defaultBalance: 12,
-        maxAccrual: 15,
-        minDuration: 0.5,
-        maxDuration: 5,
-        minNoticePeriod: 1
-      },
-      {
-        id: 'sick',
-        code: 'SICK',
-        name: 'Sick Leave',
-        description: 'For medical reasons and health-related issues',
-        isPaid: true,
-        requiresApproval: false,
-        currentBalance: 12,
-        maxBalance: 15,
-        defaultBalance: 12,
-        maxAccrual: 15,
-        minDuration: 1,
-        maxDuration: 15,
-        minNoticePeriod: 0
-      },
-      {
-        id: 'earned',
-        code: 'EARNED',
-        name: 'Earned Leave',
-        description: 'Privilege or earned leave based on months worked',
-        isPaid: true,
-        requiresApproval: true,
-        currentBalance: 0,
-        maxBalance: 30,
-        defaultBalance: 0,
-        maxAccrual: 45,
-        minDuration: 1,
-        maxDuration: 30,
-        minNoticePeriod: 7
-      },
-      {
-        id: 'maternity',
-        code: 'MATERNITY',
-        name: 'Maternity Leave',
-        description: 'For pregnancy and childbirth',
-        isPaid: true,
-        requiresApproval: true,
-        currentBalance: 180,
-        maxBalance: 180,
-        defaultBalance: 180,
-        maxAccrual: 180,
-        minDuration: 84,
-        maxDuration: 180,
-        minNoticePeriod: 30
-      },
-      {
-        id: 'paternity',
-        code: 'PATERNITY',
-        name: 'Paternity Leave',
-        description: 'For new fathers',
-        isPaid: true,
-        requiresApproval: true,
-        currentBalance: 15,
-        maxBalance: 15,
-        defaultBalance: 15,
-        maxAccrual: 15,
-        minDuration: 5,
-        maxDuration: 15,
-        minNoticePeriod: 15
-      }
-    ];
-    
-    return { success: true, data: defaultLeaveTypes };
-  }
-},
+  },
 
   // Debug endpoint to check all leave types
   getLeaveTypesDebug: async () => {
@@ -1171,110 +1188,109 @@ getLeaveTypes: async () => {
     return await apiService.request(`/payroll/analytics?${params.toString()}`);
   },
 
-
-
   // Add to your apiService.js
 
-// ==================== LOAN MANAGEMENT ====================
-requestLoan: async (loanData) => {
-  return await apiService.request("/loans/request", {
-    method: "POST",
-    body: JSON.stringify(loanData),
-  });
-},
+  // ==================== LOAN MANAGEMENT ====================
+  requestLoan: async (loanData) => {
+    return await apiService.request("/loans/request", {
+      method: "POST",
+      body: JSON.stringify(loanData),
+    });
+  },
 
-getMyLoans: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/loans/my-loans?${params.toString()}`);
-},
+  getMyLoans: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/loans/my-loans?${params.toString()}`);
+  },
 
-getAllLoans: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/loans?${params.toString()}`);
-},
+  getAllLoans: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/loans?${params.toString()}`);
+  },
 
-updateLoanStatus: async (loanId, statusData) => {
-  return await apiService.request(`/loans/${loanId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify(statusData),
-  });
-},
+  updateLoanStatus: async (loanId, statusData) => {
+    return await apiService.request(`/loans/${loanId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(statusData),
+    });
+  },
 
-cancelLoan: async (loanId, reason) => {
-  return await apiService.request(`/loans/${loanId}/cancel`, {
-    method: "PATCH",
-    body: JSON.stringify({ reason }),
-  });
-},
+  cancelLoan: async (loanId, reason) => {
+    return await apiService.request(`/loans/${loanId}/cancel`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    });
+  },
 
-getLoanAnalytics: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/loans/analytics?${params.toString()}`);
-},
+  getLoanAnalytics: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/loans/analytics?${params.toString()}`);
+  },
 
-// ==================== ADVANCE MANAGEMENT ====================
-requestAdvance: async (advanceData) => {
-  return await apiService.request("/advances/request", {
-    method: "POST",
-    body: JSON.stringify(advanceData),
-  });
-},
+  // ==================== ADVANCE MANAGEMENT ====================
+  requestAdvance: async (advanceData) => {
+    return await apiService.request("/advances/request", {
+      method: "POST",
+      body: JSON.stringify(advanceData),
+    });
+  },
 
-getMyAdvances: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/advances/my-advances?${params.toString()}`);
-},
+  getMyAdvances: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(
+      `/advances/my-advances?${params.toString()}`
+    );
+  },
 
-getAllAdvances: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/advances?${params.toString()}`);
-},
+  getAllAdvances: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/advances?${params.toString()}`);
+  },
 
-updateAdvanceStatus: async (advanceId, statusData) => {
-  return await apiService.request(`/advances/${advanceId}/status`, {
-    method: "PATCH",
-    body: JSON.stringify(statusData),
-  });
-},
+  updateAdvanceStatus: async (advanceId, statusData) => {
+    return await apiService.request(`/advances/${advanceId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify(statusData),
+    });
+  },
 
-cancelAdvance: async (advanceId, reason) => {
-  return await apiService.request(`/advances/${advanceId}/cancel`, {
-    method: "PATCH",
-    body: JSON.stringify({ reason }),
-  });
-},
+  cancelAdvance: async (advanceId, reason) => {
+    return await apiService.request(`/advances/${advanceId}/cancel`, {
+      method: "PATCH",
+      body: JSON.stringify({ reason }),
+    });
+  },
 
-getAdvanceAnalytics: async (filters = {}) => {
-  const params = new URLSearchParams();
-  Object.keys(filters).forEach((key) => {
-    if (filters[key]) params.append(key, filters[key]);
-  });
-  return await apiService.request(`/advances/analytics?${params.toString()}`);
-},
+  getAdvanceAnalytics: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach((key) => {
+      if (filters[key]) params.append(key, filters[key]);
+    });
+    return await apiService.request(`/advances/analytics?${params.toString()}`);
+  },
 
-// ==================== ENHANCED PAYROLL ====================
-approvePayroll: async (payrollData) => {
-  return await apiService.request("/payroll/approve", {
-    method: "POST",
-    body: JSON.stringify(payrollData),
-  });
-},
-
+  // ==================== ENHANCED PAYROLL ====================
+  approvePayroll: async (payrollData) => {
+    return await apiService.request("/payroll/approve", {
+      method: "POST",
+      body: JSON.stringify(payrollData),
+    });
+  },
 
   // Add to your existing apiService.js
 

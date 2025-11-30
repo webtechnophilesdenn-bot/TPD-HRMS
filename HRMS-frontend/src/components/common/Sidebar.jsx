@@ -30,7 +30,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     hrManagement: true,
     employeeServices: true,
   });
-  
+
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const sidebarRef = useRef(null);
@@ -60,41 +60,47 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   const handleMouseDown = (e) => {
     e.preventDefault();
     isResizing.current = true;
-    document.body.style.cursor = 'ew-resize';
-    document.body.style.userSelect = 'none';
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
   };
 
   // ✅ Wrapped in useCallback to fix ESLint warning
-  const handleMouseMove = useCallback((e) => {
-    if (!isResizing.current) return;
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isResizing.current) return;
 
-    const newWidth = e.clientX;
-    if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-      setSidebarWidth(newWidth);
-      setIsCollapsed(newWidth <= 80);
-    }
-  }, [MIN_WIDTH, MAX_WIDTH]);
+      const newWidth = e.clientX;
+      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+        setSidebarWidth(newWidth);
+        setIsCollapsed(newWidth <= 80);
+      }
+    },
+    [MIN_WIDTH, MAX_WIDTH]
+  );
 
   const handleMouseUp = useCallback(() => {
     if (isResizing.current) {
       isResizing.current = false;
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     }
   }, []);
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
   }, [handleMouseMove, handleMouseUp]); // ✅ Fixed dependencies
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--sidebar-width', `${sidebarWidth}px`);
+    document.documentElement.style.setProperty(
+      "--sidebar-width",
+      `${sidebarWidth}px`
+    );
   }, [sidebarWidth]);
 
   const menuStructure = [
@@ -134,16 +140,16 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     {
       section: "Communication",
       key: "communication",
-      items: [
-        { id: "announcements", label: "Announcements", icon: Megaphone },
-      ],
+      items: [{ id: "announcements", label: "Announcements", icon: Megaphone }],
     },
     {
       section: "Administration",
       key: "administration",
       items: [
         { id: "compliance", label: "Compliance & Policy", icon: Shield },
-        { id: "reports", label: "Reports", icon: FileText },
+        ...(isAdminOrHR
+          ? [{ id: "reports", label: "Reports", icon: FileText }]
+          : []),
         { id: "contracts", label: "Legal & Contracts", icon: FileSignature },
       ],
     },
@@ -179,7 +185,11 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
           </button>
 
           <div className="flex-shrink-0 px-4 py-4 border-b border-gray-200">
-            <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'}`}>
+            <div
+              className={`flex items-center ${
+                isCollapsed ? "justify-center" : "space-x-3"
+              }`}
+            >
               <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-medium">
                   {user?.employee?.name?.charAt(0).toUpperCase() || "U"}
@@ -213,16 +223,18 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                       onClose();
                     }}
                     className={`w-full flex items-center ${
-                      isCollapsed ? 'justify-center' : 'space-x-3'
+                      isCollapsed ? "justify-center" : "space-x-3"
                     } px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       activeMenu === group.id
                         ? "bg-indigo-50 text-indigo-600"
                         : "text-gray-700 hover:bg-gray-100"
                     }`}
-                    title={isCollapsed ? group.label : ''}
+                    title={isCollapsed ? group.label : ""}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
-                    {!isCollapsed && <span className="truncate">{group.label}</span>}
+                    {!isCollapsed && (
+                      <span className="truncate">{group.label}</span>
+                    )}
                   </button>
                 );
               }
@@ -258,16 +270,18 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                               onClose();
                             }}
                             className={`w-full flex items-center ${
-                              isCollapsed ? 'justify-center' : 'space-x-3'
+                              isCollapsed ? "justify-center" : "space-x-3"
                             } px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                               activeMenu === item.id
                                 ? "bg-indigo-50 text-indigo-600"
                                 : "text-gray-700 hover:bg-gray-100"
                             }`}
-                            title={isCollapsed ? item.label : ''}
+                            title={isCollapsed ? item.label : ""}
                           >
                             <Icon className="h-5 w-5 flex-shrink-0" />
-                            {!isCollapsed && <span className="truncate">{item.label}</span>}
+                            {!isCollapsed && (
+                              <span className="truncate">{item.label}</span>
+                            )}
                           </button>
                         );
                       })}
@@ -285,12 +299,16 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                 onClose();
               }}
               className={`w-full flex items-center ${
-                isCollapsed ? 'justify-center px-3' : 'justify-center space-x-2 px-4'
+                isCollapsed
+                  ? "justify-center px-3"
+                  : "justify-center space-x-2 px-4"
               } py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm`}
-              title={isCollapsed ? "AI Assistant" : ''}
+              title={isCollapsed ? "AI Assistant" : ""}
             >
               <Bot className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && <span className="font-medium">AI Assistant</span>}
+              {!isCollapsed && (
+                <span className="font-medium">AI Assistant</span>
+              )}
             </button>
           </div>
 

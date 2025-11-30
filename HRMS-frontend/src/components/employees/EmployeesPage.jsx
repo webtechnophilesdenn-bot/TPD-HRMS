@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -28,13 +28,12 @@ import {
   Smartphone,
   IndianRupee,
   Star,
-  Settings
-} from 'lucide-react';
+  Settings,
+} from "lucide-react";
 
 import { apiService } from "../../services/apiService";
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
-
 
 const EmployeesPage = () => {
   const { user } = useAuth();
@@ -66,7 +65,7 @@ const EmployeesPage = () => {
     { _id: "dept7", name: "Customer Support", code: "CS" },
     { _id: "dept8", name: "Product Management", code: "PM" },
     { _id: "dept9", name: "Quality Assurance", code: "QA" },
-    { _id: "dept10", name: "Research & Development", code: "R&D" }
+    { _id: "dept10", name: "Research & Development", code: "R&D" },
   ];
 
   const designations = [
@@ -84,7 +83,7 @@ const EmployeesPage = () => {
     { _id: "desig12", title: "Product Manager", level: "Manager" },
     { _id: "desig13", title: "QA Engineer", level: "Junior" },
     { _id: "desig14", title: "DevOps Engineer", level: "Senior" },
-    { _id: "desig15", title: "Data Scientist", level: "Senior" }
+    { _id: "desig15", title: "Data Scientist", level: "Senior" },
   ];
 
   useEffect(() => {
@@ -94,7 +93,7 @@ const EmployeesPage = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Always load current user's profile
       try {
         const myProfileResponse = await apiService.getMyProfile();
@@ -125,7 +124,7 @@ const EmployeesPage = () => {
             city: "Bangalore",
             state: "Karnataka",
             zipCode: "560001",
-            country: "India"
+            country: "India",
           },
           bankDetails: {
             accountNumber: "123456789012",
@@ -133,14 +132,14 @@ const EmployeesPage = () => {
             bankName: "State Bank of India",
             branch: "MG Road",
             accountHolderName: "John Doe",
-            accountType: "Savings"
+            accountType: "Savings",
           },
           statutoryDetails: {
             panNumber: "ABCDE1234F",
             aadharNumber: "123456789012",
             uanNumber: "123456789012",
             epfNumber: "MHBAN123456789012",
-            esiNumber: "123456789012345"
+            esiNumber: "123456789012345",
           },
           leaveBalance: {
             casual: 12,
@@ -149,19 +148,19 @@ const EmployeesPage = () => {
             maternity: 0,
             paternity: 0,
             compOff: 2,
-            lossOfPay: 0
+            lossOfPay: 0,
           },
           emergencyContact: {
             name: "Jane Doe",
             relationship: "Spouse",
             phone: "+91 9876543211",
             alternatePhone: "+91 9876543212",
-            address: "123 Main Street, Bangalore"
+            address: "123 Main Street, Bangalore",
           },
           performance: {
             lastReviewDate: "2024-01-15",
             nextReviewDate: "2024-07-15",
-            currentRating: 4.2
+            currentRating: 4.2,
           },
           education: [
             {
@@ -170,8 +169,8 @@ const EmployeesPage = () => {
               specialization: "Computer Science",
               yearOfPassing: 2012,
               percentage: 85,
-              grade: "A"
-            }
+              grade: "A",
+            },
           ],
           workExperience: [
             {
@@ -181,13 +180,13 @@ const EmployeesPage = () => {
               to: "2021-12-31",
               isCurrent: false,
               responsibilities: "Full stack development, Team leadership",
-              reasonForLeaving: "Better opportunity"
-            }
+              reasonForLeaving: "Better opportunity",
+            },
           ],
           skills: [
             { name: "JavaScript", level: "Expert", yearsOfExperience: 8 },
             { name: "React", level: "Expert", yearsOfExperience: 6 },
-            { name: "Node.js", level: "Advanced", yearsOfExperience: 5 }
+            { name: "Node.js", level: "Advanced", yearsOfExperience: 5 },
           ],
           documents: [
             {
@@ -195,17 +194,19 @@ const EmployeesPage = () => {
               fileName: "aadhar_card.pdf",
               fileUrl: "/documents/aadhar.pdf",
               uploadedAt: "2022-01-20",
-              isVerified: true
-            }
-          ]
+              isVerified: true,
+            },
+          ],
         });
       }
-      
+
       // Only load all employees if user is admin/hr/manager
       if (["hr", "admin", "manager"].includes(user?.role)) {
         try {
           const employeesResponse = await apiService.getAllEmployees();
-          setEmployees(Array.isArray(employeesResponse.data) ? employeesResponse.data : []);
+          setEmployees(
+            Array.isArray(employeesResponse.data) ? employeesResponse.data : []
+          );
           // If no employees, create mock data
           if (!employeesResponse.data || employeesResponse.data.length === 0) {
             setEmployees(generateMockEmployees());
@@ -216,7 +217,7 @@ const EmployeesPage = () => {
           setEmployees(generateMockEmployees());
         }
       }
-      
+
       setLoading(false);
     } catch (error) {
       console.error("Failed to load data:", error);
@@ -228,38 +229,85 @@ const EmployeesPage = () => {
   // Generate mock employees for demo
   const generateMockEmployees = () => {
     const mockEmployees = [];
-    const firstNames = ["John", "Jane", "Mike", "Sarah", "David", "Lisa", "Robert", "Emily", "Michael", "Jessica"];
-    const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez"];
-    
+    const firstNames = [
+      "John",
+      "Jane",
+      "Mike",
+      "Sarah",
+      "David",
+      "Lisa",
+      "Robert",
+      "Emily",
+      "Michael",
+      "Jessica",
+    ];
+    const lastNames = [
+      "Smith",
+      "Johnson",
+      "Williams",
+      "Brown",
+      "Jones",
+      "Garcia",
+      "Miller",
+      "Davis",
+      "Rodriguez",
+      "Martinez",
+    ];
+
     for (let i = 1; i <= 20; i++) {
       const dept = departments[Math.floor(Math.random() * departments.length)];
-      const desig = designations[Math.floor(Math.random() * designations.length)];
-      
+      const desig =
+        designations[Math.floor(Math.random() * designations.length)];
+
       mockEmployees.push({
         _id: `emp${i}`,
-        employeeId: `EMP${String(i).padStart(3, '0')}`,
+        employeeId: `EMP${String(i).padStart(3, "0")}`,
         firstName: firstNames[Math.floor(Math.random() * firstNames.length)],
         lastName: lastNames[Math.floor(Math.random() * lastNames.length)],
         personalEmail: `employee${i}@company.com`,
         phone: `+91 ${Math.floor(9000000000 + Math.random() * 1000000000)}`,
-        dateOfBirth: `198${Math.floor(Math.random() * 10)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+        dateOfBirth: `198${Math.floor(Math.random() * 10)}-${String(
+          Math.floor(Math.random() * 12) + 1
+        ).padStart(2, "0")}-${String(
+          Math.floor(Math.random() * 28) + 1
+        ).padStart(2, "0")}`,
         gender: Math.random() > 0.5 ? "Male" : "Female",
         department: dept,
         designation: desig,
-        joiningDate: `202${Math.floor(Math.random() * 4)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
-        employmentType: ["Full-Time", "Part-Time", "Contract", "Intern"][Math.floor(Math.random() * 4)],
-        status: ["Active", "Active", "Active", "On Leave", "On Probation"][Math.floor(Math.random() * 5)],
+        joiningDate: `202${Math.floor(Math.random() * 4)}-${String(
+          Math.floor(Math.random() * 12) + 1
+        ).padStart(2, "0")}-${String(
+          Math.floor(Math.random() * 28) + 1
+        ).padStart(2, "0")}`,
+        employmentType: ["Full-Time", "Part-Time", "Contract", "Intern"][
+          Math.floor(Math.random() * 4)
+        ],
+        status: ["Active", "Active", "Active", "On Leave", "On Probation"][
+          Math.floor(Math.random() * 5)
+        ],
         ctc: Math.floor(300000 + Math.random() * 1200000),
-        workLocation: ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai"][Math.floor(Math.random() * 5)],
-        workShift: ["Day", "Night", "Rotational"][Math.floor(Math.random() * 3)],
+        workLocation: ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai"][
+          Math.floor(Math.random() * 5)
+        ],
+        workShift: ["Day", "Night", "Rotational"][
+          Math.floor(Math.random() * 3)
+        ],
         probationPeriod: [3, 6][Math.floor(Math.random() * 2)],
         address: {
           street: `${Math.floor(Math.random() * 1000)} Street`,
-          city: ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai"][Math.floor(Math.random() * 5)],
-          state: ["Karnataka", "Maharashtra", "Delhi", "Telangana", "Tamil Nadu"][Math.floor(Math.random() * 5)],
+          city: ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai"][
+            Math.floor(Math.random() * 5)
+          ],
+          state: [
+            "Karnataka",
+            "Maharashtra",
+            "Delhi",
+            "Telangana",
+            "Tamil Nadu",
+          ][Math.floor(Math.random() * 5)],
           zipCode: "56000" + Math.floor(Math.random() * 10),
-          country: "India"
-        }
+          country: "India",
+        },
       });
     }
     return mockEmployees;
@@ -344,16 +392,17 @@ const EmployeesPage = () => {
               <span>All Employees ({employees.length})</span>
             </button>
           </div>
-          
-          {(user?.role === "hr" || user?.role === "admin") && viewMode === "allEmployees" && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors shadow-sm"
-            >
-              <Plus className="h-5 w-5" />
-              <span>Add Employee</span>
-            </button>
-          )}
+
+          {(user?.role === "hr" || user?.role === "admin") &&
+            viewMode === "allEmployees" && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors shadow-sm"
+              >
+                <Plus className="h-5 w-5" />
+                <span>Add Employee</span>
+              </button>
+            )}
         </div>
       ) : (
         // Regular employee header
@@ -377,8 +426,8 @@ const EmployeesPage = () => {
 
       {/* Content based on view mode */}
       {viewMode === "myProfile" && myProfile && (
-        <EmployeeProfileView 
-          employee={myProfile} 
+        <EmployeeProfileView
+          employee={myProfile}
           onEdit={() => {
             setSelectedEmployee(myProfile);
             setShowEditModal(true);
@@ -387,7 +436,7 @@ const EmployeesPage = () => {
       )}
 
       {viewMode === "allEmployees" && (
-        <AllEmployeesView 
+        <AllEmployeesView
           employees={filteredEmployees}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -412,6 +461,7 @@ const EmployeesPage = () => {
           }}
           departments={departments}
           designations={designations}
+          employees={employees}
         />
       )}
 
@@ -431,6 +481,7 @@ const EmployeesPage = () => {
           }}
           departments={departments}
           designations={designations}
+          employees={employees}
         />
       )}
 
@@ -453,25 +504,25 @@ const EmployeesPage = () => {
 const EmployeeProfileView = ({ employee, onEdit }) => {
   const calculateTenure = (joiningDate) => {
     if (!joiningDate) return { years: 0, months: 0, days: 0 };
-    
+
     const today = new Date();
     const joining = new Date(joiningDate);
-    
+
     let years = today.getFullYear() - joining.getFullYear();
     let months = today.getMonth() - joining.getMonth();
     let days = today.getDate() - joining.getDate();
-    
+
     if (days < 0) {
       months--;
       const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
       days += lastMonth.getDate();
     }
-    
+
     if (months < 0) {
       years--;
       months += 12;
     }
-    
+
     return { years, months, days };
   };
 
@@ -484,9 +535,9 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
         <div className="flex items-center space-x-6">
           <div className="h-24 w-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white border-opacity-30">
             {employee.profilePicture ? (
-              <img 
-                src={employee.profilePicture} 
-                alt="Profile" 
+              <img
+                src={employee.profilePicture}
+                alt="Profile"
                 className="h-24 w-24 rounded-full object-cover"
               />
             ) : (
@@ -497,7 +548,9 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
             <h1 className="text-3xl font-bold">
               {employee.firstName} {employee.lastName}
             </h1>
-            <p className="text-indigo-100 text-lg">{employee.designation?.title || "Employee"}</p>
+            <p className="text-indigo-100 text-lg">
+              {employee.designation?.title || "Employee"}
+            </p>
             <p className="text-indigo-100 flex items-center space-x-2 mt-2">
               <Building className="h-4 w-4" />
               <span>{employee.department?.name || "No Department"}</span>
@@ -522,29 +575,29 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-blue-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {employee.leaveBalance ? (
-                employee.leaveBalance.casual + employee.leaveBalance.sick + employee.leaveBalance.earned
-              ) : (
-                0
-              )}
+              {employee.leaveBalance
+                ? employee.leaveBalance.casual +
+                  employee.leaveBalance.sick +
+                  employee.leaveBalance.earned
+                : 0}
             </div>
             <div className="text-sm text-blue-600">Available Leaves</div>
           </div>
-          
+
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
               {tenure.years}.{tenure.months}
             </div>
             <div className="text-sm text-green-600">Years Experience</div>
           </div>
-          
+
           <div className="bg-purple-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-purple-600">
               {employee.performance?.currentRating || "N/A"}
             </div>
             <div className="text-sm text-purple-600">Performance Rating</div>
           </div>
-          
+
           <div className="bg-orange-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-orange-600">
               {employee.skills?.length || 0}
@@ -568,46 +621,55 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 Edit
               </button>
             </div>
-            
+
             <div className="space-y-4">
-              <InfoField 
-                label="Full Name" 
+              <InfoField
+                label="Full Name"
                 value={`${employee.firstName} ${employee.lastName}`}
                 icon={<User className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Employee ID" 
+              <InfoField
+                label="Employee ID"
                 value={employee.employeeId}
                 icon={<CreditCard className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Email" 
+              <InfoField
+                label="Email"
                 value={employee.personalEmail}
                 icon={<Mail className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Phone" 
+              <InfoField
+                label="Phone"
                 value={employee.phone || "Not provided"}
                 icon={<Phone className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Alternate Phone" 
+              <InfoField
+                label="Alternate Phone"
                 value={employee.alternatePhone || "Not provided"}
                 icon={<Smartphone className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Gender" 
+              <InfoField
+                label="Gender"
                 value={employee.gender || "Not specified"}
               />
-              <InfoField 
-                label="Date of Birth" 
-                value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : "Not provided"}
+              <InfoField
+                label="Date of Birth"
+                value={
+                  employee.dateOfBirth
+                    ? new Date(employee.dateOfBirth).toLocaleDateString()
+                    : "Not provided"
+                }
                 icon={<Cake className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Age" 
-                value={employee.dateOfBirth ? 
-                  Math.floor((new Date() - new Date(employee.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25)) : "N/A"
+              <InfoField
+                label="Age"
+                value={
+                  employee.dateOfBirth
+                    ? Math.floor(
+                        (new Date() - new Date(employee.dateOfBirth)) /
+                          (1000 * 60 * 60 * 24 * 365.25)
+                      )
+                    : "N/A"
                 }
               />
             </div>
@@ -619,75 +681,99 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
               <Briefcase className="h-5 w-5 text-indigo-600" />
               <span>Professional Information</span>
             </h2>
-            
+
             <div className="space-y-4">
-              <InfoField 
-                label="Department" 
+              <InfoField
+                label="Department"
                 value={employee.department?.name || "Not assigned"}
                 icon={<Building className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Designation" 
+              <InfoField
+                label="Designation"
                 value={employee.designation?.title || "Not assigned"}
                 icon={<Briefcase className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Reporting Manager" 
-                value={employee.reportingManager?.name || "Not assigned"}
+              // In EmployeeProfileView component, update the reporting manager
+              field:
+              <InfoField
+                label="Reporting Manager"
+                value={
+                  employee.reportingManager
+                    ? `${employee.reportingManager.firstName} ${employee.reportingManager.lastName} (${employee.reportingManager.employeeId})`
+                    : "Not assigned"
+                }
                 icon={<User className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Joining Date" 
-                value={employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : "Not provided"}
+              <InfoField
+                label="Joining Date"
+                value={
+                  employee.joiningDate
+                    ? new Date(employee.joiningDate).toLocaleDateString()
+                    : "Not provided"
+                }
                 icon={<Calendar className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Confirmation Date" 
-                value={employee.confirmationDate ? new Date(employee.confirmationDate).toLocaleDateString() : "Not provided"}
+              <InfoField
+                label="Confirmation Date"
+                value={
+                  employee.confirmationDate
+                    ? new Date(employee.confirmationDate).toLocaleDateString()
+                    : "Not provided"
+                }
                 icon={<Calendar className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Employment Type" 
+              <InfoField
+                label="Employment Type"
                 value={employee.employmentType}
               />
-              <InfoField 
-                label="Work Location" 
+              <InfoField
+                label="Work Location"
                 value={employee.workLocation || "Not specified"}
                 icon={<MapPin className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Work Shift" 
+              <InfoField
+                label="Work Shift"
                 value={employee.workShift || "Not specified"}
                 icon={<Clock className="h-4 w-4" />}
               />
-              <InfoField 
-                label="Probation Period" 
-                value={employee.probationPeriod ? `${employee.probationPeriod} months` : "Completed"}
-              />
-              <InfoField 
-                label="Status" 
+              <InfoField
+                label="Probation Period"
                 value={
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    employee.status === "Active" ? "bg-green-100 text-green-800" :
-                    employee.status === "On Leave" ? "bg-blue-100 text-blue-800" :
-                    employee.status === "On Probation" ? "bg-yellow-100 text-yellow-800" :
-                    employee.status === "Resigned" ? "bg-orange-100 text-orange-800" :
-                    "bg-red-100 text-red-800"
-                  }`}>
+                  employee.probationPeriod
+                    ? `${employee.probationPeriod} months`
+                    : "Completed"
+                }
+              />
+              <InfoField
+                label="Status"
+                value={
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      employee.status === "Active"
+                        ? "bg-green-100 text-green-800"
+                        : employee.status === "On Leave"
+                        ? "bg-blue-100 text-blue-800"
+                        : employee.status === "On Probation"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : employee.status === "Resigned"
+                        ? "bg-orange-100 text-orange-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
                     {employee.status}
                   </span>
                 }
               />
               {employee.ctc && (
-                <InfoField 
-                  label="CTC (Annual)" 
+                <InfoField
+                  label="CTC (Annual)"
                   value={`₹${employee.ctc.toLocaleString()}`}
                   icon={<IndianRupee className="h-4 w-4" />}
                 />
               )}
               {employee.basicSalary && (
-                <InfoField 
-                  label="Basic Salary" 
+                <InfoField
+                  label="Basic Salary"
                   value={`₹${employee.basicSalary.toLocaleString()}`}
                   icon={<IndianRupee className="h-4 w-4" />}
                 />
@@ -702,13 +788,16 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <MapPin className="h-5 w-5 text-indigo-600" />
                 <span>Address Information</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
                 <InfoField label="Street" value={employee.address.street} />
                 <InfoField label="City" value={employee.address.city} />
                 <InfoField label="State" value={employee.address.state} />
                 <InfoField label="ZIP Code" value={employee.address.zipCode} />
-                <InfoField label="Country" value={employee.address.country || "India"} />
+                <InfoField
+                  label="Country"
+                  value={employee.address.country || "India"}
+                />
               </div>
             </div>
           )}
@@ -717,17 +806,35 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
           {employee.bankDetails && (
             <div className="lg:col-span-2 space-y-6">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
-                <Landmark  className="h-5 w-5 text-indigo-600" />
+                <Landmark className="h-5 w-5 text-indigo-600" />
                 <span>Bank Details</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="Account Number" value={employee.bankDetails.accountNumber || "N/A"} />
-                <InfoField label="Account Holder" value={employee.bankDetails.accountHolderName || "N/A"} />
-                <InfoField label="Bank Name" value={employee.bankDetails.bankName || "N/A"} />
-                <InfoField label="IFSC Code" value={employee.bankDetails.ifscCode || "N/A"} />
-                <InfoField label="Branch" value={employee.bankDetails.branch || "N/A"} />
-                <InfoField label="Account Type" value={employee.bankDetails.accountType || "N/A"} />
+                <InfoField
+                  label="Account Number"
+                  value={employee.bankDetails.accountNumber || "N/A"}
+                />
+                <InfoField
+                  label="Account Holder"
+                  value={employee.bankDetails.accountHolderName || "N/A"}
+                />
+                <InfoField
+                  label="Bank Name"
+                  value={employee.bankDetails.bankName || "N/A"}
+                />
+                <InfoField
+                  label="IFSC Code"
+                  value={employee.bankDetails.ifscCode || "N/A"}
+                />
+                <InfoField
+                  label="Branch"
+                  value={employee.bankDetails.branch || "N/A"}
+                />
+                <InfoField
+                  label="Account Type"
+                  value={employee.bankDetails.accountType || "N/A"}
+                />
               </div>
             </div>
           )}
@@ -739,14 +846,32 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <Shield className="h-5 w-5 text-indigo-600" />
                 <span>Statutory Details</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="PAN Number" value={employee.statutoryDetails.panNumber || "N/A"} />
-                <InfoField label="Aadhar Number" value={employee.statutoryDetails.aadharNumber || "N/A"} />
-                <InfoField label="UAN Number" value={employee.statutoryDetails.uanNumber || "N/A"} />
-                <InfoField label="EPF Number" value={employee.statutoryDetails.epfNumber || "N/A"} />
-                <InfoField label="ESI Number" value={employee.statutoryDetails.esiNumber || "N/A"} />
-                <InfoField label="Passport Number" value={employee.statutoryDetails.passportNumber || "N/A"} />
+                <InfoField
+                  label="PAN Number"
+                  value={employee.statutoryDetails.panNumber || "N/A"}
+                />
+                <InfoField
+                  label="Aadhar Number"
+                  value={employee.statutoryDetails.aadharNumber || "N/A"}
+                />
+                <InfoField
+                  label="UAN Number"
+                  value={employee.statutoryDetails.uanNumber || "N/A"}
+                />
+                <InfoField
+                  label="EPF Number"
+                  value={employee.statutoryDetails.epfNumber || "N/A"}
+                />
+                <InfoField
+                  label="ESI Number"
+                  value={employee.statutoryDetails.esiNumber || "N/A"}
+                />
+                <InfoField
+                  label="Passport Number"
+                  value={employee.statutoryDetails.passportNumber || "N/A"}
+                />
               </div>
             </div>
           )}
@@ -758,34 +883,48 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <Calendar className="h-5 w-5 text-indigo-600" />
                 <span>Leave Balance</span>
               </h2>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-blue-600">{employee.leaveBalance.casual}</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {employee.leaveBalance.casual}
+                  </div>
                   <div className="text-xs text-gray-600">Casual</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-green-600">{employee.leaveBalance.sick}</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {employee.leaveBalance.sick}
+                  </div>
                   <div className="text-xs text-gray-600">Sick</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-purple-600">{employee.leaveBalance.earned}</div>
+                  <div className="text-lg font-bold text-purple-600">
+                    {employee.leaveBalance.earned}
+                  </div>
                   <div className="text-xs text-gray-600">Earned</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-pink-600">{employee.leaveBalance.maternity}</div>
+                  <div className="text-lg font-bold text-pink-600">
+                    {employee.leaveBalance.maternity}
+                  </div>
                   <div className="text-xs text-gray-600">Maternity</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-blue-600">{employee.leaveBalance.paternity}</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {employee.leaveBalance.paternity}
+                  </div>
                   <div className="text-xs text-gray-600">Paternity</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-orange-600">{employee.leaveBalance.compOff}</div>
+                  <div className="text-lg font-bold text-orange-600">
+                    {employee.leaveBalance.compOff}
+                  </div>
                   <div className="text-xs text-gray-600">Comp Off</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-red-600">{employee.leaveBalance.lossOfPay}</div>
+                  <div className="text-lg font-bold text-red-600">
+                    {employee.leaveBalance.lossOfPay}
+                  </div>
                   <div className="text-xs text-gray-600">LOP</div>
                 </div>
               </div>
@@ -799,13 +938,29 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <Heart className="h-5 w-5 text-indigo-600" />
                 <span>Emergency Contact</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="Name" value={employee.emergencyContact.name} />
-                <InfoField label="Relationship" value={employee.emergencyContact.relationship} />
-                <InfoField label="Phone" value={employee.emergencyContact.phone} />
-                <InfoField label="Alternate Phone" value={employee.emergencyContact.alternatePhone || "N/A"} />
-                <InfoField label="Address" value={employee.emergencyContact.address} className="md:col-span-2" />
+                <InfoField
+                  label="Name"
+                  value={employee.emergencyContact.name}
+                />
+                <InfoField
+                  label="Relationship"
+                  value={employee.emergencyContact.relationship}
+                />
+                <InfoField
+                  label="Phone"
+                  value={employee.emergencyContact.phone}
+                />
+                <InfoField
+                  label="Alternate Phone"
+                  value={employee.emergencyContact.alternatePhone || "N/A"}
+                />
+                <InfoField
+                  label="Address"
+                  value={employee.emergencyContact.address}
+                  className="md:col-span-2"
+                />
               </div>
             </div>
           )}
@@ -817,41 +972,50 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <TrendingUp className="h-5 w-5 text-indigo-600" />
                 <span>Performance</span>
               </h2>
-              
+
               <div className="space-y-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField 
-                  label="Current Rating" 
+                <InfoField
+                  label="Current Rating"
                   value={
                     <div className="flex items-center space-x-2">
                       <span className="text-lg font-bold text-indigo-600">
                         {employee.performance.currentRating}/5
                       </span>
                       <div className="flex">
-                        {[1,2,3,4,5].map(star => (
-                          <Star 
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
                             key={star}
                             className={`h-4 w-4 ${
-                              star <= Math.floor(employee.performance.currentRating) 
-                                ? "text-yellow-400 fill-current" 
+                              star <=
+                              Math.floor(employee.performance.currentRating)
+                                ? "text-yellow-400 fill-current"
                                 : "text-gray-300"
                             }`}
                           />
                         ))}
                       </div>
                     </div>
-                  } 
+                  }
                 />
-                <InfoField 
-                  label="Last Review" 
-                  value={employee.performance.lastReviewDate ? 
-                    new Date(employee.performance.lastReviewDate).toLocaleDateString() : "N/A"
-                  } 
+                <InfoField
+                  label="Last Review"
+                  value={
+                    employee.performance.lastReviewDate
+                      ? new Date(
+                          employee.performance.lastReviewDate
+                        ).toLocaleDateString()
+                      : "N/A"
+                  }
                 />
-                <InfoField 
-                  label="Next Review" 
-                  value={employee.performance.nextReviewDate ? 
-                    new Date(employee.performance.nextReviewDate).toLocaleDateString() : "N/A"
-                  } 
+                <InfoField
+                  label="Next Review"
+                  value={
+                    employee.performance.nextReviewDate
+                      ? new Date(
+                          employee.performance.nextReviewDate
+                        ).toLocaleDateString()
+                      : "N/A"
+                  }
                 />
               </div>
             </div>
@@ -864,21 +1028,29 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <GraduationCap className="h-5 w-5 text-indigo-600" />
                 <span>Education</span>
               </h2>
-              
+
               <div className="space-y-3">
                 {employee.education.map((edu, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                        <p className="text-sm text-gray-600">{edu.institution}</p>
+                        <h3 className="font-semibold text-gray-900">
+                          {edu.degree}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {edu.institution}
+                        </p>
                         {edu.specialization && (
-                          <p className="text-sm text-gray-600">Specialization: {edu.specialization}</p>
+                          <p className="text-sm text-gray-600">
+                            Specialization: {edu.specialization}
+                          </p>
                         )}
                       </div>
                       <div className="text-right text-sm text-gray-500">
                         <p>{edu.yearOfPassing}</p>
-                        <p>{edu.percentage}% | {edu.grade}</p>
+                        <p>
+                          {edu.percentage}% | {edu.grade}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -894,24 +1066,30 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <Briefcase className="h-5 w-5 text-indigo-600" />
                 <span>Work Experience</span>
               </h2>
-              
+
               <div className="space-y-3">
                 {employee.workExperience.map((exp, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{exp.designation}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {exp.designation}
+                        </h3>
                         <p className="text-sm text-gray-600">{exp.company}</p>
                       </div>
                       <div className="text-right text-sm text-gray-500">
                         <p>
                           {new Date(exp.from).toLocaleDateString()} -{" "}
-                          {exp.isCurrent ? "Present" : new Date(exp.to).toLocaleDateString()}
+                          {exp.isCurrent
+                            ? "Present"
+                            : new Date(exp.to).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     {exp.responsibilities && (
-                      <p className="text-sm text-gray-700 mt-2">{exp.responsibilities}</p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        {exp.responsibilities}
+                      </p>
                     )}
                     {exp.reasonForLeaving && !exp.isCurrent && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -931,16 +1109,19 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <Award className="h-5 w-5 text-indigo-600" />
                 <span>Skills</span>
               </h2>
-              
+
               <div className="flex flex-wrap gap-2">
                 {employee.skills.map((skill, index) => (
                   <span
                     key={index}
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      skill.level === "Expert" ? "bg-green-100 text-green-800" :
-                      skill.level === "Advanced" ? "bg-blue-100 text-blue-800" :
-                      skill.level === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                      "bg-gray-100 text-gray-800"
+                      skill.level === "Expert"
+                        ? "bg-green-100 text-green-800"
+                        : skill.level === "Advanced"
+                        ? "bg-blue-100 text-blue-800"
+                        : skill.level === "Intermediate"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     {skill.name} ({skill.level}) - {skill.yearsOfExperience} yrs
@@ -957,21 +1138,26 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 <FileText className="h-5 w-5 text-indigo-600" />
                 <span>Documents</span>
               </h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {employee.documents.map((doc, index) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{doc.type}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {doc.type}
+                        </h3>
                         <p className="text-sm text-gray-600">{doc.fileName}</p>
                         <p className="text-xs text-gray-500">
-                          Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}
+                          Uploaded:{" "}
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
                         </p>
                       </div>
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
-                          doc.isVerified ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                          doc.isVerified
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
                         {doc.isVerified ? "Verified" : "Pending"}
@@ -990,31 +1176,40 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
 // Helper component for info fields
 const InfoField = ({ label, value, icon, className = "" }) => (
-  <div className={`flex justify-between items-start py-2 border-b border-gray-100 ${className}`}>
+  <div
+    className={`flex justify-between items-start py-2 border-b border-gray-100 ${className}`}
+  >
     <div className="flex items-center space-x-2 text-sm font-medium text-gray-600">
       {icon}
       <span>{label}</span>
     </div>
-    <div className="text-sm text-gray-900 text-right max-w-xs">
-      {value}
-    </div>
+    <div className="text-sm text-gray-900 text-right max-w-xs">{value}</div>
   </div>
 );
 
 // All Employees View Component
-const AllEmployeesView = ({ 
-  employees, 
-  searchTerm, 
-  onSearchChange, 
-  filters, 
-  onFiltersChange, 
-  onEmployeeSelect, 
+const AllEmployeesView = ({
+  employees,
+  searchTerm,
+  onSearchChange,
+  filters,
+  onFiltersChange,
+  onEmployeeSelect,
   onDeleteEmployee,
   userRole,
   departments,
-  designations
+  designations,
 }) => {
-  const workLocations = ["Bangalore", "Mumbai", "Delhi", "Hyderabad", "Chennai", "Pune", "Kolkata", "Remote"];
+  const workLocations = [
+    "Bangalore",
+    "Mumbai",
+    "Delhi",
+    "Hyderabad",
+    "Chennai",
+    "Pune",
+    "Kolkata",
+    "Remote",
+  ];
 
   return (
     <div className="space-y-6">
@@ -1064,7 +1259,9 @@ const AllEmployeesView = ({
 
           <select
             value={filters.status}
-            onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+            onChange={(e) =>
+              onFiltersChange({ ...filters, status: e.target.value })
+            }
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="">All Status</option>
@@ -1092,7 +1289,9 @@ const AllEmployeesView = ({
         </div>
 
         <div className="flex justify-between items-center text-sm text-gray-600">
-          <span>Showing {employees.length} of {employees.length} employees</span>
+          <span>
+            Showing {employees.length} of {employees.length} employees
+          </span>
           <div className="flex space-x-2">
             <button className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700">
               <Download className="h-4 w-4" />
@@ -1140,7 +1339,10 @@ const AllEmployeesView = ({
             </thead>
             <tbody className="divide-y divide-gray-200">
               {employees.map((employee) => (
-                <tr key={employee._id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={employee._id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
@@ -1247,10 +1449,9 @@ const AllEmployeesView = ({
             <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-500 text-lg">No employees found</p>
             <p className="text-gray-400 text-sm mt-1">
-              {searchTerm || Object.values(filters).some(f => f) 
-                ? "Try adjusting your search or filters" 
-                : "No employees in the system"
-              }
+              {searchTerm || Object.values(filters).some((f) => f)
+                ? "Try adjusting your search or filters"
+                : "No employees in the system"}
             </p>
           </div>
         )}
@@ -1260,11 +1461,20 @@ const AllEmployeesView = ({
 };
 
 // Employee Form Modal Component
-const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, designations }) => {
+const EmployeeFormModal = ({
+  mode,
+  employee,
+  onClose,
+  onSuccess,
+  departments,
+  designations,
+  employees = [],
+}) => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(false);
   const [activeSection, setActiveSection] = useState("personal");
+  const [reportingManagers, setReportingManagers] = useState([]);
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -1278,7 +1488,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       ? new Date(employee.dateOfBirth).toISOString().split("T")[0]
       : "",
     gender: employee?.gender || "",
-    
+
     // Professional Information
     department: employee?.department?._id || "",
     designation: employee?.designation?._id || "",
@@ -1294,11 +1504,11 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
     workLocation: employee?.workLocation || "",
     workShift: employee?.workShift || "Day",
     status: employee?.status || "Active",
-    
+
     // Salary Information
     ctc: employee?.ctc || "",
     basicSalary: employee?.basicSalary || "",
-    
+
     // Address Information
     address: {
       street: employee?.address?.street || "",
@@ -1307,7 +1517,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       zipCode: employee?.address?.zipCode || "",
       country: employee?.address?.country || "India",
     },
-    
+
     // Bank Details
     bankDetails: {
       accountNumber: employee?.bankDetails?.accountNumber || "",
@@ -1317,7 +1527,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       accountHolderName: employee?.bankDetails?.accountHolderName || "",
       accountType: employee?.bankDetails?.accountType || "Savings",
     },
-    
+
     // Statutory Details
     statutoryDetails: {
       panNumber: employee?.statutoryDetails?.panNumber || "",
@@ -1327,7 +1537,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       esiNumber: employee?.statutoryDetails?.esiNumber || "",
       passportNumber: employee?.statutoryDetails?.passportNumber || "",
     },
-    
+
     // Emergency Contact
     emergencyContact: {
       name: employee?.emergencyContact?.name || "",
@@ -1336,38 +1546,63 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       alternatePhone: employee?.emergencyContact?.alternatePhone || "",
       address: employee?.emergencyContact?.address || "",
     },
-    
+
     // System Access
     password: "",
     role: employee?.userId?.role || "employee",
   });
 
+  useEffect(() => {
+    // Load reporting managers when modal opens
+    if (["hr", "admin", "manager"].includes(user?.role)) {
+      loadReportingManagers();
+    }
+  }, [user?.role]); // REMOVED showAddModal and showEditModal from dependencies
+
+  const loadReportingManagers = async () => {
+    try {
+      const response = await apiService.getReportingManagers();
+      setReportingManagers(response.data || []);
+    } catch (error) {
+      console.error("Failed to load reporting managers:", error);
+      // Fallback: use existing employees as managers
+      const managers = employees.filter(emp => 
+        ["manager", "hr", "admin"].includes(emp.userId?.role) && emp.status === "Active"
+      );
+      setReportingManagers(managers);
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
+
     try {
-      // Prepare data - remove empty values
+      // Prepare data - remove empty values and validate ObjectIds
       const submitData = { ...formData };
 
-      // Clean up empty fields
+      // Clean up empty values
       Object.keys(submitData).forEach(key => {
         if (submitData[key] === "" || submitData[key] === null) {
           delete submitData[key];
         }
       });
 
-      // For regular employees editing their own profile, remove admin-only fields
+      // Validate and clean ObjectId fields
+      const objectIdFields = ['department', 'designation', 'reportingManager'];
+      objectIdFields.forEach(field => {
+        if (submitData[field] && !/^[0-9a-fA-F]{24}$/.test(submitData[field])) {
+          delete submitData[field];
+        }
+      });
+
+      // For regular employees: Remove admin-only fields during edit
       if (mode === "edit" && !["hr", "admin"].includes(user?.role)) {
-        delete submitData.password;
-        delete submitData.role;
-        delete submitData.employeeId;
-        delete submitData.department;
-        delete submitData.designation;
-        delete submitData.ctc;
-        delete submitData.employmentType;
-        delete submitData.joiningDate;
-        delete submitData.status;
-        delete submitData.bankDetails;
-        delete submitData.statutoryDetails;
+        const adminFields = [
+          'password', 'role', 'employeeId', 'department', 'designation', 
+          'ctc', 'employmentType', 'joiningDate', 'status', 'bankDetails', 
+          'statutoryDetails', 'reportingManager'
+        ];
+        adminFields.forEach(field => delete submitData[field]);
       }
 
       // Remove password if empty for new employees
@@ -1384,7 +1619,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
       }
       onSuccess();
     } catch (error) {
-      showError(error.message || `Failed to ${mode} employee`);
+      showError(error.message || "Failed to " + mode + " employee");
     } finally {
       setLoading(false);
     }
@@ -1409,21 +1644,68 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
   const renderSection = () => {
     switch (activeSection) {
       case "personal":
-        return <PersonalInfoSection formData={formData} setFormData={setFormData} mode={mode} />;
+        return (
+          <PersonalInfoSection
+            formData={formData}
+            setFormData={setFormData}
+            mode={mode}
+          />
+        );
       case "professional":
-        return <ProfessionalInfoSection formData={formData} setFormData={setFormData} departments={departments} designations={designations} isAdmin={isAdmin} mode={mode} />;
+        return (
+          <ProfessionalInfoSection
+            formData={formData}
+            setFormData={setFormData}
+            departments={departments}
+            designations={designations}
+            isAdmin={isAdmin}
+            mode={mode}
+            employees={employees}
+            reportingManagers={reportingManagers}
+          />
+        );
       case "salary":
-        return <SalaryInfoSection formData={formData} setFormData={setFormData} isAdmin={isAdmin} mode={mode} />;
+        return (
+          <SalaryInfoSection
+            formData={formData}
+            setFormData={setFormData}
+            isAdmin={isAdmin}
+            mode={mode}
+          />
+        );
       case "address":
-        return <AddressInfoSection formData={formData} setFormData={setFormData} />;
+        return (
+          <AddressInfoSection formData={formData} setFormData={setFormData} />
+        );
       case "bank":
-        return <BankInfoSection formData={formData} setFormData={setFormData} isAdmin={isAdmin} mode={mode} />;
+        return (
+          <BankInfoSection
+            formData={formData}
+            setFormData={setFormData}
+            isAdmin={isAdmin}
+            mode={mode}
+          />
+        );
       case "statutory":
-        return <StatutoryInfoSection formData={formData} setFormData={setFormData} isAdmin={isAdmin} mode={mode} />;
+        return (
+          <StatutoryInfoSection
+            formData={formData}
+            setFormData={setFormData}
+            isAdmin={isAdmin}
+            mode={mode}
+          />
+        );
       case "emergency":
-        return <EmergencyContactSection formData={formData} setFormData={setFormData} />;
+        return (
+          <EmergencyContactSection
+            formData={formData}
+            setFormData={setFormData}
+          />
+        );
       case "system":
-        return <SystemAccessSection formData={formData} setFormData={setFormData} />;
+        return (
+          <SystemAccessSection formData={formData} setFormData={setFormData} />
+        );
       default:
         return null;
     }
@@ -1468,9 +1750,7 @@ const EmployeeFormModal = ({ mode, employee, onClose, onSuccess, departments, de
         </div>
 
         {/* Form Content */}
-        <div className="space-y-6">
-          {renderSection()}
-        </div>
+        <div className="space-y-6">{renderSection()}</div>
 
         {/* Action Buttons */}
         <div className="flex space-x-3 mt-6 pt-6 border-t">
@@ -1514,7 +1794,9 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
       <input
         type="text"
         value={formData.firstName}
-        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, firstName: e.target.value })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         required
       />
@@ -1541,7 +1823,9 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
         <input
           type="text"
           value={formData.employeeId}
-          onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, employeeId: e.target.value })
+          }
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           required
         />
@@ -1555,7 +1839,9 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
       <input
         type="email"
         value={formData.personalEmail}
-        onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, personalEmail: e.target.value })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         required
       />
@@ -1581,7 +1867,9 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
       <input
         type="tel"
         value={formData.alternatePhone}
-        onChange={(e) => setFormData({ ...formData, alternatePhone: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, alternatePhone: e.target.value })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1593,7 +1881,9 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
       <input
         type="date"
         value={formData.dateOfBirth}
-        onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, dateOfBirth: e.target.value })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1617,162 +1907,228 @@ const PersonalInfoSection = ({ formData, setFormData, mode }) => (
   </div>
 );
 
-const ProfessionalInfoSection = ({ formData, setFormData, departments, designations, isAdmin, mode }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="md:col-span-2">
-      <h3 className="text-lg font-semibold mb-3 text-gray-900 border-b pb-2">
-        Professional Information
-      </h3>
-    </div>
+const ProfessionalInfoSection = ({
+  formData,
+  setFormData,
+  departments,
+  designations,
+  isAdmin,
+  mode,
+  employees = [],
+  reportingManagers = [],
+}) => {
+  // Fix reporting manager options - filter out current employee if editing
+  const reportingManagerOptions = reportingManagers.filter(manager => 
+    mode === "add" || manager._id !== formData._id
+  );
 
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Department {isAdmin && "*"}
-      </label>
-      <select
-        value={formData.department}
-        onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        disabled={!isAdmin && mode === "edit"}
-      >
-        <option value="">Select Department</option>
-        {departments.map((dept) => (
-          <option key={dept._id} value={dept._id}>
-            {dept.name}
-          </option>
-        ))}
-      </select>
-    </div>
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="md:col-span-2">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900 border-b pb-2">
+          Professional Information
+        </h3>
+      </div>
 
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Designation {isAdmin && "*"}
-      </label>
-      <select
-        value={formData.designation}
-        onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        disabled={!isAdmin && mode === "edit"}
-      >
-        <option value="">Select Designation</option>
-        {designations.map((desig) => (
-          <option key={desig._id} value={desig._id}>
-            {desig.title}
-          </option>
-        ))}
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Joining Date {isAdmin && "*"}
-      </label>
-      <input
-        type="date"
-        value={formData.joiningDate}
-        onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        disabled={!isAdmin && mode === "edit"}
-        required={isAdmin}
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Confirmation Date
-      </label>
-      <input
-        type="date"
-        value={formData.confirmationDate}
-        onChange={(e) => setFormData({ ...formData, confirmationDate: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Probation Period (months)
-      </label>
-      <input
-        type="number"
-        value={formData.probationPeriod}
-        onChange={(e) => setFormData({ ...formData, probationPeriod: parseInt(e.target.value) || 3 })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        min="1"
-        max="6"
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Employment Type
-      </label>
-      <select
-        value={formData.employmentType}
-        onChange={(e) => setFormData({ ...formData, employmentType: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        disabled={!isAdmin && mode === "edit"}
-      >
-        <option value="Full-Time">Full-Time</option>
-        <option value="Part-Time">Part-Time</option>
-        <option value="Contract">Contract</option>
-        <option value="Intern">Intern</option>
-        <option value="Consultant">Consultant</option>
-      </select>
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Work Location
-      </label>
-      <input
-        type="text"
-        value={formData.workLocation}
-        onChange={(e) => setFormData({ ...formData, workLocation: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        placeholder="e.g., Bangalore, Remote"
-      />
-    </div>
-
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        Work Shift
-      </label>
-      <select
-        value={formData.workShift}
-        onChange={(e) => setFormData({ ...formData, workShift: e.target.value })}
-        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-      >
-        <option value="Day">Day Shift</option>
-        <option value="Night">Night Shift</option>
-        <option value="Rotational">Rotational</option>
-        <option value="Flexible">Flexible</option>
-      </select>
-    </div>
-
-    {isAdmin && (
+      {/* Department */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Status
+          Department {isAdmin && "*"}
         </label>
         <select
-          value={formData.status}
-          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+          value={formData.department || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, department: e.target.value })
+          }
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={!isAdmin && mode === "edit"}
+          required={isAdmin}
         >
-          <option value="Active">Active</option>
-          <option value="On Leave">On Leave</option>
-          <option value="On Probation">On Probation</option>
-          <option value="On Notice">On Notice</option>
-          <option value="Resigned">Resigned</option>
-          <option value="Terminated">Terminated</option>
-          <option value="Retired">Retired</option>
-          <option value="Inactive">Inactive</option>
+          <option value="">Select Department</option>
+          {departments.map((dept) => (
+            <option key={dept._id} value={dept._id}>
+              {dept.name}
+            </option>
+          ))}
         </select>
       </div>
-    )}
-  </div>
-);
+
+      {/* Designation */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Designation {isAdmin && "*"}
+        </label>
+        <select
+          value={formData.designation || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, designation: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={!isAdmin && mode === "edit"}
+          required={isAdmin}
+        >
+          <option value="">Select Designation</option>
+          {designations.map((desig) => (
+            <option key={desig._id} value={desig._id}>
+              {desig.title} ({desig.level})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Reporting Manager - Fixed */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Reporting Manager
+        </label>
+        <select
+          value={formData.reportingManager || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, reportingManager: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={!isAdmin && mode === "edit"}
+        >
+          <option value="">Select Reporting Manager</option>
+          {reportingManagerOptions.map((manager) => (
+            <option key={manager._id} value={manager._id}>
+              {manager.firstName} {manager.lastName} - {manager.designation?.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Rest of the professional fields */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Joining Date {isAdmin && "*"}
+        </label>
+        <input
+          type="date"
+          value={formData.joiningDate}
+          onChange={(e) =>
+            setFormData({ ...formData, joiningDate: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={!isAdmin && mode === "edit"}
+          required={isAdmin}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Confirmation Date
+        </label>
+        <input
+          type="date"
+          value={formData.confirmationDate}
+          onChange={(e) =>
+            setFormData({ ...formData, confirmationDate: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Probation Period (months)
+        </label>
+        <input
+          type="number"
+          value={formData.probationPeriod}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              probationPeriod: parseInt(e.target.value) || 3,
+            })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          min="1"
+          max="6"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Employment Type
+        </label>
+        <select
+          value={formData.employmentType}
+          onChange={(e) =>
+            setFormData({ ...formData, employmentType: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          disabled={!isAdmin && mode === "edit"}
+        >
+          <option value="Full-Time">Full-Time</option>
+          <option value="Part-Time">Part-Time</option>
+          <option value="Contract">Contract</option>
+          <option value="Intern">Intern</option>
+          <option value="Consultant">Consultant</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Work Location
+        </label>
+        <input
+          type="text"
+          value={formData.workLocation}
+          onChange={(e) =>
+            setFormData({ ...formData, workLocation: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          placeholder="e.g., Bangalore, Remote"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Work Shift
+        </label>
+        <select
+          value={formData.workShift}
+          onChange={(e) =>
+            setFormData({ ...formData, workShift: e.target.value })
+          }
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        >
+          <option value="Day">Day Shift</option>
+          <option value="Night">Night Shift</option>
+          <option value="Rotational">Rotational</option>
+          <option value="Flexible">Flexible</option>
+        </select>
+      </div>
+
+      {isAdmin && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              value={formData.status}
+              onChange={(e) =>
+                setFormData({ ...formData, status: e.target.value })
+              }
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="Active">Active</option>
+              <option value="On Leave">On Leave</option>
+              <option value="On Probation">On Probation</option>
+              <option value="On Notice">On Notice</option>
+              <option value="Resigned">Resigned</option>
+              <option value="Terminated">Terminated</option>
+              <option value="Retired">Retired</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const SalaryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1803,7 +2159,9 @@ const SalaryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="number"
         value={formData.basicSalary}
-        onChange={(e) => setFormData({ ...formData, basicSalary: e.target.value })}
+        onChange={(e) =>
+          setFormData({ ...formData, basicSalary: e.target.value })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         placeholder="Monthly basic salary"
         disabled={!isAdmin && mode === "edit"}
@@ -1827,10 +2185,12 @@ const AddressInfoSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.address.street}
-        onChange={(e) => setFormData({
-          ...formData,
-          address: { ...formData.address, street: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            address: { ...formData.address, street: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         placeholder="House no., Building, Street"
       />
@@ -1843,10 +2203,12 @@ const AddressInfoSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.address.city}
-        onChange={(e) => setFormData({
-          ...formData,
-          address: { ...formData.address, city: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            address: { ...formData.address, city: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1858,10 +2220,12 @@ const AddressInfoSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.address.state}
-        onChange={(e) => setFormData({
-          ...formData,
-          address: { ...formData.address, state: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            address: { ...formData.address, state: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1873,10 +2237,12 @@ const AddressInfoSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.address.zipCode}
-        onChange={(e) => setFormData({
-          ...formData,
-          address: { ...formData.address, zipCode: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            address: { ...formData.address, zipCode: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1888,10 +2254,12 @@ const AddressInfoSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.address.country}
-        onChange={(e) => setFormData({
-          ...formData,
-          address: { ...formData.address, country: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            address: { ...formData.address, country: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -1902,9 +2270,9 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     <div className="md:col-span-2">
       <h3 className="text-lg font-semibold mb-3 text-gray-900 border-b pb-2 flex items-center space-x-2">
-  <Landmark className="h-5 w-5 text-indigo-600" />
-  <span>Bank Account Details</span>
-</h3>
+        <Landmark className="h-5 w-5 text-indigo-600" />
+        <span>Bank Account Details</span>
+      </h3>
     </div>
 
     <div className="md:col-span-2">
@@ -1914,10 +2282,15 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.bankDetails.accountHolderName}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, accountHolderName: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: {
+              ...formData.bankDetails,
+              accountHolderName: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -1930,10 +2303,15 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.bankDetails.accountNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, accountNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: {
+              ...formData.bankDetails,
+              accountNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -1946,10 +2324,12 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.bankDetails.ifscCode}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, ifscCode: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: { ...formData.bankDetails, ifscCode: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -1962,10 +2342,12 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.bankDetails.bankName}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, bankName: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: { ...formData.bankDetails, bankName: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -1978,10 +2360,12 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.bankDetails.branch}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, branch: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: { ...formData.bankDetails, branch: e.target.value },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -1993,10 +2377,15 @@ const BankInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       </label>
       <select
         value={formData.bankDetails.accountType}
-        onChange={(e) => setFormData({
-          ...formData,
-          bankDetails: { ...formData.bankDetails, accountType: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            bankDetails: {
+              ...formData.bankDetails,
+              accountType: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       >
@@ -2023,10 +2412,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.panNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, panNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              panNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2039,10 +2433,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.aadharNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, aadharNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              aadharNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2055,10 +2454,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.uanNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, uanNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              uanNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2071,10 +2475,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.epfNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, epfNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              epfNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2087,10 +2496,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.esiNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, esiNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              esiNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2103,10 +2517,15 @@ const StatutoryInfoSection = ({ formData, setFormData, isAdmin, mode }) => (
       <input
         type="text"
         value={formData.statutoryDetails.passportNumber}
-        onChange={(e) => setFormData({
-          ...formData,
-          statutoryDetails: { ...formData.statutoryDetails, passportNumber: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            statutoryDetails: {
+              ...formData.statutoryDetails,
+              passportNumber: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         disabled={!isAdmin && mode === "edit"}
       />
@@ -2129,10 +2548,15 @@ const EmergencyContactSection = ({ formData, setFormData }) => (
       <input
         type="text"
         value={formData.emergencyContact.name}
-        onChange={(e) => setFormData({
-          ...formData,
-          emergencyContact: { ...formData.emergencyContact, name: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            emergencyContact: {
+              ...formData.emergencyContact,
+              name: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         required
       />
@@ -2144,10 +2568,15 @@ const EmergencyContactSection = ({ formData, setFormData }) => (
       </label>
       <select
         value={formData.emergencyContact.relationship}
-        onChange={(e) => setFormData({
-          ...formData,
-          emergencyContact: { ...formData.emergencyContact, relationship: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            emergencyContact: {
+              ...formData.emergencyContact,
+              relationship: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         required
       >
@@ -2167,10 +2596,15 @@ const EmergencyContactSection = ({ formData, setFormData }) => (
       <input
         type="tel"
         value={formData.emergencyContact.phone}
-        onChange={(e) => setFormData({
-          ...formData,
-          emergencyContact: { ...formData.emergencyContact, phone: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            emergencyContact: {
+              ...formData.emergencyContact,
+              phone: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         required
       />
@@ -2183,10 +2617,15 @@ const EmergencyContactSection = ({ formData, setFormData }) => (
       <input
         type="tel"
         value={formData.emergencyContact.alternatePhone}
-        onChange={(e) => setFormData({
-          ...formData,
-          emergencyContact: { ...formData.emergencyContact, alternatePhone: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            emergencyContact: {
+              ...formData.emergencyContact,
+              alternatePhone: e.target.value,
+            },
+          })
+        }
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
       />
     </div>
@@ -2197,10 +2636,15 @@ const EmergencyContactSection = ({ formData, setFormData }) => (
       </label>
       <textarea
         value={formData.emergencyContact.address}
-        onChange={(e) => setFormData({
-          ...formData,
-          emergencyContact: { ...formData.emergencyContact, address: e.target.value }
-        })}
+        onChange={(e) =>
+          setFormData({
+            ...formData,
+            emergencyContact: {
+              ...formData.emergencyContact,
+              address: e.target.value,
+            },
+          })
+        }
         rows="3"
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
         placeholder="Full address of the emergency contact"
@@ -2280,11 +2724,18 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
               <InfoField label="Employee ID" value={employee.employeeId} />
               <InfoField label="Email" value={employee.personalEmail} />
               <InfoField label="Phone" value={employee.phone || "N/A"} />
-              <InfoField label="Alternate Phone" value={employee.alternatePhone || "N/A"} />
+              <InfoField
+                label="Alternate Phone"
+                value={employee.alternatePhone || "N/A"}
+              />
               <InfoField label="Gender" value={employee.gender || "N/A"} />
-              <InfoField 
-                label="Date of Birth" 
-                value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : "N/A"} 
+              <InfoField
+                label="Date of Birth"
+                value={
+                  employee.dateOfBirth
+                    ? new Date(employee.dateOfBirth).toLocaleDateString()
+                    : "N/A"
+                }
               />
             </div>
           </div>
@@ -2295,36 +2746,81 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
               Professional Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <InfoField label="Department" value={employee.department?.name || "N/A"} />
-              <InfoField label="Designation" value={employee.designation?.title || "N/A"} />
-              <InfoField label="Reporting Manager" value={employee.reportingManager?.name || "N/A"} />
-              <InfoField 
-                label="Joining Date" 
-                value={employee.joiningDate ? new Date(employee.joiningDate).toLocaleDateString() : "N/A"} 
+              <InfoField
+                label="Department"
+                value={employee.department?.name || "N/A"}
               />
-              <InfoField 
-                label="Confirmation Date" 
-                value={employee.confirmationDate ? new Date(employee.confirmationDate).toLocaleDateString() : "N/A"} 
+              <InfoField
+                label="Designation"
+                value={employee.designation?.title || "N/A"}
               />
-              <InfoField label="Employment Type" value={employee.employmentType} />
-              <InfoField label="Work Location" value={employee.workLocation || "N/A"} />
-              <InfoField label="Work Shift" value={employee.workShift} />
-              <InfoField label="Probation Period" value={employee.probationPeriod ? `${employee.probationPeriod} months` : "N/A"} />
-              <InfoField 
-                label="Status" 
+              <InfoField
+                label="Reporting Manager"
+                value={employee.reportingManager?.name || "N/A"}
+              />
+              <InfoField
+                label="Joining Date"
                 value={
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    employee.status === "Active" ? "bg-green-100 text-green-800" :
-                    employee.status === "On Leave" ? "bg-blue-100 text-blue-800" :
-                    employee.status === "On Probation" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-red-100 text-red-800"
-                  }`}>
+                  employee.joiningDate
+                    ? new Date(employee.joiningDate).toLocaleDateString()
+                    : "N/A"
+                }
+              />
+              <InfoField
+                label="Confirmation Date"
+                value={
+                  employee.confirmationDate
+                    ? new Date(employee.confirmationDate).toLocaleDateString()
+                    : "N/A"
+                }
+              />
+              <InfoField
+                label="Employment Type"
+                value={employee.employmentType}
+              />
+              <InfoField
+                label="Work Location"
+                value={employee.workLocation || "N/A"}
+              />
+              <InfoField label="Work Shift" value={employee.workShift} />
+              <InfoField
+                label="Probation Period"
+                value={
+                  employee.probationPeriod
+                    ? `${employee.probationPeriod} months`
+                    : "N/A"
+                }
+              />
+              <InfoField
+                label="Status"
+                value={
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      employee.status === "Active"
+                        ? "bg-green-100 text-green-800"
+                        : employee.status === "On Leave"
+                        ? "bg-blue-100 text-blue-800"
+                        : employee.status === "On Probation"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}
+                  >
                     {employee.status}
                   </span>
-                } 
+                }
               />
-              {employee.ctc && <InfoField label="CTC" value={`₹${employee.ctc.toLocaleString()}`} />}
-              {employee.basicSalary && <InfoField label="Basic Salary" value={`₹${employee.basicSalary.toLocaleString()}`} />}
+              {employee.ctc && (
+                <InfoField
+                  label="CTC"
+                  value={`₹${employee.ctc.toLocaleString()}`}
+                />
+              )}
+              {employee.basicSalary && (
+                <InfoField
+                  label="Basic Salary"
+                  value={`₹${employee.basicSalary.toLocaleString()}`}
+                />
+              )}
             </div>
           </div>
 
@@ -2339,7 +2835,10 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                 <InfoField label="City" value={employee.address.city} />
                 <InfoField label="State" value={employee.address.state} />
                 <InfoField label="ZIP Code" value={employee.address.zipCode} />
-                <InfoField label="Country" value={employee.address.country || "India"} />
+                <InfoField
+                  label="Country"
+                  value={employee.address.country || "India"}
+                />
               </div>
             </div>
           )}
@@ -2351,12 +2850,30 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                 Bank Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="Account Number" value={employee.bankDetails.accountNumber || "N/A"} />
-                <InfoField label="Account Holder" value={employee.bankDetails.accountHolderName || "N/A"} />
-                <InfoField label="Bank Name" value={employee.bankDetails.bankName || "N/A"} />
-                <InfoField label="IFSC Code" value={employee.bankDetails.ifscCode || "N/A"} />
-                <InfoField label="Branch" value={employee.bankDetails.branch || "N/A"} />
-                <InfoField label="Account Type" value={employee.bankDetails.accountType || "N/A"} />
+                <InfoField
+                  label="Account Number"
+                  value={employee.bankDetails.accountNumber || "N/A"}
+                />
+                <InfoField
+                  label="Account Holder"
+                  value={employee.bankDetails.accountHolderName || "N/A"}
+                />
+                <InfoField
+                  label="Bank Name"
+                  value={employee.bankDetails.bankName || "N/A"}
+                />
+                <InfoField
+                  label="IFSC Code"
+                  value={employee.bankDetails.ifscCode || "N/A"}
+                />
+                <InfoField
+                  label="Branch"
+                  value={employee.bankDetails.branch || "N/A"}
+                />
+                <InfoField
+                  label="Account Type"
+                  value={employee.bankDetails.accountType || "N/A"}
+                />
               </div>
             </div>
           )}
@@ -2368,12 +2885,30 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                 Statutory Details
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="PAN Number" value={employee.statutoryDetails.panNumber || "N/A"} />
-                <InfoField label="Aadhar Number" value={employee.statutoryDetails.aadharNumber || "N/A"} />
-                <InfoField label="UAN Number" value={employee.statutoryDetails.uanNumber || "N/A"} />
-                <InfoField label="EPF Number" value={employee.statutoryDetails.epfNumber || "N/A"} />
-                <InfoField label="ESI Number" value={employee.statutoryDetails.esiNumber || "N/A"} />
-                <InfoField label="Passport Number" value={employee.statutoryDetails.passportNumber || "N/A"} />
+                <InfoField
+                  label="PAN Number"
+                  value={employee.statutoryDetails.panNumber || "N/A"}
+                />
+                <InfoField
+                  label="Aadhar Number"
+                  value={employee.statutoryDetails.aadharNumber || "N/A"}
+                />
+                <InfoField
+                  label="UAN Number"
+                  value={employee.statutoryDetails.uanNumber || "N/A"}
+                />
+                <InfoField
+                  label="EPF Number"
+                  value={employee.statutoryDetails.epfNumber || "N/A"}
+                />
+                <InfoField
+                  label="ESI Number"
+                  value={employee.statutoryDetails.esiNumber || "N/A"}
+                />
+                <InfoField
+                  label="Passport Number"
+                  value={employee.statutoryDetails.passportNumber || "N/A"}
+                />
               </div>
             </div>
           )}
@@ -2385,11 +2920,27 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                 Emergency Contact
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField label="Name" value={employee.emergencyContact.name} />
-                <InfoField label="Relationship" value={employee.emergencyContact.relationship} />
-                <InfoField label="Phone" value={employee.emergencyContact.phone} />
-                <InfoField label="Alternate Phone" value={employee.emergencyContact.alternatePhone || "N/A"} />
-                <InfoField label="Address" value={employee.emergencyContact.address} className="md:col-span-2" />
+                <InfoField
+                  label="Name"
+                  value={employee.emergencyContact.name}
+                />
+                <InfoField
+                  label="Relationship"
+                  value={employee.emergencyContact.relationship}
+                />
+                <InfoField
+                  label="Phone"
+                  value={employee.emergencyContact.phone}
+                />
+                <InfoField
+                  label="Alternate Phone"
+                  value={employee.emergencyContact.alternatePhone || "N/A"}
+                />
+                <InfoField
+                  label="Address"
+                  value={employee.emergencyContact.address}
+                  className="md:col-span-2"
+                />
               </div>
             </div>
           )}
@@ -2402,31 +2953,45 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-blue-600">{employee.leaveBalance.casual}</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {employee.leaveBalance.casual}
+                  </div>
                   <div className="text-xs text-gray-600">Casual</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-green-600">{employee.leaveBalance.sick}</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {employee.leaveBalance.sick}
+                  </div>
                   <div className="text-xs text-gray-600">Sick</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-purple-600">{employee.leaveBalance.earned}</div>
+                  <div className="text-lg font-bold text-purple-600">
+                    {employee.leaveBalance.earned}
+                  </div>
                   <div className="text-xs text-gray-600">Earned</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-pink-600">{employee.leaveBalance.maternity}</div>
+                  <div className="text-lg font-bold text-pink-600">
+                    {employee.leaveBalance.maternity}
+                  </div>
                   <div className="text-xs text-gray-600">Maternity</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-blue-600">{employee.leaveBalance.paternity}</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {employee.leaveBalance.paternity}
+                  </div>
                   <div className="text-xs text-gray-600">Paternity</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-orange-600">{employee.leaveBalance.compOff}</div>
+                  <div className="text-lg font-bold text-orange-600">
+                    {employee.leaveBalance.compOff}
+                  </div>
                   <div className="text-xs text-gray-600">Comp Off</div>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center">
-                  <div className="text-lg font-bold text-red-600">{employee.leaveBalance.lossOfPay}</div>
+                  <div className="text-lg font-bold text-red-600">
+                    {employee.leaveBalance.lossOfPay}
+                  </div>
                   <div className="text-xs text-gray-600">LOP</div>
                 </div>
               </div>
@@ -2440,39 +3005,48 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                 Performance
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-50 p-4 rounded-lg">
-                <InfoField 
-                  label="Current Rating" 
+                <InfoField
+                  label="Current Rating"
                   value={
                     <div className="flex items-center space-x-2">
                       <span className="text-lg font-bold text-indigo-600">
                         {employee.performance.currentRating}/5
                       </span>
                       <div className="flex">
-                        {[1,2,3,4,5].map(star => (
-                          <Star 
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
                             key={star}
                             className={`h-4 w-4 ${
-                              star <= Math.floor(employee.performance.currentRating) 
-                                ? "text-yellow-400 fill-current" 
+                              star <=
+                              Math.floor(employee.performance.currentRating)
+                                ? "text-yellow-400 fill-current"
                                 : "text-gray-300"
                             }`}
                           />
                         ))}
                       </div>
                     </div>
-                  } 
+                  }
                 />
-                <InfoField 
-                  label="Last Review" 
-                  value={employee.performance.lastReviewDate ? 
-                    new Date(employee.performance.lastReviewDate).toLocaleDateString() : "N/A"
-                  } 
+                <InfoField
+                  label="Last Review"
+                  value={
+                    employee.performance.lastReviewDate
+                      ? new Date(
+                          employee.performance.lastReviewDate
+                        ).toLocaleDateString()
+                      : "N/A"
+                  }
                 />
-                <InfoField 
-                  label="Next Review" 
-                  value={employee.performance.nextReviewDate ? 
-                    new Date(employee.performance.nextReviewDate).toLocaleDateString() : "N/A"
-                  } 
+                <InfoField
+                  label="Next Review"
+                  value={
+                    employee.performance.nextReviewDate
+                      ? new Date(
+                          employee.performance.nextReviewDate
+                        ).toLocaleDateString()
+                      : "N/A"
+                  }
                 />
               </div>
             </div>
@@ -2489,15 +3063,23 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                        <p className="text-sm text-gray-600">{edu.institution}</p>
+                        <h3 className="font-semibold text-gray-900">
+                          {edu.degree}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {edu.institution}
+                        </p>
                         {edu.specialization && (
-                          <p className="text-sm text-gray-600">Specialization: {edu.specialization}</p>
+                          <p className="text-sm text-gray-600">
+                            Specialization: {edu.specialization}
+                          </p>
                         )}
                       </div>
                       <div className="text-right text-sm text-gray-500">
                         <p>{edu.yearOfPassing}</p>
-                        <p>{edu.percentage}% | {edu.grade}</p>
+                        <p>
+                          {edu.percentage}% | {edu.grade}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -2517,18 +3099,24 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{exp.designation}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {exp.designation}
+                        </h3>
                         <p className="text-sm text-gray-600">{exp.company}</p>
                       </div>
                       <div className="text-right text-sm text-gray-500">
                         <p>
                           {new Date(exp.from).toLocaleDateString()} -{" "}
-                          {exp.isCurrent ? "Present" : new Date(exp.to).toLocaleDateString()}
+                          {exp.isCurrent
+                            ? "Present"
+                            : new Date(exp.to).toLocaleDateString()}
                         </p>
                       </div>
                     </div>
                     {exp.responsibilities && (
-                      <p className="text-sm text-gray-700 mt-2">{exp.responsibilities}</p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        {exp.responsibilities}
+                      </p>
                     )}
                     {exp.reasonForLeaving && !exp.isCurrent && (
                       <p className="text-xs text-gray-500 mt-1">
@@ -2552,10 +3140,13 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                   <span
                     key={index}
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      skill.level === "Expert" ? "bg-green-100 text-green-800" :
-                      skill.level === "Advanced" ? "bg-blue-100 text-blue-800" :
-                      skill.level === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                      "bg-gray-100 text-gray-800"
+                      skill.level === "Expert"
+                        ? "bg-green-100 text-green-800"
+                        : skill.level === "Advanced"
+                        ? "bg-blue-100 text-blue-800"
+                        : skill.level === "Intermediate"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}
                   >
                     {skill.name} ({skill.level}) - {skill.yearsOfExperience} yrs
@@ -2576,15 +3167,20 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
                   <div key={index} className="bg-gray-50 p-4 rounded-lg border">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{doc.type}</h3>
+                        <h3 className="font-semibold text-gray-900">
+                          {doc.type}
+                        </h3>
                         <p className="text-sm text-gray-600">{doc.fileName}</p>
                         <p className="text-xs text-gray-500">
-                          Uploaded: {new Date(doc.uploadedAt).toLocaleDateString()}
+                          Uploaded:{" "}
+                          {new Date(doc.uploadedAt).toLocaleDateString()}
                         </p>
                       </div>
                       <span
                         className={`px-2 py-1 text-xs rounded-full ${
-                          doc.isVerified ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
+                          doc.isVerified
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
                         {doc.isVerified ? "Verified" : "Pending"}
