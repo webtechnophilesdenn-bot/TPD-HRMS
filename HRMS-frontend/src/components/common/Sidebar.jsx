@@ -30,7 +30,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     hrManagement: true,
     employeeServices: true,
   });
-
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256);
   const sidebarRef = useRef(null);
@@ -64,11 +63,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     document.body.style.userSelect = "none";
   };
 
-  // ✅ Wrapped in useCallback to fix ESLint warning
   const handleMouseMove = useCallback(
     (e) => {
       if (!isResizing.current) return;
-
       const newWidth = e.clientX;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
@@ -89,12 +86,11 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
-
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [handleMouseMove, handleMouseUp]); // ✅ Fixed dependencies
+  }, [handleMouseMove, handleMouseUp]);
 
   useEffect(() => {
     document.documentElement.style.setProperty(
@@ -119,7 +115,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         { id: "leaves", label: "Leave Management", icon: Calendar },
         { id: "payroll", label: "Payroll", icon: DollarSign },
         { id: "recruitment", label: "Recruitment", icon: UserPlus },
-        { id: "events", label: "Events Calendar", icon: Calendar }, // ✅ Using Calendar icon
+        { id: "events", label: "Events Calendar", icon: Calendar },
         ...(isAdminOrHR
           ? [
               { id: "onboarding", label: "Onboarding", icon: UserCheck },
@@ -159,7 +155,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -167,51 +163,83 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       <aside
         ref={sidebarRef}
         style={{ width: `${sidebarWidth}px` }}
-        className={`fixed top-16 left-0 bottom-0 bg-white border-r border-gray-200 z-10 transform transition-all duration-300 ease-in-out ${
+        className={`fixed left-0 top-0 h-screen bg-white border-r border-gray-200 z-50 flex flex-col transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0`}
       >
-        <div className="h-full flex flex-col relative">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200">
+          {!isCollapsed && (
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/logo.png" 
+                alt="Company Logo" 
+                className="h-10 w-auto object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg items-center justify-center hidden">
+                <span className="text-white text-base font-bold">HR</span>
+              </div>
+            </div>
+          )}
+          {isCollapsed && (
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="h-10 w-auto object-contain mx-auto"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          )}
+          {isCollapsed && (
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg items-center justify-center mx-auto hidden">
+              <span className="text-white text-base font-bold">HR</span>
+            </div>
+          )}
           <button
             onClick={toggleCollapse}
-            className="absolute -right-3 top-6 z-20 bg-indigo-600 text-white p-1.5 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            className={`p-1.5 hover:bg-gray-100 rounded-md transition-colors text-gray-500 hover:text-gray-700 ${isCollapsed ? 'absolute right-2 top-4' : ''}`}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="w-4 h-4" />
             ) : (
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="w-4 h-4" />
             )}
           </button>
+        </div>
 
-          <div className="flex-shrink-0 px-4 py-4 border-b border-gray-200">
-            <div
-              className={`flex items-center ${
-                isCollapsed ? "justify-center" : "space-x-3"
-              }`}
-            >
-              <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-medium">
-                  {user?.employee?.name?.charAt(0).toUpperCase() || "U"}
-                </span>
-              </div>
-              {!isCollapsed && (
-                <div className="overflow-hidden">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user?.employee?.name || user?.name || "User"}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user?.employee?.employeeId || user?.employeeId || "EMP001"}
-                  </p>
-                </div>
-              )}
+        {/* User Profile */}
+        <div
+          className={`px-4 py-3 border-b border-gray-200 ${
+            isCollapsed ? "flex justify-center" : ""
+          }`}
+        >
+          <div className={`flex items-center ${isCollapsed ? "" : "space-x-3"}`}>
+            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ring-2 ring-indigo-100">
+              {user?.employee?.name?.charAt(0).toUpperCase() || "U"}
             </div>
+            {!isCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.employee?.name || user?.name || "User"}
+                </p>
+                <p className="text-xs text-gray-500 truncate">
+                  {user?.employee?.employeeId || user?.employeeId || "EMP001"}
+                </p>
+              </div>
+            )}
           </div>
+        </div>
 
-          <nav
-            className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-4 space-y-1"
-            style={{ overscrollBehavior: "contain" }}
-          >
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
+          <div className="space-y-1">
             {menuStructure.map((group) => {
               if (group.standalone) {
                 const Icon = group.icon;
@@ -223,18 +251,16 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                       onClose();
                     }}
                     className={`w-full flex items-center ${
-                      isCollapsed ? "justify-center" : "space-x-3"
-                    } px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      isCollapsed ? "justify-center px-2" : "space-x-2.5 px-3"
+                    } py-2 rounded-lg text-sm font-medium transition-all ${
                       activeMenu === group.id
                         ? "bg-indigo-50 text-indigo-600"
-                        : "text-gray-700 hover:bg-gray-100"
+                        : "text-gray-700 hover:bg-gray-50"
                     }`}
                     title={isCollapsed ? group.label : ""}
                   >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    {!isCollapsed && (
-                      <span className="truncate">{group.label}</span>
-                    )}
+                    <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                    {!isCollapsed && <span>{group.label}</span>}
                   </button>
                 );
               }
@@ -243,23 +269,23 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
               const ExpandIcon = isExpanded ? ChevronDown : ChevronRight;
 
               return (
-                <div key={group.key} className="space-y-1">
+                <div key={group.key} className="py-1">
                   {!isCollapsed && (
                     <button
                       onClick={() => toggleSection(group.key)}
-                      className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-700 transition-colors"
                     >
-                      <span className="truncate">{group.section}</span>
-                      <ExpandIcon className="h-4 w-4 flex-shrink-0" />
+                      <span>{group.section}</span>
+                      <ExpandIcon className="w-3.5 h-3.5" />
                     </button>
                   )}
 
                   {isCollapsed && (
-                    <div className="border-t border-gray-200 my-2"></div>
+                    <div className="h-px bg-gray-200 mx-2 my-1.5" />
                   )}
 
                   {(isExpanded || isCollapsed) && (
-                    <div className="space-y-1">
+                    <div className={`${isCollapsed ? "" : "mt-0.5"} space-y-0.5`}>
                       {group.items.map((item) => {
                         const Icon = item.icon;
                         return (
@@ -270,18 +296,16 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                               onClose();
                             }}
                             className={`w-full flex items-center ${
-                              isCollapsed ? "justify-center" : "space-x-3"
-                            } px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                              isCollapsed ? "justify-center px-2" : "space-x-2.5 px-3"
+                            } py-2 rounded-lg text-sm font-medium transition-all ${
                               activeMenu === item.id
                                 ? "bg-indigo-50 text-indigo-600"
-                                : "text-gray-700 hover:bg-gray-100"
+                                : "text-gray-700 hover:bg-gray-50"
                             }`}
                             title={isCollapsed ? item.label : ""}
                           >
-                            <Icon className="h-5 w-5 flex-shrink-0" />
-                            {!isCollapsed && (
-                              <span className="truncate">{item.label}</span>
-                            )}
+                            <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                            {!isCollapsed && <span>{item.label}</span>}
                           </button>
                         );
                       })}
@@ -290,34 +314,32 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                 </div>
               );
             })}
-          </nav>
-
-          <div className="flex-shrink-0 p-4 border-t border-gray-200">
-            <button
-              onClick={() => {
-                setActiveMenu("chatbot");
-                onClose();
-              }}
-              className={`w-full flex items-center ${
-                isCollapsed
-                  ? "justify-center px-3"
-                  : "justify-center space-x-2 px-4"
-              } py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm`}
-              title={isCollapsed ? "AI Assistant" : ""}
-            >
-              <Bot className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="font-medium">AI Assistant</span>
-              )}
-            </button>
           </div>
+        </nav>
 
-          <div
-            onMouseDown={handleMouseDown}
-            className="absolute top-0 right-0 bottom-0 w-1 cursor-ew-resize hover:bg-indigo-400 transition-colors group"
+        {/* AI Assistant Button */}
+        <div className="p-3 border-t border-gray-200">
+          <button
+            onClick={() => {
+              setActiveMenu("chatbot");
+              onClose();
+            }}
+            className={`w-full flex items-center ${
+              isCollapsed ? "justify-center px-2" : "justify-center space-x-2 px-3"
+            } py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all shadow-sm font-medium text-sm`}
+            title={isCollapsed ? "AI Assistant" : ""}
           >
-            <div className="absolute inset-y-0 -right-1 w-3 opacity-0 group-hover:opacity-100"></div>
-          </div>
+            <Bot className="w-[18px] h-[18px]" />
+            {!isCollapsed && <span>AI Assistant</span>}
+          </button>
+        </div>
+
+        {/* Resize Handle */}
+        <div
+          onMouseDown={handleMouseDown}
+          className="absolute top-0 right-0 w-1 h-full cursor-ew-resize hover:bg-indigo-500 transition-colors group"
+        >
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-12 bg-gray-300 rounded-full group-hover:bg-indigo-500 transition-colors" />
         </div>
       </aside>
     </>

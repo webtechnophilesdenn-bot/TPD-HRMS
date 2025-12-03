@@ -18,6 +18,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { apiService } from "../../services/apiService";
+import payrollAPI from "../../services/payrollAPI";
 import { useNotification } from "../../hooks/useNotification";
 
 const PayrollGenerationSystem = ({ onClose }) => {
@@ -25,7 +26,7 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const [activeView, setActiveView] = useState("generate");
   const [generating, setGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null);
-  
+
   const [config, setConfig] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
@@ -46,8 +47,18 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const [showWarning, setShowWarning] = useState(false);
 
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
 
   useEffect(() => {
@@ -59,7 +70,7 @@ const PayrollGenerationSystem = ({ onClose }) => {
 
   const loadDepartments = async () => {
     try {
-      const response = await apiService.getDepartments();
+      const response = await apiService.getDepartments(); // ✅ Keep this
       setDepartments(response.data?.departments || []);
     } catch (error) {
       showError("Failed to load departments");
@@ -69,25 +80,24 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const loadEmployeePreview = async () => {
     setLoadingPreview(true);
     try {
-      // Check generation summary first
-      const summaryResponse = await apiService.getPayrollGenerationSummary({
+      // ✅ CHANGE: Use payrollAPI
+      const summaryResponse = await payrollAPI.getPayrollGenerationSummary({
         month: config.month,
         year: config.year,
         department: config.department,
       });
-      
+
       setGenerationSummary(summaryResponse.data);
-      
       if (summaryResponse.data.existingPayrolls > 0) {
         setShowWarning(true);
       }
 
-      // Load eligible employees
-      const response = await apiService.getEligibleEmployees({
+      // ✅ CHANGE: Use payrollAPI
+      const response = await payrollAPI.getEligibleEmployees({
         department: config.department,
         includeInactive: config.includeInactive,
       });
-      
+
       setEmployeePreview(response.data?.employees || []);
       setPreviewSummary(response.data?.summary || null);
       setShowPreview(true);
@@ -101,7 +111,8 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const loadPayrollHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await apiService.getAllPayrolls({
+      // ✅ CHANGE: Use payrollAPI
+      const response = await payrollAPI.getAllPayrolls({
         month: config.month,
         year: config.year,
         department: config.department,
@@ -114,92 +125,132 @@ const PayrollGenerationSystem = ({ onClose }) => {
     }
   };
 
-  const handleGeneratePayroll = async () => {
-    if (!config.month || !config.year) {
-      showError("Please select month and year");
-      return;
-    }
 
-    if (employeePreview.length === 0) {
-      showError("No employees found for payroll generation");
-      return;
-    }
 
-    if (showWarning && !window.confirm("Payroll already exists for some employees. Do you want to continue?")) {
-      return;
-    }
-
+  // In PayrollGenerationSystem.jsx
+const handleGeneratePayroll = async (data) => {
+  try {
     setGenerating(true);
     setGenerationProgress({
-      stage: "initializing",
+      stage: 'initializing',
       current: 0,
       total: employeePreview.length,
-      message: "Initializing payroll generation...",
+      message: 'Initializing payroll generation...',
       errors: [],
     });
 
-    try {
-      // Stage 1: Validating
-      setGenerationProgress(prev => ({ 
-        ...prev, 
-        stage: "validating", 
-        message: "Validating employee data..." 
-      }));
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // ✅ STEP 1: Validate eligibility first
+    setGenerationProgress(prev => ({
+      ...prev,
+      stage: 'validating',
+      message: 'Validating employee eligibility...',
+    }));
 
-      // Stage 2: Fetching attendance
-      setGenerationProgress(prev => ({ 
-        ...prev, 
-        stage: "fetching", 
-        message: "Fetching attendance records..." 
-      }));
-      await new Promise(resolve => setTimeout(resolve, 1500));
+    const validationResponse = await payrollAPI.validatePayrollEligibility({
+      month: config.month,
+      year: config.year,
+      department: config.department,
+      includeInactive: config.includeInactive,
+    });
 
-      // Stage 3: Generating payroll (actual API call)
-      setGenerationProgress(prev => ({ 
-        ...prev, 
-        stage: "calculating", 
-        message: "Calculating salaries and generating payroll..." 
-      }));
+    if (validationResponse.data.summary.ineligible > 0) {
+      // Show detailed ineligible list
+      const ineligibleDetails = validationResponse.data.ineligible
+        .map(emp => `${emp.name} (${emp.employeeId}): ${emp.issues.join(', ')}`)
+        .join('\n');
 
-      const response = await apiService.generatePayroll({
-        month: config.month,
-        year: config.year,
-        department: config.department,
-        includeInactive: config.includeInactive,
-      });
-
-      // Stage 4: Completed
-      setGenerationProgress({ 
-        stage: "completed", 
-        current: response.data.summary.processed, 
-        total: response.data.summary.totalEmployees, 
-        message: "Payroll generated successfully!",
-        errors: response.data.errors || [],
-        summary: response.data.summary,
-      });
+      const proceed = window.confirm(
+        `⚠️ WARNING: ${validationResponse.data.summary.ineligible} employees are ineligible for payroll.\n\n` +
+        `Issues found:\n${ineligibleDetails}\n\n` +
+        `Do you want to continue and generate payroll only for eligible employees?`
+      );
       
-      setTimeout(() => {
+      if (!proceed) {
         setGenerating(false);
         setGenerationProgress(null);
-        setShowPreview(false);
-        setShowWarning(false);
-        showSuccess(`Payroll generated for ${response.data.summary.processed} employees!`);
-        if (onClose) onClose();
-      }, 3000);
-    } catch (error) {
-      setGenerationProgress({ 
-        stage: "error", 
-        message: error.message || "Failed to generate payroll",
-        errors: [error.message],
-      });
-      showError(error.message || "Failed to generate payroll");
-      setTimeout(() => {
-        setGenerating(false);
-        setGenerationProgress(null);
-      }, 3000);
+        return;
+      }
     }
-  };
+
+    // ✅ STEP 2: Simulate stages for better UX
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    setGenerationProgress(prev => ({
+      ...prev,
+      stage: 'fetching',
+      message: 'Fetching attendance and leave records...',
+    }));
+
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // ✅ STEP 3: Generate payroll - actual API call
+    setGenerationProgress(prev => ({
+      ...prev,
+      stage: 'calculating',
+      message: 'Calculating salaries and generating payroll...',
+    }));
+
+    const response = await payrollAPI.generatePayroll({
+      month: config.month,
+      year: config.year,
+      department: config.department,
+      includeInactive: config.includeInactive,
+    });
+
+    // ✅ STEP 4: Handle response
+    const errorMessages = Array.isArray(response.data.errors) 
+      ? response.data.errors.map(err => {
+          if (typeof err === 'object' && err !== null) {
+            return `${err.name || err.employeeId}: ${err.error}`;
+          }
+          return String(err);
+        })
+      : [];
+
+    setGenerationProgress({
+      stage: 'completed',
+      current: response.data.summary?.generated || 0,
+      total: response.data.summary?.totalEmployees || employeePreview.length,
+      message: 'Payroll generated successfully!',
+      errors: errorMessages,
+      summary: response.data.summary,
+    });
+
+    // ✅ STEP 5: Show success notification and close
+    setTimeout(() => {
+      setGenerating(false);
+      setGenerationProgress(null);
+      setShowPreview(false);
+      setShowWarning(false);
+      
+      showSuccess(
+        `✅ Payroll generated for ${response.data.summary?.generated || 0} employees! ` +
+        (errorMessages.length > 0 ? `${errorMessages.length} errors occurred.` : '')
+      );
+      
+      if (onClose) onClose();
+    }, 3000);
+
+  } catch (error) {
+    console.error('Error generating payroll:', error);
+    
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to generate payroll';
+    
+    setGenerationProgress({
+      stage: 'error',
+      message: errorMessage,
+      errors: [errorMessage],
+    });
+
+    showError(errorMessage);
+
+    setTimeout(() => {
+      setGenerating(false);
+      setGenerationProgress(null);
+    }, 3000);
+  }
+};
+
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-IN", {
@@ -214,7 +265,9 @@ const PayrollGenerationSystem = ({ onClose }) => {
       case "initializing":
         return <Clock className="h-8 w-8 text-blue-600 animate-pulse" />;
       case "validating":
-        return <CheckCircle className="h-8 w-8 text-yellow-600 animate-pulse" />;
+        return (
+          <CheckCircle className="h-8 w-8 text-yellow-600 animate-pulse" />
+        );
       case "fetching":
         return <RefreshCw className="h-8 w-8 text-indigo-600 animate-spin" />;
       case "calculating":
@@ -265,7 +318,7 @@ const PayrollGenerationSystem = ({ onClose }) => {
               <Settings className="h-5 w-5 mr-2 text-indigo-600" />
               Payroll Configuration
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               {/* Month */}
               <div>
@@ -274,7 +327,9 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 </label>
                 <select
                   value={config.month}
-                  onChange={(e) => setConfig({ ...config, month: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setConfig({ ...config, month: parseInt(e.target.value) })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   {months.map((month, index) => (
@@ -292,7 +347,9 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 </label>
                 <select
                   value={config.year}
-                  onChange={(e) => setConfig({ ...config, year: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setConfig({ ...config, year: parseInt(e.target.value) })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   {[2024, 2023, 2022].map((year) => (
@@ -310,7 +367,9 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 </label>
                 <select
                   value={config.department}
-                  onChange={(e) => setConfig({ ...config, department: e.target.value })}
+                  onChange={(e) =>
+                    setConfig({ ...config, department: e.target.value })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="">All Departments</option>
@@ -329,27 +388,40 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 <input
                   type="checkbox"
                   checked={config.includeInactive}
-                  onChange={(e) => setConfig({ ...config, includeInactive: e.target.checked })}
+                  onChange={(e) =>
+                    setConfig({ ...config, includeInactive: e.target.checked })
+                  }
                   className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
                 />
-                <span className="text-sm text-gray-700">Include Inactive Employees</span>
+                <span className="text-sm text-gray-700">
+                  Include Inactive Employees
+                </span>
               </label>
 
               <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300">
                 <input
                   type="checkbox"
                   checked={config.sendNotifications}
-                  onChange={(e) => setConfig({ ...config, sendNotifications: e.target.checked })}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      sendNotifications: e.target.checked,
+                    })
+                  }
                   className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
                 />
-                <span className="text-sm text-gray-700">Send Email Notifications</span>
+                <span className="text-sm text-gray-700">
+                  Send Email Notifications
+                </span>
               </label>
 
               <label className="flex items-center space-x-3 cursor-pointer p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300">
                 <input
                   type="checkbox"
                   checked={config.processOvertime}
-                  onChange={(e) => setConfig({ ...config, processOvertime: e.target.checked })}
+                  onChange={(e) =>
+                    setConfig({ ...config, processOvertime: e.target.checked })
+                  }
                   className="w-4 h-4 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
                 />
                 <span className="text-sm text-gray-700">Process Overtime</span>
@@ -387,20 +459,31 @@ const PayrollGenerationSystem = ({ onClose }) => {
               <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="font-medium text-yellow-900 mb-1">Warning</h4>
-                <p className="text-sm text-yellow-800">{generationSummary.message}</p>
-                {generationSummary.existingEmployees && generationSummary.existingEmployees.length > 0 && (
-                  <div className="mt-2 text-sm text-yellow-700">
-                    <strong>Existing payrolls for:</strong>
-                    <ul className="list-disc list-inside mt-1">
-                      {generationSummary.existingEmployees.slice(0, 5).map((emp, idx) => (
-                        <li key={idx}>{emp.name} ({emp.employeeId}) - {emp.status}</li>
-                      ))}
-                      {generationSummary.existingEmployees.length > 5 && (
-                        <li>...and {generationSummary.existingEmployees.length - 5} more</li>
-                      )}
-                    </ul>
-                  </div>
-                )}
+                <p className="text-sm text-yellow-800">
+                  {generationSummary.message}
+                </p>
+                {generationSummary.existingEmployees &&
+                  generationSummary.existingEmployees.length > 0 && (
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <strong>Existing payrolls for:</strong>
+                      <ul className="list-disc list-inside mt-1">
+                        {generationSummary.existingEmployees
+                          .slice(0, 5)
+                          .map((emp, idx) => (
+                            <li key={idx}>
+                              {emp.name} ({emp.employeeId}) - {emp.status}
+                            </li>
+                          ))}
+                        {generationSummary.existingEmployees.length > 5 && (
+                          <li>
+                            ...and{" "}
+                            {generationSummary.existingEmployees.length - 5}{" "}
+                            more
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
               </div>
               <button
                 onClick={() => setShowWarning(false)}
@@ -421,7 +504,8 @@ const PayrollGenerationSystem = ({ onClose }) => {
                     Employee Preview
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
-                    {employeePreview.length} employees • Estimated Payout: {formatCurrency(previewSummary?.totalEstimatedPayout)}
+                    {employeePreview.length} employees • Estimated Payout:{" "}
+                    {formatCurrency(previewSummary?.totalEstimatedPayout)}
                   </p>
                 </div>
                 <button
@@ -439,16 +523,28 @@ const PayrollGenerationSystem = ({ onClose }) => {
               {previewSummary && (
                 <div className="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Total Employees</p>
-                    <p className="text-xl font-bold text-gray-900">{previewSummary.totalEmployees}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      Total Employees
+                    </p>
+                    <p className="text-xl font-bold text-gray-900">
+                      {previewSummary.totalEmployees}
+                    </p>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Estimated Gross</p>
-                    <p className="text-xl font-bold text-green-600">{formatCurrency(previewSummary.totalEstimatedGross)}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      Estimated Gross
+                    </p>
+                    <p className="text-xl font-bold text-green-600">
+                      {formatCurrency(previewSummary.totalEstimatedGross)}
+                    </p>
                   </div>
                   <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Estimated Net Payout</p>
-                    <p className="text-xl font-bold text-indigo-600">{formatCurrency(previewSummary.totalEstimatedPayout)}</p>
+                    <p className="text-xs text-gray-600 mb-1">
+                      Estimated Net Payout
+                    </p>
+                    <p className="text-xl font-bold text-indigo-600">
+                      {formatCurrency(previewSummary.totalEstimatedPayout)}
+                    </p>
                   </div>
                 </div>
               )}
@@ -457,19 +553,36 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Designation</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Basic</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Gross</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Net</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Employee
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Designation
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Department
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Basic
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Est. Gross
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Est. Net
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {employeePreview.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                        <td
+                          colSpan="7"
+                          className="px-4 py-8 text-center text-gray-500"
+                        >
                           No employees found
                         </td>
                       </tr>
@@ -480,10 +593,16 @@ const PayrollGenerationSystem = ({ onClose }) => {
                             <div className="text-sm font-medium text-gray-900">
                               {emp.firstName} {emp.lastName}
                             </div>
-                            <div className="text-xs text-gray-500">{emp.employeeId}</div>
+                            <div className="text-xs text-gray-500">
+                              {emp.employeeId}
+                            </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{emp.designation?.title || 'N/A'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{emp.department?.name || 'N/A'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {emp.designation?.title || "N/A"}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-900">
+                            {emp.department?.name || "N/A"}
+                          </td>
                           <td className="px-4 py-3 text-sm text-right text-gray-900">
                             {formatCurrency(emp.basicSalary)}
                           </td>
@@ -494,9 +613,13 @@ const PayrollGenerationSystem = ({ onClose }) => {
                             {formatCurrency(emp.estimatedNet)}
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              emp.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                            }`}>
+                            <span
+                              className={`px-2 py-1 text-xs rounded-full ${
+                                emp.status === "Active"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
                               {emp.status}
                             </span>
                           </td>
@@ -516,7 +639,9 @@ const PayrollGenerationSystem = ({ onClose }) => {
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="p-4 border-b border-gray-200">
             <h3 className="text-lg font-semibold">Payroll History</h3>
-            <p className="text-sm text-gray-600 mt-1">View previously generated payrolls</p>
+            <p className="text-sm text-gray-600 mt-1">
+              View previously generated payrolls
+            </p>
           </div>
 
           {historyLoading ? (
@@ -529,19 +654,36 @@ const PayrollGenerationSystem = ({ onClose }) => {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Salary</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Period
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Employee
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Gross
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Deductions
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      Net Salary
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {payrollHistory.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                      <td
+                        colSpan="7"
+                        className="px-4 py-8 text-center text-gray-500"
+                      >
                         No payroll records found
                       </td>
                     </tr>
@@ -553,9 +695,12 @@ const PayrollGenerationSystem = ({ onClose }) => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="text-sm font-medium text-gray-900">
-                            {payroll.employee?.firstName} {payroll.employee?.lastName}
+                            {payroll.employee?.firstName}{" "}
+                            {payroll.employee?.lastName}
                           </div>
-                          <div className="text-xs text-gray-500">{payroll.employee?.employeeId}</div>
+                          <div className="text-xs text-gray-500">
+                            {payroll.employee?.employeeId}
+                          </div>
                         </td>
                         <td className="px-4 py-3 text-sm text-right text-gray-900">
                           {formatCurrency(payroll.summary?.grossEarnings)}
@@ -567,18 +712,25 @@ const PayrollGenerationSystem = ({ onClose }) => {
                           {formatCurrency(payroll.summary?.netSalary)}
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            payroll.status === "Paid" ? "bg-green-100 text-green-800" :
-                            payroll.status === "Generated" ? "bg-blue-100 text-blue-800" :
-                            payroll.status === "Approved" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-gray-100 text-gray-800"
-                          }`}>
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${
+                              payroll.status === "Paid"
+                                ? "bg-green-100 text-green-800"
+                                : payroll.status === "Generated"
+                                ? "bg-blue-100 text-blue-800"
+                                : payroll.status === "Approved"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
                             {payroll.status}
                           </span>
                         </td>
                         <td className="px-4 py-3">
                           <button
-                            onClick={() => apiService.downloadPayslip(payroll._id)}
+                            onClick={() =>
+                              apiService.downloadPayslip(payroll._id)
+                            }
                             className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center"
                           >
                             <Download className="h-4 w-4 mr-1" />
@@ -604,56 +756,82 @@ const PayrollGenerationSystem = ({ onClose }) => {
                 {getStageIcon(generationProgress.stage)}
               </div>
               <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                {generationProgress.stage === "completed" ? "Completed!" : 
-                 generationProgress.stage === "error" ? "Error" : 
-                 "Generating Payroll..."}
+                {generationProgress.stage === "completed"
+                  ? "Completed!"
+                  : generationProgress.stage === "error"
+                  ? "Error"
+                  : "Generating Payroll..."}
               </h3>
               <p className="text-gray-600 mb-6">{generationProgress.message}</p>
-              
-              {generationProgress.stage !== "completed" && generationProgress.stage !== "error" && (
-                <>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                    <div
-                      className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${(generationProgress.current / generationProgress.total) * 100}%`,
-                      }}
-                    ></div>
+
+              {generationProgress.stage !== "completed" &&
+                generationProgress.stage !== "error" && (
+                  <>
+                    <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                      <div
+                        className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${
+                            (generationProgress.current /
+                              generationProgress.total) *
+                            100
+                          }%`,
+                        }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      Processing {generationProgress.current} of{" "}
+                      {generationProgress.total} employees
+                    </p>
+                  </>
+                )}
+
+              {generationProgress.stage === "completed" &&
+                generationProgress.summary && (
+                  <div className="mt-6 bg-green-50 rounded-lg p-4">
+                    <div className="grid grid-cols-2 gap-4 text-left">
+                      <div>
+                        <p className="text-sm text-gray-600">Processed</p>
+                        <p className="text-lg font-bold text-green-700">
+                          {generationProgress.summary.processed}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Total Payout</p>
+                        <p className="text-lg font-bold text-green-700">
+                          {formatCurrency(
+                            generationProgress.summary.totalPayout
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                   
+                    {generationProgress.errors &&
+                      generationProgress.errors.length > 0 && (
+                        <div className="mt-3 text-left">
+                          <p className="text-sm font-medium text-red-600">
+                            Errors ({generationProgress.errors.length}):
+                          </p>
+                          <ul className="text-xs text-red-600 mt-1 list-disc list-inside">
+                            {generationProgress.errors.map((err, idx) => (
+                              <li key={idx}>
+                                {/* ✅ Ensure err is a string */}
+                                {typeof err === "string"
+                                  ? err
+                                  : JSON.stringify(err)}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                   </div>
-                  <p className="text-sm text-gray-500">
-                    Processing {generationProgress.current} of {generationProgress.total} employees
-                  </p>
-                </>
-              )}
-              
-              {generationProgress.stage === "completed" && generationProgress.summary && (
-                <div className="mt-6 bg-green-50 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div>
-                      <p className="text-sm text-gray-600">Processed</p>
-                      <p className="text-lg font-bold text-green-700">{generationProgress.summary.processed}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Total Payout</p>
-                      <p className="text-lg font-bold text-green-700">{formatCurrency(generationProgress.summary.totalPayout)}</p>
-                    </div>
-                  </div>
-                  {generationProgress.errors.length > 0 && (
-                    <div className="mt-3 text-left">
-                      <p className="text-sm font-medium text-red-600">Errors ({generationProgress.errors.length}):</p>
-                      <ul className="text-xs text-red-600 mt-1 list-disc list-inside">
-                        {generationProgress.errors.slice(0, 3).map((err, idx) => (
-                          <li key={idx}>{err}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-              
+                )}
+
               {generationProgress.stage === "error" && (
                 <div className="mt-4 bg-red-50 rounded-lg p-4">
-                  <p className="text-sm text-red-800">{generationProgress.message}</p>
+                  <p className="text-sm text-red-800">
+                    {generationProgress.message}
+                  </p>
                 </div>
               )}
             </div>

@@ -67,28 +67,28 @@ const getAllEmployees = async (req, res, next) => {
 const getEmployeeById = async (req, res, next) => {
   try {
     const employeeId = req.params.id;
-    
+
     const currentEmployee = await Employee.findOne({ userId: req.user._id });
-    
+
     if (!currentEmployee) {
       return sendResponse(res, 404, false, "Employee profile not found");
     }
 
     let employee;
-    
+
     if (
-      employeeId === "me" || 
-      employeeId === currentEmployee._id.toString() || 
+      employeeId === "me" ||
+      employeeId === currentEmployee._id.toString() ||
       employeeId === currentEmployee.employeeId
     ) {
-      employee = await Employee.findById(currentEmployee._id)
-        .populate("department designation reportingManager userId");
-    } 
-    else if (["hr", "admin", "manager"].includes(req.user.role)) {
-      employee = await Employee.findById(employeeId)
-        .populate("department designation reportingManager userId");
-    } 
-    else {
+      employee = await Employee.findById(currentEmployee._id).populate(
+        "department designation reportingManager userId"
+      );
+    } else if (["hr", "admin", "manager"].includes(req.user.role)) {
+      employee = await Employee.findById(employeeId).populate(
+        "department designation reportingManager userId"
+      );
+    } else {
       return sendResponse(res, 403, false, "Access denied");
     }
 
@@ -183,7 +183,12 @@ const createEmployee = async (req, res, next) => {
     // Check if user email already exists
     const existingUser = await User.findOne({ email: personalEmail });
     if (existingUser) {
-      return sendResponse(res, 400, false, "User with this email already exists");
+      return sendResponse(
+        res,
+        400,
+        false,
+        "User with this email already exists"
+      );
     }
 
     // Create user account
@@ -258,18 +263,18 @@ const updateEmployee = async (req, res, next) => {
   try {
     const employeeId = req.params.id;
     const updates = { ...req.body };
-    
+
     const currentEmployee = await Employee.findOne({ userId: req.user._id });
-    
+
     if (!currentEmployee) {
       return sendResponse(res, 404, false, "Employee profile not found");
     }
 
     let employee;
-    
+
     // Check permissions
     if (
-      employeeId === currentEmployee._id.toString() || 
+      employeeId === currentEmployee._id.toString() ||
       employeeId === currentEmployee.employeeId
     ) {
       // Employee updating their own profile - restrict fields
@@ -283,49 +288,55 @@ const updateEmployee = async (req, res, next) => {
         "profilePicture",
         "bio",
         "emergencyContact",
-        "bankDetails"
+        "bankDetails",
       ];
-      
+
       Object.keys(updates).forEach((key) => {
         if (!allowedUpdates.includes(key)) {
           delete updates[key];
         }
       });
-      
+
       employee = await Employee.findByIdAndUpdate(
         currentEmployee._id,
         updates,
         { new: true, runValidators: true }
       ).populate("department designation reportingManager");
-    } 
-    else if (["hr", "admin"].includes(req.user.role)) {
+    } else if (["hr", "admin"].includes(req.user.role)) {
       // Admin/HR can update any employee with all fields
-      
+
       // Remove empty fields to avoid cast errors
-      Object.keys(updates).forEach(key => {
+      Object.keys(updates).forEach((key) => {
         if (updates[key] === "" || updates[key] === null) {
           delete updates[key];
         }
       });
 
       // Validate ObjectIds if provided
-      if (updates.department && !mongoose.Types.ObjectId.isValid(updates.department)) {
+      if (
+        updates.department &&
+        !mongoose.Types.ObjectId.isValid(updates.department)
+      ) {
         return sendResponse(res, 400, false, "Invalid department ID");
       }
-      if (updates.designation && !mongoose.Types.ObjectId.isValid(updates.designation)) {
+      if (
+        updates.designation &&
+        !mongoose.Types.ObjectId.isValid(updates.designation)
+      ) {
         return sendResponse(res, 400, false, "Invalid designation ID");
       }
-      if (updates.reportingManager && !mongoose.Types.ObjectId.isValid(updates.reportingManager)) {
+      if (
+        updates.reportingManager &&
+        !mongoose.Types.ObjectId.isValid(updates.reportingManager)
+      ) {
         return sendResponse(res, 400, false, "Invalid reporting manager ID");
       }
 
-      employee = await Employee.findByIdAndUpdate(
-        employeeId,
-        updates,
-        { new: true, runValidators: true }
-      ).populate("department designation reportingManager");
-    } 
-    else {
+     employee = await Employee.findByIdAndUpdate(employeeId, updates, {
+  new: true,
+  runValidators: true,
+}).populate('department designation reportingManager');
+    } else {
       return sendResponse(res, 403, false, "Access denied");
     }
 
@@ -359,7 +370,7 @@ const updateMyProfile = async (req, res, next) => {
       "bio",
       "profilePicture",
       "emergencyContact",
-      "bankDetails"
+      "bankDetails",
     ];
 
     const updates = {};
@@ -422,7 +433,7 @@ const uploadDocument = async (req, res, next) => {
       fileName,
       fileUrl,
       uploadedAt: Date.now(),
-      isVerified: false
+      isVerified: false,
     });
     await employee.save();
 
@@ -436,15 +447,20 @@ const uploadDocument = async (req, res, next) => {
 const getOrgChart = async (req, res, next) => {
   try {
     const { department } = req.query;
-    
-    const query = { status: 'Active' };
+
+    const query = { status: "Active" };
     if (department) query.department = department;
 
     const employees = await Employee.find(query)
-      .select('firstName lastName employeeId designation department reportingManager profilePicture')
-      .populate('designation', 'title')
-      .populate('department', 'name')
-      .populate('reportingManager', 'firstName lastName employeeId profilePicture');
+      .select(
+        "firstName lastName employeeId designation department reportingManager profilePicture"
+      )
+      .populate("designation", "title")
+      .populate("department", "name")
+      .populate(
+        "reportingManager",
+        "firstName lastName employeeId profilePicture"
+      );
 
     // Build hierarchical tree structure
     const buildTree = (employees, parentId = null) => {
@@ -464,22 +480,24 @@ const getOrgChart = async (req, res, next) => {
           lastName: emp.lastName,
           fullName: `${emp.firstName} ${emp.lastName}`,
           employeeId: emp.employeeId,
-          designation: emp.designation?.title || 'N/A',
-          department: emp.department?.name || 'N/A',
+          designation: emp.designation?.title || "N/A",
+          department: emp.department?.name || "N/A",
           profilePicture: emp.profilePicture,
-          reportingManager: emp.reportingManager ? {
-            _id: emp.reportingManager._id,
-            firstName: emp.reportingManager.firstName,
-            lastName: emp.reportingManager.lastName,
-            employeeId: emp.reportingManager.employeeId,
-          } : null,
+          reportingManager: emp.reportingManager
+            ? {
+                _id: emp.reportingManager._id,
+                firstName: emp.reportingManager.firstName,
+                lastName: emp.reportingManager.lastName,
+                employeeId: emp.reportingManager.employeeId,
+              }
+            : null,
           children: buildTree(employees, emp._id),
         }));
     };
 
     const orgChart = buildTree(employees);
 
-    sendResponse(res, 200, true, 'Org chart fetched successfully', {
+    sendResponse(res, 200, true, "Org chart fetched successfully", {
       orgChart,
       totalEmployees: employees.length,
       generatedAt: new Date(),
@@ -492,13 +510,13 @@ const getOrgChart = async (req, res, next) => {
 // ==================== GET MY TEAM ====================
 const getMyTeam = async (req, res, next) => {
   try {
-    const { page = 1, limit = 20, status = 'Active' } = req.query;
+    const { page = 1, limit = 20, status = "Active" } = req.query;
 
     // Find current employee
     const currentEmployee = await Employee.findOne({ userId: req.user._id });
-    
+
     if (!currentEmployee) {
-      return sendResponse(res, 404, false, 'Employee profile not found');
+      return sendResponse(res, 404, false, "Employee profile not found");
     }
 
     const query = {
@@ -507,16 +525,18 @@ const getMyTeam = async (req, res, next) => {
     };
 
     const teamMembers = await Employee.find(query)
-      .select('firstName lastName employeeId designation department personalEmail phone status joiningDate')
-      .populate('designation', 'title')
-      .populate('department', 'name')
+      .select(
+        "firstName lastName employeeId designation department personalEmail phone status joiningDate"
+      )
+      .populate("designation", "title")
+      .populate("department", "name")
       .sort({ firstName: 1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Employee.countDocuments(query);
 
-    sendResponse(res, 200, true, 'Team members fetched successfully', {
+    sendResponse(res, 200, true, "Team members fetched successfully", {
       team: teamMembers,
       manager: {
         _id: currentEmployee._id,
@@ -548,13 +568,22 @@ const getReportingManagers = async (req, res, next) => {
       .sort({ firstName: 1 });
 
     // Filter employees who can be reporting managers (managers, hr, admin, or experienced employees)
-    const managers = allEmployees.filter(emp => {
+    const managers = allEmployees.filter((emp) => {
       const userRole = emp.userId?.role;
-      return ["manager", "hr", "admin"].includes(userRole) || 
-             (userRole === "employee" && emp.designation?.title?.toLowerCase().includes("lead"));
+      return (
+        ["manager", "hr", "admin"].includes(userRole) ||
+        (userRole === "employee" &&
+          emp.designation?.title?.toLowerCase().includes("lead"))
+      );
     });
 
-    sendResponse(res, 200, true, "Reporting managers fetched successfully", managers);
+    sendResponse(
+      res,
+      200,
+      true,
+      "Reporting managers fetched successfully",
+      managers
+    );
   } catch (error) {
     next(error);
   }

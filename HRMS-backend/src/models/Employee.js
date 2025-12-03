@@ -71,6 +71,10 @@ const employeeSchema = new mongoose.Schema(
     // ==================== SALARY INFORMATION ====================
     ctc: Number,
     basicSalary: Number,
+    currentSalaryStructure: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SalaryStructure",
+    },
 
     // ==================== BANK DETAILS ====================
     bankDetails: {

@@ -1,6 +1,7 @@
-// routes/payroll.routes.js
 const express = require("express");
 const router = express.Router();
+
+// ✅ ONLY import functions that EXIST in payrollController.js
 const {
   generatePayroll,
   getMyPayslips,
@@ -12,25 +13,29 @@ const {
   getPayrollAnalytics,
   getEligibleEmployees,
   getPayrollGenerationSummary,
-  approvePayroll
+  approvePayroll,
+  validatePayrollEligibility
 } = require("../controllers/payrollController");
+
 const { protect, authorize } = require("../middlewares/auth.middleware");
 
-// Employee routes
+// ==================== EMPLOYEE ROUTES ====================
 router.get("/my-payslips", protect, getMyPayslips);
 router.get("/salary-structure", protect, getSalaryStructure);
 router.get("/:id/download", protect, downloadPayslip);
 
-// Admin/HR routes - Generation
+// ==================== HR/ADMIN ROUTES - PRE-GENERATION ====================
 router.get("/eligible-employees", protect, authorize("hr", "admin"), getEligibleEmployees);
 router.get("/generation-summary", protect, authorize("hr", "admin"), getPayrollGenerationSummary);
+
+// ==================== HR/ADMIN ROUTES - GENERATION ====================
 router.post("/generate", protect, authorize("hr", "admin"), generatePayroll);
 router.post("/approve", protect, authorize("hr", "admin"), approvePayroll);
-
-// Admin/HR routes - Management
+router.post("/validate-eligibility", protect, authorize("hr", "admin"), validatePayrollEligibility);
+// ==================== HR/ADMIN ROUTES - MANAGEMENT ====================
 router.get("/", protect, authorize("hr", "admin"), getAllPayrolls);
-router.patch("/:id/status", protect, authorize("hr", "admin"), updatePayrollStatus);
-router.patch("/bulk/status", protect, authorize("hr", "admin"), bulkUpdatePayrollStatus);
 router.get("/analytics", protect, authorize("hr", "admin"), getPayrollAnalytics);
+router.patch("/:id/status", protect, authorize("hr", "admin"), updatePayrollStatus);
+router.patch("/bulk-status", protect, authorize("hr", "admin"), bulkUpdatePayrollStatus);
 
 module.exports = router;

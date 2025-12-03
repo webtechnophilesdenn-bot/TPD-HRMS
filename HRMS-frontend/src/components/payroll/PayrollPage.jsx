@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Download,
   Calendar,
@@ -15,28 +15,28 @@ import {
   TrendingUp,
   RefreshCw,
   PlayCircle,
-} from 'lucide-react';
-import { apiService } from '../../services/apiService';
-import { useNotification } from '../../hooks/useNotification';
-import { useAuth } from '../../hooks/useAuth';
-import PayrollGenerationSystem from './PayrollGenerationSystem';
-
+} from "lucide-react";
+import { apiService } from "../../services/apiService";
+import { useNotification } from "../../hooks/useNotification";
+import { useAuth } from "../../hooks/useAuth";
+import PayrollGenerationSystem from "./PayrollGenerationSystem";
+import payrollAPI from "../../services/payrollAPI";
 const PayrollPage = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
-  
+
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState(null);
   const [showPayslipModal, setShowPayslipModal] = useState(false);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    department: '',
-    status: '',
+    department: "",
+    status: "",
     page: 1,
     limit: 20,
   });
@@ -61,43 +61,46 @@ const PayrollPage = () => {
       const response = await apiService.getDepartments();
       setDepartments(response.data || []);
     } catch (error) {
-      console.error('Failed to load departments:', error);
+      console.error("Failed to load departments:", error);
     }
   };
 
-const loadPayrolls = async () => {
-  setLoading(true);
-  try {
-    // Clean up filters - remove empty values
-    const cleanFilters = {};
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
-        cleanFilters[key] = filters[key];
-      }
-    });
+  const loadPayrolls = async () => {
+    setLoading(true);
+    try {
+      const cleanFilters = {};
+      Object.keys(filters).forEach((key) => {
+        if (
+          filters[key] !== "" &&
+          filters[key] !== null &&
+          filters[key] !== undefined
+        ) {
+          cleanFilters[key] = filters[key];
+        }
+      });
 
-    console.log('Loading payrolls with filters:', cleanFilters); // Debug log
-    
-    const response = await apiService.getAllPayrolls(cleanFilters);
-    
-    console.log('Payroll response:', response); // Debug log
-    
-    setPayrolls(response.data?.payrolls || []);
-    setSummary(response.data?.summary || {
-      totalNetSalary: 0,
-      totalGrossEarnings: 0,
-      totalDeductions: 0,
-      totalEmployees: 0,
-    });
-  } catch (error) {
-    console.error('Load payrolls error:', error); // Debug log
-    showError(error.message || 'Failed to load payrolls');
-    setPayrolls([]);
-  } finally {
-    setLoading(false);
-  }
-};
+      console.log("Loading payrolls with filters:", cleanFilters);
+      // ✅ CHANGE: Use payrollAPI
+      const response = await payrollAPI.getAllPayrolls(cleanFilters);
+      console.log("Payroll response:", response);
 
+      setPayrolls(response.data?.payrolls || []);
+      setSummary(
+        response.data?.summary || {
+          totalNetSalary: 0,
+          totalGrossEarnings: 0,
+          totalDeductions: 0,
+          totalEmployees: 0,
+        }
+      );
+    } catch (error) {
+      console.error("Load payrolls error:", error);
+      showError(error.message || "Failed to load payrolls");
+      setPayrolls([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
@@ -106,15 +109,16 @@ const loadPayrolls = async () => {
   const handleGenerationComplete = () => {
     setShowGenerateModal(false);
     loadPayrolls(); // Reload payrolls after generation
-    showSuccess('Payroll generated successfully!');
+    showSuccess("Payroll generated successfully!");
   };
 
   const handleUpdateStatus = async (payrollId, status) => {
     try {
-      await apiService.updatePayrollStatus(payrollId, {
+      // ✅ CHANGE: Use payrollAPI
+      await payrollAPI.updatePayrollStatus(payrollId, {
         status,
         paymentDate: new Date(),
-        paymentMode: 'Bank Transfer',
+        paymentMode: "Bank Transfer",
       });
       showSuccess(`Payroll ${status.toLowerCase()} successfully`);
       loadPayrolls();
@@ -125,34 +129,36 @@ const loadPayrolls = async () => {
 
   const handleBulkStatusUpdate = async (status) => {
     const selectedIds = payrolls
-      .filter((p) => p.status === 'Generated')
+      .filter((p) => p.status === "Generated")
       .map((p) => p._id);
 
     if (selectedIds.length === 0) {
-      showError('No generated payrolls to update');
+      showError("No generated payrolls to update");
       return;
     }
 
     try {
-      await apiService.bulkUpdatePayrollStatus({
+      // ✅ CHANGE: Use payrollAPI
+      await payrollAPI.bulkUpdatePayrollStatus({
         payrollIds: selectedIds,
         status,
         paymentDate: new Date(),
-        paymentMode: 'Bank Transfer',
+        paymentMode: "Bank Transfer",
       });
       showSuccess(`${selectedIds.length} payrolls updated to ${status}`);
       loadPayrolls();
     } catch (error) {
-      showError(error.message || 'Failed to update payrolls');
+      showError(error.message || "Failed to update payrolls");
     }
   };
 
   const handleDownloadPayslip = async (payrollId) => {
     try {
-      await apiService.downloadPayslip(payrollId);
-      showSuccess('Payslip downloaded successfully');
+      // ✅ CHANGE: Use payrollAPI
+      await payrollAPI.downloadPayslip(payrollId);
+      showSuccess("Payslip downloaded successfully");
     } catch (error) {
-      showError(error.message || 'Failed to download payslip');
+      showError(error.message || "Failed to download payslip");
     }
   };
 
@@ -162,44 +168,44 @@ const loadPayrolls = async () => {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
       minimumFractionDigits: 0,
     }).format(amount || 0);
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Generated':
-        return 'bg-blue-100 text-blue-800';
-      case 'Approved':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Paid':
-        return 'bg-green-100 text-green-800';
-      case 'Rejected':
-        return 'bg-red-100 text-red-800';
+      case "Generated":
+        return "bg-blue-100 text-blue-800";
+      case "Approved":
+        return "bg-yellow-100 text-yellow-800";
+      case "Paid":
+        return "bg-green-100 text-green-800";
+      case "Rejected":
+        return "bg-red-100 text-red-800";
       default:
-        return 'bg-gray-100 text-gray-800';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Generated':
+      case "Generated":
         return <FileText className="h-4 w-4" />;
-      case 'Approved':
+      case "Approved":
         return <CheckCircle className="h-4 w-4" />;
-      case 'Paid':
+      case "Paid":
         return <DollarSign className="h-4 w-4" />;
-      case 'Rejected':
+      case "Rejected":
         return <XCircle className="h-4 w-4" />;
       default:
         return <AlertCircle className="h-4 w-4" />;
     }
   };
 
-  const isHROrAdmin = user?.role === 'hr' || user?.role === 'admin';
+  const isHROrAdmin = user?.role === "hr" || user?.role === "admin";
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -208,7 +214,9 @@ const loadPayrolls = async () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Payroll Management</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Payroll Management
+              </h1>
               <p className="text-gray-600 mt-1">
                 Manage and process employee payroll
               </p>
@@ -300,13 +308,13 @@ const loadPayrolls = async () => {
               </label>
               <select
                 value={filters.month}
-                onChange={(e) => handleFilterChange('month', e.target.value)}
+                onChange={(e) => handleFilterChange("month", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                   <option key={month} value={month}>
-                    {new Date(2024, month - 1).toLocaleString('default', {
-                      month: 'long',
+                    {new Date(2024, month - 1).toLocaleString("default", {
+                      month: "long",
                     })}
                   </option>
                 ))}
@@ -320,7 +328,7 @@ const loadPayrolls = async () => {
               </label>
               <select
                 value={filters.year}
-                onChange={(e) => handleFilterChange('year', e.target.value)}
+                onChange={(e) => handleFilterChange("year", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 {[2024, 2025, 2026].map((year) => (
@@ -338,7 +346,9 @@ const loadPayrolls = async () => {
               </label>
               <select
                 value={filters.department}
-                onChange={(e) => handleFilterChange('department', e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("department", e.target.value)
+                }
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">All Departments</option>
@@ -357,7 +367,7 @@ const loadPayrolls = async () => {
               </label>
               <select
                 value={filters.status}
-                onChange={(e) => handleFilterChange('status', e.target.value)}
+                onChange={(e) => handleFilterChange("status", e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
                 <option value="">All Status</option>
@@ -386,17 +396,19 @@ const loadPayrolls = async () => {
           </div>
 
           {/* Bulk Actions */}
-          {isHROrAdmin && payrolls.some((p) => p.status === 'Generated') && (
+          {isHROrAdmin && payrolls.some((p) => p.status === "Generated") && (
             <div className="mt-4 flex items-center gap-3">
-              <span className="text-sm font-medium text-gray-700">Bulk Actions:</span>
+              <span className="text-sm font-medium text-gray-700">
+                Bulk Actions:
+              </span>
               <button
-                onClick={() => handleBulkStatusUpdate('Approved')}
+                onClick={() => handleBulkStatusUpdate("Approved")}
                 className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 text-sm font-medium"
               >
                 Approve All Generated
               </button>
               <button
-                onClick={() => handleBulkStatusUpdate('Paid')}
+                onClick={() => handleBulkStatusUpdate("Paid")}
                 className="px-3 py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 text-sm font-medium"
               >
                 Mark All as Paid
@@ -455,7 +467,8 @@ const loadPayrolls = async () => {
                         <div className="flex items-center">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
-                              {payroll.employee?.firstName} {payroll.employee?.lastName}
+                              {payroll.employee?.firstName}{" "}
+                              {payroll.employee?.lastName}
                             </div>
                             <div className="text-sm text-gray-500">
                               {payroll.employee?.employeeId}
@@ -465,9 +478,12 @@ const loadPayrolls = async () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
-                          {new Date(2024, payroll.month - 1).toLocaleString('default', {
-                            month: 'long',
-                          })}{' '}
+                          {new Date(2024, payroll.month - 1).toLocaleString(
+                            "default",
+                            {
+                              month: "long",
+                            }
+                          )}{" "}
                           {payroll.year}
                         </div>
                       </td>
@@ -492,7 +508,9 @@ const loadPayrolls = async () => {
                             payroll.status
                           )}`}
                         >
-                          <span className="mr-1">{getStatusIcon(payroll.status)}</span>
+                          <span className="mr-1">
+                            {getStatusIcon(payroll.status)}
+                          </span>
                           {payroll.status}
                         </span>
                       </td>
@@ -512,17 +530,21 @@ const loadPayrolls = async () => {
                           >
                             <Download className="h-4 w-4" />
                           </button>
-                          {isHROrAdmin && payroll.status === 'Generated' && (
+                          {isHROrAdmin && payroll.status === "Generated" && (
                             <>
                               <button
-                                onClick={() => handleUpdateStatus(payroll._id, 'Approved')}
+                                onClick={() =>
+                                  handleUpdateStatus(payroll._id, "Approved")
+                                }
                                 className="text-yellow-600 hover:text-yellow-900"
                                 title="Approve"
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </button>
                               <button
-                                onClick={() => handleUpdateStatus(payroll._id, 'Rejected')}
+                                onClick={() =>
+                                  handleUpdateStatus(payroll._id, "Rejected")
+                                }
                                 className="text-red-600 hover:text-red-900"
                                 title="Reject"
                               >
@@ -530,9 +552,11 @@ const loadPayrolls = async () => {
                               </button>
                             </>
                           )}
-                          {isHROrAdmin && payroll.status === 'Approved' && (
+                          {isHROrAdmin && payroll.status === "Approved" && (
                             <button
-                              onClick={() => handleUpdateStatus(payroll._id, 'Paid')}
+                              onClick={() =>
+                                handleUpdateStatus(payroll._id, "Paid")
+                              }
                               className="text-green-600 hover:text-green-900"
                               title="Mark as Paid"
                             >
@@ -569,9 +593,12 @@ const loadPayrolls = async () => {
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Payslip</h2>
                   <p className="text-gray-600">
-                    {new Date(2024, selectedPayroll.month - 1).toLocaleString('default', {
-                      month: 'long',
-                    })}{' '}
+                    {new Date(2024, selectedPayroll.month - 1).toLocaleString(
+                      "default",
+                      {
+                        month: "long",
+                      }
+                    )}{" "}
                     {selectedPayroll.year}
                   </p>
                 </div>
@@ -585,25 +612,34 @@ const loadPayrolls = async () => {
 
               {/* Employee Details */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-semibold text-gray-900 mb-2">Employee Details</h3>
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Employee Details
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Name</p>
                     <p className="font-medium">
-                      {selectedPayroll.employee?.firstName} {selectedPayroll.employee?.lastName}
+                      {selectedPayroll.employee?.firstName}{" "}
+                      {selectedPayroll.employee?.lastName}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Employee ID</p>
-                    <p className="font-medium">{selectedPayroll.employee?.employeeId}</p>
+                    <p className="font-medium">
+                      {selectedPayroll.employee?.employeeId}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Department</p>
-                    <p className="font-medium">{selectedPayroll.employee?.department}</p>
+                    <p className="font-medium">
+                      {selectedPayroll.employee?.department}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Designation</p>
-                    <p className="font-medium">{selectedPayroll.employee?.designation}</p>
+                    <p className="font-medium">
+                      {selectedPayroll.employee?.designation}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -628,18 +664,24 @@ const loadPayrolls = async () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Special Allowance</span>
                       <span className="font-medium">
-                        {formatCurrency(selectedPayroll.earnings?.specialAllowance)}
+                        {formatCurrency(
+                          selectedPayroll.earnings?.specialAllowance
+                        )}
                       </span>
                     </div>
                     <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                       <span>Gross Earnings</span>
-                      <span>{formatCurrency(selectedPayroll.summary?.grossEarnings)}</span>
+                      <span>
+                        {formatCurrency(selectedPayroll.summary?.grossEarnings)}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-900 mb-3">Deductions</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Deductions
+                  </h3>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="text-gray-600">PF (Employee)</span>
@@ -650,19 +692,25 @@ const loadPayrolls = async () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">ESIC</span>
                       <span className="font-medium">
-                        {formatCurrency(selectedPayroll.deductions?.esicEmployee)}
+                        {formatCurrency(
+                          selectedPayroll.deductions?.esicEmployee
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Professional Tax</span>
                       <span className="font-medium">
-                        {formatCurrency(selectedPayroll.deductions?.professionalTax)}
+                        {formatCurrency(
+                          selectedPayroll.deductions?.professionalTax
+                        )}
                       </span>
                     </div>
                     <div className="border-t pt-2 mt-2 flex justify-between font-bold">
                       <span>Total Deductions</span>
                       <span className="text-red-600">
-                        {formatCurrency(selectedPayroll.summary?.totalDeductions)}
+                        {formatCurrency(
+                          selectedPayroll.summary?.totalDeductions
+                        )}
                       </span>
                     </div>
                   </div>
@@ -672,7 +720,9 @@ const loadPayrolls = async () => {
               {/* Net Salary */}
               <div className="bg-indigo-50 p-4 rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-900">Net Salary</span>
+                  <span className="text-lg font-semibold text-gray-900">
+                    Net Salary
+                  </span>
                   <span className="text-2xl font-bold text-indigo-600">
                     {formatCurrency(selectedPayroll.summary?.netSalary)}
                   </span>

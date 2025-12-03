@@ -364,7 +364,7 @@ const EmployeesPage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 space-y-6 pt-6">
       {/* Header with Toggle for Admin/HR */}
       {["hr", "admin", "manager"].includes(user?.role) ? (
         <div className="flex justify-between items-center">
@@ -693,8 +693,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 value={employee.designation?.title || "Not assigned"}
                 icon={<Briefcase className="h-4 w-4" />}
               />
-              // In EmployeeProfileView component, update the reporting manager
-              field:
+             
               <InfoField
                 label="Reporting Manager"
                 value={
@@ -1371,16 +1370,16 @@ const AllEmployeesView = ({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.department?.name || "N/A"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.designation?.title || "N/A"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.employmentType}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-9 py-4 whitespace-nowrap text-sm text-gray-500">
                     {employee.workLocation || "Remote"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -1559,19 +1558,21 @@ const EmployeeFormModal = ({
     }
   }, [user?.role]); // REMOVED showAddModal and showEditModal from dependencies
 
-  const loadReportingManagers = async () => {
-    try {
-      const response = await apiService.getReportingManagers();
-      setReportingManagers(response.data || []);
-    } catch (error) {
-      console.error("Failed to load reporting managers:", error);
-      // Fallback: use existing employees as managers
-      const managers = employees.filter(emp => 
-        ["manager", "hr", "admin"].includes(emp.userId?.role) && emp.status === "Active"
-      );
-      setReportingManagers(managers);
-    }
-  };
+ const loadReportingManagers = async () => {
+  try {
+    const response = await apiService.getReportingManagers();
+    setReportingManagers(response.data);
+  } catch (error) {
+    // fallback: filter from employees by role manager/hr/admin and status active
+    const managers = employees.filter(
+      emp =>
+        ['manager', 'hr', 'admin'].includes(emp.userId?.role) &&
+        emp.status === 'Active'
+    );
+    setReportingManagers(managers);
+  }
+};
+
 
   const handleSubmit = async () => {
     setLoading(true);

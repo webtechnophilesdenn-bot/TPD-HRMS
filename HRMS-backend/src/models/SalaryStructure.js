@@ -94,15 +94,27 @@ const salaryStructureSchema = new mongoose.Schema(
 
     // ==================== PAYMENT & OVERTIME ====================
     paymentSettings: {
-      paymentMode: { type: String, enum: ["Bank Transfer", "Cash", "Cheque"], default: "Bank Transfer" },
-      paymentCycle: { type: String, enum: ["Monthly", "Bi-Weekly", "Weekly"], default: "Monthly" },
+      paymentMode: {
+        type: String,
+        enum: ["Bank Transfer", "Cash", "Cheque"],
+        default: "Bank Transfer",
+      },
+      paymentCycle: {
+        type: String,
+        enum: ["Monthly", "Bi-Weekly", "Weekly"],
+        default: "Monthly",
+      },
       paymentDate: { type: Number, default: 1, min: 1, max: 31 },
     },
 
     overtime: {
       applicable: { type: Boolean, default: false },
       hourlyRate: { type: Number, default: 0 },
-      calculation: { type: String, enum: ["Hourly", "Daily", "Fixed"], default: "Hourly" },
+      calculation: {
+        type: String,
+        enum: ["Hourly", "Daily", "Fixed"],
+        default: "Hourly",
+      },
     },
 
     // ==================== AUDIT ====================
@@ -123,14 +135,20 @@ salaryStructureSchema.index({ isActive: 1 });
 salaryStructureSchema.pre("save", function (next) {
   // Calculate HRA
   if (!this.earnings.hra && this.earnings.hraPercentage) {
-    this.earnings.hra = Math.round(this.earnings.basic * (this.earnings.hraPercentage / 100));
+    this.earnings.hra = Math.round(
+      this.earnings.basic * (this.earnings.hraPercentage / 100)
+    );
   }
 
   // Calculate PF
   if (this.deductions.pf.applicable) {
     const pfBase = Math.min(this.earnings.basic, this.deductions.pf.pfCeiling);
-    this.deductions.pf.employeeContribution = Math.round(pfBase * (this.deductions.pf.employeePercentage / 100));
-    this.deductions.pf.employerContribution = Math.round(pfBase * (this.deductions.pf.employerPercentage / 100));
+    this.deductions.pf.employeeContribution = Math.round(
+      pfBase * (this.deductions.pf.employeePercentage / 100)
+    );
+    this.deductions.pf.employerContribution = Math.round(
+      pfBase * (this.deductions.pf.employerPercentage / 100)
+    );
   }
 
   // Calculate gross salary
@@ -150,9 +168,16 @@ salaryStructureSchema.pre("save", function (next) {
   this.summary.annualGross = grossEarnings * 12;
 
   // Calculate ESI
-  if (this.deductions.esi.applicable && grossEarnings <= this.deductions.esi.esiCeiling) {
-    this.deductions.esi.employeeContribution = Math.round(grossEarnings * (this.deductions.esi.employeePercentage / 100));
-    this.deductions.esi.employerContribution = Math.round(grossEarnings * (this.deductions.esi.employerPercentage / 100));
+  if (
+    this.deductions.esi.applicable &&
+    grossEarnings <= this.deductions.esi.esiCeiling
+  ) {
+    this.deductions.esi.employeeContribution = Math.round(
+      grossEarnings * (this.deductions.esi.employeePercentage / 100)
+    );
+    this.deductions.esi.employerContribution = Math.round(
+      grossEarnings * (this.deductions.esi.employerPercentage / 100)
+    );
   } else {
     this.deductions.esi.employeeContribution = 0;
     this.deductions.esi.employerContribution = 0;
@@ -162,9 +187,13 @@ salaryStructureSchema.pre("save", function (next) {
   const totalDeductions =
     this.deductions.pf.employeeContribution +
     this.deductions.esi.employeeContribution +
-    (this.deductions.professionalTax.applicable ? this.deductions.professionalTax.amount : 0) +
+    (this.deductions.professionalTax.applicable
+      ? this.deductions.professionalTax.amount
+      : 0) +
     this.deductions.tds.monthlyTDS +
-    (this.deductions.labourWelfareFund.applicable ? this.deductions.labourWelfareFund.amount : 0);
+    (this.deductions.labourWelfareFund.applicable
+      ? this.deductions.labourWelfareFund.amount
+      : 0);
 
   this.summary.totalDeductions = totalDeductions;
   this.summary.netSalary = grossEarnings - totalDeductions;
@@ -183,6 +212,9 @@ salaryStructureSchema.pre("save", function (next) {
 
   next();
 });
+
+salaryStructureSchema.index({ employee: 1, isActive: 1, effectiveFrom: -1 });
+salaryStructureSchema.index({ isActive: 1, effectiveFrom: 1 });
 
 // ==================== METHODS ====================
 salaryStructureSchema.methods.calculateMonthlyPayroll = function (
@@ -205,13 +237,19 @@ salaryStructureSchema.methods.calculateMonthlyPayroll = function (
 
   // Pro-rate deductions
   const attendanceRatio = attendanceDays / totalWorkingDays;
-  const proRatedPF = Math.round(this.deductions.pf.employeeContribution * attendanceRatio);
-  const proRatedESI = Math.round(this.deductions.esi.employeeContribution * attendanceRatio);
+  const proRatedPF = Math.round(
+    this.deductions.pf.employeeContribution * attendanceRatio
+  );
+  const proRatedESI = Math.round(
+    this.deductions.esi.employeeContribution * attendanceRatio
+  );
 
   const finalDeductions =
     proRatedPF +
     proRatedESI +
-    (this.deductions.professionalTax.applicable ? this.deductions.professionalTax.amount : 0) +
+    (this.deductions.professionalTax.applicable
+      ? this.deductions.professionalTax.amount
+      : 0) +
     this.deductions.tds.monthlyTDS +
     (additionalDeductions.loanRecovery || 0) +
     (additionalDeductions.advanceRecovery || 0) +
@@ -230,20 +268,34 @@ salaryStructureSchema.methods.calculateMonthlyPayroll = function (
       earnings: {
         basic: Math.round(this.earnings.basic * attendanceRatio),
         hra: Math.round(this.earnings.hra * attendanceRatio),
-        specialAllowance: Math.round(this.earnings.specialAllowance * attendanceRatio),
+        specialAllowance: Math.round(
+          this.earnings.specialAllowance * attendanceRatio
+        ),
         conveyance: Math.round(this.earnings.conveyance * attendanceRatio),
-        medicalAllowance: Math.round(this.earnings.medicalAllowance * attendanceRatio),
-        educationAllowance: Math.round(this.earnings.educationAllowance * attendanceRatio),
+        medicalAllowance: Math.round(
+          this.earnings.medicalAllowance * attendanceRatio
+        ),
+        educationAllowance: Math.round(
+          this.earnings.educationAllowance * attendanceRatio
+        ),
         lta: Math.round(this.earnings.lta * attendanceRatio),
-        otherAllowances: Math.round(this.earnings.otherAllowances * attendanceRatio),
+        otherAllowances: Math.round(
+          this.earnings.otherAllowances * attendanceRatio
+        ),
         overtime: overtimePay,
       },
       deductions: {
         pfEmployee: proRatedPF,
-        pfEmployer: Math.round(this.deductions.pf.employerContribution * attendanceRatio),
+        pfEmployer: Math.round(
+          this.deductions.pf.employerContribution * attendanceRatio
+        ),
         esiEmployee: proRatedESI,
-        esiEmployer: Math.round(this.deductions.esi.employerContribution * attendanceRatio),
-        professionalTax: this.deductions.professionalTax.applicable ? this.deductions.professionalTax.amount : 0,
+        esiEmployer: Math.round(
+          this.deductions.esi.employerContribution * attendanceRatio
+        ),
+        professionalTax: this.deductions.professionalTax.applicable
+          ? this.deductions.professionalTax.amount
+          : 0,
         tds: this.deductions.tds.monthlyTDS,
         loanRecovery: additionalDeductions.loanRecovery || 0,
         advanceRecovery: additionalDeductions.advanceRecovery || 0,

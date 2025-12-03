@@ -541,6 +541,22 @@ exports.getAttendanceStats = async (req, res, next) => {
   }
 };
 
+
+// attendanceController.js
+exports.biometricCheckIn = async (req, res, next) => {
+  const { biometricData, location } = req.body;
+  
+  // Option 1: Web-based face recognition
+  const verified = await verifyFace(biometricData, employee.profilePicture);
+  
+  // Option 2: Hardware device integration
+  // const verified = await zktecoSDK.verify(biometricData);
+  
+  if (verified) {
+    await processCheckIn(employee, location);
+  }
+};
+
 // Bulk Attendance Update (HR/Admin)
 exports.bulkUpdateAttendance = async (req, res, next) => {
   try {

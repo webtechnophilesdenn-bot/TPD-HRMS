@@ -399,49 +399,53 @@ exports.getPendingLeaves = async (req, res, next) => {
       return sendResponse(res, 404, false, "Approver not found");
     }
 
-    // Build base query
-    let query = { status: "Pending" };
+   // Build base query
+let query = { status: "Pending" };
 
-    // Manager can see leaves where they are approver
-    if (req.user.role === "manager") {
-      query.$or = [
-        {
-          currentStage: "Manager",
-          "approvers": {
-            $elemMatch: {
-              employee: approver._id,
-              level: "Manager",
-              status: "Pending"
-            }
-          }
-        },
-        {
-          currentStage: "Manager",
-          employee: {
-            $in: (await Employee.find({ reportingManager: approver._id }).select("_id")).map(e => e._id)
-          }
-        }
-      ];
-    }
-    
-    // HR/Admin can see all pending leaves at HR stage
-    if (req.user.role === "hr" || req.user.role === "admin") {
-      query.$or = [
-        { currentStage: "HR" },
-        {
-          "approvers": {
-            $elemMatch: {
-              level: "HR",
-              status: "Pending"
-            }
-          }
-        },
-        {
-          approvers: { $size: 0 },
+// ✅ FIXED: Clear role-based logic
+if (req.user.role === "admin") {
+  // Admin sees ALL pending leaves - no restrictions
+  console.log("👑 Admin: Showing all pending leaves");
+} else if (req.user.role === "manager") {
+  // Managers see only their team/department
+  query.$or = [
+    {
+      currentStage: "Manager",
+      "approvers": {
+        $elemMatch: {
+          employee: approver._id,
+          level: "Manager",
           status: "Pending"
         }
-      ];
+      }
+    },
+    {
+      currentStage: "Manager",
+      employee: {
+        $in: (await Employee.find({ reportingManager: approver._id }).select("_id")).map(e => e._id)
+      }
     }
+  ];
+} else if (req.user.role === "hr") {
+  // HR sees HR-stage leaves only
+  query.$or = [
+    { currentStage: "HR" },
+    {
+      "approvers": {
+        $elemMatch: {
+          level: "HR",
+          status: "Pending"
+        }
+      }
+    }
+  ];
+}
+
+// REMOVE these problematic lines completely:
+// - approvers: { $size: 0 } 
+// - status: "Pending" (duplicate)
+// They were hiding legitimate pending leaves [file:1]
+
     
     // Additional filters
     if (leaveType) {

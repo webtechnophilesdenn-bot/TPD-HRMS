@@ -370,7 +370,7 @@ const EmployeeForm = ({
                     Reporting Manager
                   </label>
                   <select
-                    value={formData.reportingManager}
+                    value={formData.reportingManager || ""}
                     onChange={(e) =>
                       handleChange("reportingManager", e.target.value)
                     }
@@ -378,7 +378,7 @@ const EmployeeForm = ({
                   >
                     <option value="">Select Manager</option>
                     {managers.map((mgr) => (
-                      <option key={mgr._id} value={mgr._id}>
+                      <option key={mgr.id} value={mgr.id}>
                         {mgr.firstName} {mgr.lastName}
                       </option>
                     ))}

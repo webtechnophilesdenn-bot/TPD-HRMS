@@ -63,7 +63,7 @@ const GeneratePayrollModal = ({ isOpen, onClose, onPayrollGenerated }) => {
   const handleGenerate = async () => {
     try {
       setLoading(true);
-      const response = await apiService.generatePayroll(formData);
+      const response = await payrollAPI.generatePayroll(formData);
       showSuccess('Payroll generated successfully!');
       onPayrollGenerated(response.data);
       onClose();

@@ -1,16 +1,44 @@
+// controllers/assetController.js - Working Version
 const Asset = require("../models/Asset");
 const AssetAllocation = require("../models/AssetAllocation");
 const Employee = require("../models/Employee");
+const Department = require("../models/Department");
 const { sendResponse } = require("../utils/responseHandler");
 const mongoose = require("mongoose");
 
-// Create Asset
+// RBAC Permissions Configuration
+const ASSET_PERMISSIONS = {
+  VIEW_ASSETS: "assets.view",
+  VIEW_ALL_ASSETS: "assets.view_all",
+  CREATE_ASSET: "assets.create",
+  EDIT_ASSET: "assets.edit",
+  DELETE_ASSET: "assets.delete",
+  ALLOCATE_ASSET: "assets.allocate",
+  RETURN_ASSET: "assets.return",
+  MAINTENANCE_ASSET: "assets.maintenance",
+  DISPOSE_ASSET: "assets.dispose",
+  AUDIT_ASSET: "assets.audit",
+  GENERATE_REPORTS: "assets.reports",
+  IMPORT_ASSETS: "assets.import",
+  EXPORT_ASSETS: "assets.export",
+  VIEW_DEPARTMENT_ASSETS: "assets.view_department",
+  APPROVE_ALLOCATION: "assets.approve_allocation",
+  VIEW_AUDIT_TRAIL: "assets.view_audit_trail",
+};
+
+// 1. Create Asset
 exports.createAsset = async (req, res, next) => {
   try {
     const assetData = {
       ...req.body,
       createdBy: req.user._id,
     };
+
+    // Auto-generate asset ID if not provided
+    if (!assetData.assetId) {
+      const count = await Asset.countDocuments();
+      assetData.assetId = `AST${String(count + 1).padStart(6, "0")}`;
+    }
 
     const asset = await Asset.create(assetData);
     sendResponse(res, 201, true, "Asset created successfully", asset);
@@ -19,7 +47,7 @@ exports.createAsset = async (req, res, next) => {
   }
 };
 
-// Get All Assets with advanced filtering
+// controllers/assetController.js - Simple version without department
 exports.getAllAssets = async (req, res, next) => {
   try {
     const {
@@ -30,11 +58,11 @@ exports.getAllAssets = async (req, res, next) => {
       location,
       search,
       page = 1,
-      limit = 20,
+      limit = 50,
     } = req.query;
 
     // Build filter
-    const filter = {};
+    const filter = { isActive: true };
     if (status) filter.status = status;
     if (category) filter.category = category;
     if (type) filter.type = type;
@@ -51,25 +79,13 @@ exports.getAllAssets = async (req, res, next) => {
     }
 
     const assets = await Asset.find(filter)
-      .populate("allocatedTo", "firstName lastName employeeId department")
-      .populate("department", "name")
+      .populate("allocatedTo", "firstName lastName employeeId")
       .populate("createdBy", "firstName lastName")
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Asset.countDocuments(filter);
-
-    // Get asset statistics
-    const stats = await Asset.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-          totalValue: { $sum: "$purchasePrice" },
-        },
-      },
-    ]);
 
     sendResponse(res, 200, true, "Assets fetched successfully", {
       assets,
@@ -77,23 +93,18 @@ exports.getAllAssets = async (req, res, next) => {
         currentPage: parseInt(page),
         totalPages: Math.ceil(total / limit),
         totalRecords: total,
-        hasNext: page * limit < total,
-        hasPrev: page > 1,
+        limit: parseInt(limit),
       },
-      stats: stats.reduce((acc, curr) => {
-        acc[curr._id] = curr.count;
-        return acc;
-      }, {}),
     });
   } catch (error) {
+    console.error("Error fetching assets:", error);
     next(error);
   }
 };
 
-// Get Asset by ID
+// 3. Get Asset by ID
 exports.getAssetById = async (req, res, next) => {
   try {
-    // Check if it's a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return sendResponse(res, 400, false, "Invalid asset ID");
     }
@@ -125,7 +136,7 @@ exports.getAssetById = async (req, res, next) => {
   }
 };
 
-// Update Asset
+// 4. Update Asset
 exports.updateAsset = async (req, res, next) => {
   try {
     const asset = await Asset.findByIdAndUpdate(req.params.id, req.body, {
@@ -143,7 +154,7 @@ exports.updateAsset = async (req, res, next) => {
   }
 };
 
-// Delete Asset
+// 5. Delete Asset (Soft Delete)
 exports.deleteAsset = async (req, res, next) => {
   try {
     const asset = await Asset.findById(req.params.id);
@@ -152,18 +163,91 @@ exports.deleteAsset = async (req, res, next) => {
       return sendResponse(res, 404, false, "Asset not found");
     }
 
-    if (asset.status === "Allocated") {
+    if (asset.status === "Assigned" || asset.status === "In Use") {
       return sendResponse(res, 400, false, "Cannot delete allocated asset");
     }
 
-    await Asset.findByIdAndDelete(req.params.id);
+    // Soft delete
+    asset.isActive = false;
+    asset.deleted = true;
+    asset.deletedAt = new Date();
+    await asset.save();
+
     sendResponse(res, 200, true, "Asset deleted successfully");
   } catch (error) {
     next(error);
   }
 };
 
-// Allocate Asset
+
+// Controller functions (assetController.js)
+
+// ✅ FIXED: Use AssetAllocation instead of AssetRequest
+exports.getAssetRequests = async (req, res, next) => {
+  try {
+    const { status = 'Requested', page = 1, limit = 10 } = req.query;
+    
+    const filter = { 
+      status, 
+      isActive: true 
+    };
+    
+    const requests = await AssetAllocation.find(filter)
+      .populate('employee', 'firstName lastName email employeeId')
+      .populate('asset', 'name assetId category')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await AssetAllocation.countDocuments(filter);
+
+    sendResponse(res, 200, true, 'Requests fetched successfully', {
+      requests,
+      pagination: { 
+        page: parseInt(page), 
+        limit: parseInt(limit), 
+        total 
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.approveRequest = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const allocation = await AssetAllocation.findById(id);
+    
+    if (!allocation) {
+      return sendResponse(res, 404, false, 'Request not found');
+    }
+
+    // Update asset status and allocation
+    await Asset.findByIdAndUpdate(allocation.asset, {
+      status: 'Assigned',
+      allocatedTo: allocation.employee,
+      allocationDate: new Date()
+    });
+    
+    // Approve allocation
+    allocation.status = 'Allocated';
+    allocation.approvedBy = req.user._id;
+    allocation.approvalDate = new Date();
+    await allocation.save();
+
+    sendResponse(res, 200, true, 'Request approved successfully', allocation);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
+
+
+// 6. Allocate Asset
 exports.allocateAsset = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -208,11 +292,13 @@ exports.allocateAsset = async (req, res, next) => {
           checkoutNotes: notes,
           accessoriesProvided: accessories,
           checkoutCondition: asset.condition,
+          status: "Active",
           history: [
             {
               action: "Allocated",
               performedBy: req.user._id,
               notes: "Asset allocated to employee",
+              timestamp: new Date(),
             },
           ],
         },
@@ -223,7 +309,7 @@ exports.allocateAsset = async (req, res, next) => {
     // Update asset
     asset.allocatedTo = employeeId;
     asset.allocationDate = new Date();
-    asset.status = "Allocated";
+    asset.status = "Assigned";
     await asset.save({ session });
 
     await session.commitTransaction();
@@ -250,13 +336,13 @@ exports.allocateAsset = async (req, res, next) => {
   }
 };
 
-// Return Asset
+// 7. Return Asset
 exports.returnAsset = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { condition, notes } = req.body;
+    const { condition, notes, damageReport } = req.body;
     const assetId = req.params.id;
 
     const asset = await Asset.findById(assetId).session(session);
@@ -265,7 +351,7 @@ exports.returnAsset = async (req, res, next) => {
       return sendResponse(res, 404, false, "Asset not found");
     }
 
-    if (asset.status !== "Allocated") {
+    if (asset.status !== "Assigned") {
       await session.abortTransaction();
       return sendResponse(res, 400, false, "Asset is not allocated");
     }
@@ -278,12 +364,7 @@ exports.returnAsset = async (req, res, next) => {
 
     if (!allocation) {
       await session.abortTransaction();
-      return sendResponse(
-        res,
-        400,
-        false,
-        "No active allocation found for this asset"
-      );
+      return sendResponse(res, 400, false, "No active allocation found");
     }
 
     // Update allocation
@@ -291,19 +372,21 @@ exports.returnAsset = async (req, res, next) => {
     allocation.returnedTo = req.user._id;
     allocation.conditionAtReturn = condition;
     allocation.returnNotes = notes;
+    allocation.damageReport = damageReport;
     allocation.status = "Returned";
     allocation.history.push({
       action: "Returned",
       performedBy: req.user._id,
       notes: `Asset returned in ${condition} condition`,
+      timestamp: new Date(),
     });
     await allocation.save({ session });
 
     // Update asset
     asset.allocatedTo = null;
     asset.allocationDate = null;
-    asset.status = "Available";
-    asset.condition = condition; // Update asset condition based on return
+    asset.status = condition === "Damaged" ? "Damaged" : "Available";
+    asset.condition = condition;
     await asset.save({ session });
 
     await session.commitTransaction();
@@ -320,15 +403,19 @@ exports.returnAsset = async (req, res, next) => {
   }
 };
 
-// Get My Assets - FIXED: This should be a separate function, not part of getAssetById
+// 8. Get My Assets (Employee View)
 exports.getMyAssets = async (req, res, next) => {
   try {
-    const employee = await Employee.findOne({ userId: req.user._id });
+    // Find employee by user ID
+    const employee = await Employee.findOne({ user: req.user._id });
     if (!employee) {
       return sendResponse(res, 404, false, "Employee not found");
     }
 
-    const assets = await Asset.find({ allocatedTo: employee._id })
+    const assets = await Asset.find({
+      allocatedTo: employee._id,
+      isActive: true,
+    })
       .populate("department", "name")
       .sort({ allocationDate: -1 });
 
@@ -342,33 +429,178 @@ exports.getMyAssets = async (req, res, next) => {
     sendResponse(res, 200, true, "My assets fetched successfully", {
       assets,
       allocations,
+      stats: {
+        allocated: assets.length,
+        totalAllocations: allocations.length,
+      },
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Asset Request
-exports.requestAsset = async (req, res, next) => {
+// SIMPLE FALLBACK - No employee creation
+exports.requestAssetAllocation = async (req, res, next) => {
   try {
-    const { assetType, category, reason, urgency, requiredBy } = req.body;
+    const { purpose, expectedReturnDate, notes, projectCode } = req.body;
+    const { id: assetId } = req.params;
 
-    const employee = await Employee.findOne({ userId: req.user._id });
+    // Only allow if employee exists
+    const employee = await Employee.findOne({ user: req.user._id });
+    
     if (!employee) {
-      return sendResponse(res, 404, false, "Employee not found");
+      return sendResponse(res, 400, false, 
+        'Please complete your employee profile first. ' +
+        'Visit /api/v1/employees/setup-profile or contact HR.'
+      );
     }
 
-    // Create asset request logic here
-    // This would typically create a record in an AssetRequest model
-    // and notify the admin/HR team
+    // Rest of the function remains the same...
+    const asset = await Asset.findById(assetId);
+    if (!asset || !asset.isActive || asset.status !== 'Available') {
+      return sendResponse(res, 400, false, 'Asset not available for request');
+    }
 
-    sendResponse(res, 201, true, "Asset request submitted successfully");
+    const allocation = await AssetAllocation.create({
+      asset: assetId,
+      employee: employee._id,
+      allocatedBy: employee._id,
+      allocatedDate: new Date(),
+      expectedReturnDate,
+      purpose: purpose || 'Work requirement',
+      projectCode,
+      checkoutNotes: notes || `Request for ${asset.name}`,
+      checkoutCondition: asset.condition,
+      status: 'Requested',
+      history: [{
+        action: 'Requested',
+        performedBy: employee._id,
+        notes: `Requested ${asset.name}`,
+        timestamp: new Date()
+      }]
+    });
+
+    sendResponse(res, 201, true, 'Asset requested successfully!', allocation);
+  } catch (error) {
+    console.error('Request allocation error:', error.message);
+    next(error);
+  }
+};
+
+// 10. Schedule Maintenance
+exports.scheduleMaintenance = async (req, res, next) => {
+  try {
+    const {
+      assetId,
+      date,
+      type,
+      description,
+      vendor,
+      technician,
+      estimatedCost,
+      duration,
+    } = req.body;
+
+    const asset = await Asset.findById(assetId);
+    if (!asset) {
+      return sendResponse(res, 404, false, "Asset not found");
+    }
+
+    // Add to maintenance history
+    asset.maintenanceHistory.push({
+      date: new Date(date),
+      type,
+      description,
+      vendor,
+      technician,
+      cost: estimatedCost,
+      status: "Scheduled",
+      performedBy: req.user._id,
+      downtime: duration,
+    });
+
+    // Update maintenance schedule
+    asset.maintenanceSchedule = {
+      type,
+      lastMaintenanceDate: new Date(),
+      nextMaintenanceDate: calculateNextMaintenanceDate(date, type),
+      maintenanceNotes: description,
+    };
+
+    asset.status = "Under Maintenance";
+    await asset.save();
+
+    sendResponse(res, 200, true, "Maintenance scheduled successfully", asset);
   } catch (error) {
     next(error);
   }
 };
 
-// Maintenance History
+// 11. Get Asset Analytics
+exports.getAssetAnalytics = async (req, res, next) => {
+  try {
+    const [
+      totalAssets,
+      availableAssets,
+      allocatedAssets,
+      maintenanceAssets,
+      categoryStats,
+      statusDistribution,
+    ] = await Promise.all([
+      Asset.countDocuments({ isActive: true }),
+      Asset.countDocuments({ status: "Available", isActive: true }),
+      Asset.countDocuments({
+        status: { $in: ["Assigned", "In Use"] },
+        isActive: true,
+      }),
+      Asset.countDocuments({ status: "Under Maintenance", isActive: true }),
+
+      // Category statistics
+      Asset.aggregate([
+        { $match: { isActive: true } },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+            totalValue: { $sum: "$purchasePrice" },
+            avgValue: { $avg: "$purchasePrice" },
+          },
+        },
+        { $sort: { count: -1 } },
+      ]),
+
+      // Status distribution
+      Asset.aggregate([
+        { $match: { isActive: true } },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const analytics = {
+      overview: {
+        totalAssets,
+        availableAssets,
+        allocatedAssets,
+        maintenanceAssets,
+        utilizationRate:
+          totalAssets > 0
+            ? ((allocatedAssets / totalAssets) * 100).toFixed(2)
+            : 0,
+      },
+      categoryBreakdown: categoryStats,
+      statusDistribution: statusDistribution.reduce((acc, curr) => {
+        acc[curr._id] = curr.count;
+        return acc;
+      }, {}),
+    };
+
+    sendResponse(res, 200, true, "Analytics fetched successfully", analytics);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// 12. Add Maintenance Record
 exports.addMaintenance = async (req, res, next) => {
   try {
     const {
@@ -419,58 +651,23 @@ exports.addMaintenance = async (req, res, next) => {
   }
 };
 
-// Get Asset Analytics
-exports.getAssetAnalytics = async (req, res, next) => {
-  try {
-    const statusStats = await Asset.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 },
-          totalValue: { $sum: "$purchasePrice" },
-        },
-      },
-    ]);
+// Helper functions
+function calculateNextMaintenanceDate(startDate, type) {
+  const date = new Date(startDate);
 
-    const categoryStats = await Asset.aggregate([
-      {
-        $group: {
-          _id: "$category",
-          count: { $sum: 1 },
-          types: { $addToSet: "$type" },
-        },
-      },
-    ]);
-
-    const allocationStats = await AssetAllocation.aggregate([
-      {
-        $match: { status: "Active" },
-      },
-      {
-        $group: {
-          _id: "$purpose",
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const totalAssets = await Asset.countDocuments();
-    const availableAssets = await Asset.countDocuments({ status: "Available" });
-    const allocatedAssets = await Asset.countDocuments({ status: "Allocated" });
-    const maintenanceAssets = await Asset.countDocuments({
-      status: "Under Maintenance",
-    });
-
-    sendResponse(res, 200, true, "Analytics fetched successfully", {
-      totalAssets,
-      availableAssets,
-      allocatedAssets,
-      maintenanceAssets,
-      statusDistribution: statusStats,
-      categoryBreakdown: categoryStats,
-      allocationStats: allocationStats,
-    });
-  } catch (error) {
-    next(error);
+  switch (type) {
+    case "Preventive":
+      date.setMonth(date.getMonth() + 6); // Every 6 months
+      break;
+    case "Routine":
+      date.setMonth(date.getMonth() + 3); // Every 3 months
+      break;
+    case "Annual":
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    default:
+      date.setMonth(date.getMonth() + 1); // Default monthly
   }
-};
+
+  return date;
+}

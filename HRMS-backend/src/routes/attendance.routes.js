@@ -11,6 +11,7 @@ const {
   handleRegularization,
   getAttendanceStats,
   bulkUpdateAttendance,
+  biometricCheckIn,
 } = require("../controllers/attendanceController");
 
 // Employee routes
@@ -19,6 +20,8 @@ router.post("/check-out", protect, checkOut);
 router.get("/my-attendance", protect, getMyAttendance);
 router.get("/my-stats", protect, getAttendanceStats);
 router.post("/regularize", protect, regularizeAttendance);
+// Add to attendance.routes.js
+router.post("/biometric-check-in", protect, biometricCheckIn);
 
 // Manager/HR routes
 router.get(

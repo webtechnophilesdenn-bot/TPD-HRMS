@@ -16,11 +16,12 @@ import { useAuth } from "../../context/AuthContext";
 const AttendancePage = () => {
   const { user } = useAuth();
   const { showSuccess, showError } = useNotification();
-  
+
   // Determine user role - adjust based on your auth structure
-  const userRole = user?.role === "admin" || user?.role === "hr" ? "admin" : "employee";
+  const userRole =
+    user?.role === "admin" || user?.role === "hr" ? "admin" : "employee";
   const [activeTab, setActiveTab] = useState("myAttendance");
-  
+
   const [loading, setLoading] = useState(true);
   const [attendance, setAttendance] = useState([]);
   const [stats, setStats] = useState({});
@@ -104,7 +105,7 @@ const AttendancePage = () => {
             };
             const deviceInfo = navigator.userAgent;
             const ipAddress = await getIPAddress();
-            
+
             await apiService.checkIn(location, ipAddress, deviceInfo);
             showSuccess("Checked in successfully!");
             loadData();
@@ -139,7 +140,7 @@ const AttendancePage = () => {
             };
             const deviceInfo = navigator.userAgent;
             const ipAddress = await getIPAddress();
-            
+
             await apiService.checkOut(location, ipAddress, deviceInfo);
             showSuccess("Checked out successfully!");
             loadData();
@@ -175,16 +176,23 @@ const AttendancePage = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "Present": return "bg-green-100 text-green-800";
-      case "Absent": return "bg-red-100 text-red-800";
-      case "Half-Day": return "bg-yellow-100 text-yellow-800";
-      case "On Leave": return "bg-blue-100 text-blue-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Present":
+        return "bg-green-100 text-green-800";
+      case "Absent":
+        return "bg-red-100 text-red-800";
+      case "Half-Day":
+        return "bg-yellow-100 text-yellow-800";
+      case "On Leave":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getMonthName = (monthNumber) => {
-    return new Date(2000, monthNumber - 1).toLocaleString("default", { month: "long" });
+    return new Date(2000, monthNumber - 1).toLocaleString("default", {
+      month: "long",
+    });
   };
 
   if (loading) {
@@ -200,9 +208,13 @@ const AttendancePage = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Attendance Management
+          </h1>
           <p className="text-gray-600 mt-1">
-            {userRole === "admin" ? "Manage team attendance" : "Track your attendance"}
+            {userRole === "admin"
+              ? "Manage team attendance"
+              : "Track your attendance"}
           </p>
         </div>
         <div className="flex space-x-3">
@@ -270,7 +282,11 @@ const AttendancePage = () => {
             <div className="text-right">
               <p className="text-lg font-semibold">
                 Status:{" "}
-                <span className={todayStatus.checkedIn ? "text-green-300" : "text-red-300"}>
+                <span
+                  className={
+                    todayStatus.checkedIn ? "text-green-300" : "text-red-300"
+                  }
+                >
                   {todayStatus.checkedIn
                     ? todayStatus.checkedOut
                       ? "Completed"
@@ -279,7 +295,9 @@ const AttendancePage = () => {
                 </span>
               </p>
               {todayStatus.workingHours > 0 && (
-                <p className="text-blue-100">Hours: {todayStatus.workingHours}</p>
+                <p className="text-blue-100">
+                  Hours: {todayStatus.workingHours}
+                </p>
               )}
             </div>
           </div>
@@ -296,7 +314,9 @@ const AttendancePage = () => {
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-6 w-6 text-gray-400" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Current Time</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      Current Time
+                    </p>
                     <p className="text-xs text-gray-500">
                       {new Date().toLocaleTimeString()}
                     </p>
@@ -316,7 +336,9 @@ const AttendancePage = () => {
                   className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Clock className="h-5 w-5" />
-                  <span>{todayStatus.checkedIn ? "Checked In" : "Check In"}</span>
+                  <span>
+                    {todayStatus.checkedIn ? "Checked In" : "Check In"}
+                  </span>
                 </button>
                 <button
                   onClick={handleCheckOut}
@@ -324,7 +346,9 @@ const AttendancePage = () => {
                   className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
                   <Clock className="h-5 w-5" />
-                  <span>{todayStatus.checkedOut ? "Checked Out" : "Check Out"}</span>
+                  <span>
+                    {todayStatus.checkedOut ? "Checked Out" : "Check Out"}
+                  </span>
                 </button>
               </div>
 
@@ -364,13 +388,17 @@ const AttendancePage = () => {
               <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
                 <span className="text-sm text-gray-600">Total Hours</span>
                 <span className="text-lg font-bold text-blue-600">
-                  {stats.totalWorkingHours ? stats.totalWorkingHours.toFixed(1) : "0"} hrs
+                  {stats.totalWorkingHours
+                    ? stats.totalWorkingHours.toFixed(1)
+                    : "0"}{" "}
+                  hrs
                 </span>
               </div>
               <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                 <span className="text-sm text-gray-600">Overtime</span>
                 <span className="text-lg font-bold text-purple-600">
-                  {stats.totalOvertime ? stats.totalOvertime.toFixed(1) : "0"} hrs
+                  {stats.totalOvertime ? stats.totalOvertime.toFixed(1) : "0"}{" "}
+                  hrs
                 </span>
               </div>
             </div>
@@ -384,7 +412,9 @@ const AttendancePage = () => {
           <div className="flex items-center space-x-4">
             <select
               value={filters.month}
-              onChange={(e) => setFilters({ ...filters, month: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFilters({ ...filters, month: parseInt(e.target.value) })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               {Array.from({ length: 12 }, (_, i) => (
@@ -396,7 +426,9 @@ const AttendancePage = () => {
 
             <select
               value={filters.year}
-              onChange={(e) => setFilters({ ...filters, year: parseInt(e.target.value) })}
+              onChange={(e) =>
+                setFilters({ ...filters, year: parseInt(e.target.value) })
+              }
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               {Array.from({ length: 5 }, (_, i) => {
@@ -416,7 +448,9 @@ const AttendancePage = () => {
                   type="text"
                   placeholder="Search employee..."
                   value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  onChange={(e) =>
+                    setFilters({ ...filters, search: e.target.value })
+                  }
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -438,7 +472,9 @@ const AttendancePage = () => {
       {/* Attendance Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold mb-4">
-          {activeTab === "teamAttendance" ? "Team Attendance" : "Attendance History"}
+          {activeTab === "teamAttendance"
+            ? "Team Attendance"
+            : "Attendance History"}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full">
@@ -497,22 +533,31 @@ const AttendancePage = () => {
                     {new Date(record.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : "-"}
+                    {record.checkIn
+                      ? new Date(record.checkIn).toLocaleTimeString()
+                      : "-"}
                     {record.isLate && record.checkIn && (
                       <span className="ml-1 text-xs text-red-600">(Late)</span>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : "-"}
+                    {record.checkOut
+                      ? new Date(record.checkOut).toLocaleTimeString()
+                      : "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {record.workingHours ? record.workingHours.toFixed(1) : "0"} hrs
+                    {record.workingHours ? record.workingHours.toFixed(1) : "0"}{" "}
+                    hrs
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {record.overtime ? record.overtime.toFixed(1) : "0"} hrs
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(record.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                        record.status
+                      )}`}
+                    >
                       {record.status}
                     </span>
                   </td>
@@ -561,11 +606,15 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
         <h2 className="text-xl font-bold mb-4">Regularize Attendance</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Date
+            </label>
             <input
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, date: e.target.value })
+              }
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               required
             />
@@ -573,21 +622,29 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check In</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check In
+              </label>
               <input
                 type="time"
                 value={formData.checkIn}
-                onChange={(e) => setFormData({ ...formData, checkIn: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, checkIn: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Check Out</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Check Out
+              </label>
               <input
                 type="time"
                 value={formData.checkOut}
-                onChange={(e) => setFormData({ ...formData, checkOut: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, checkOut: e.target.value })
+                }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 required
               />
@@ -595,10 +652,14 @@ const RegularizeModal = ({ onClose, onSubmit }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Reason
+            </label>
             <textarea
               value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, reason: e.target.value })
+              }
               rows="3"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Please provide reason for regularization..."
