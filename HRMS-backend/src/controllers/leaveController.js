@@ -738,7 +738,6 @@ exports.updateLeaveStatus = async (req, res, next) => {
     console.log(`🔍 Processing leave status update: ${id}, new status: ${status}`);
 
     const approver = await Employee.findOne({ userId: req.user._id });
-
     if (!approver) {
       return sendResponse(res, 404, false, "Approver not found");
     }
@@ -752,7 +751,9 @@ exports.updateLeaveStatus = async (req, res, next) => {
       employeeId: leave.employee._id,
       leaveType: leave.leaveTypeCode,
       days: leave.totalDays,
-      currentStatus: leave.status
+      currentStatus: leave.status,
+      currentStage: leave.currentStage,
+      approverRole: req.user.role
     });
 
     // Check if approver has permission
@@ -761,6 +762,7 @@ exports.updateLeaveStatus = async (req, res, next) => {
       approver,
       req.user.role
     );
+
     if (!canApprove) {
       return sendResponse(
         res,
@@ -800,13 +802,12 @@ exports.updateLeaveStatus = async (req, res, next) => {
       if (availableBalance < leave.totalDays) {
         console.warn(`⚠️ Insufficient balance (${availableBalance}), reinitializing...`);
         leaveBalance = await initializeLeaveBalance(leave.employee._id, currentYear);
-        
+
         // Check again after reinitialization
         const newBalances = leaveBalance.getCurrentBalance();
         const newAvailable = newBalances[leave.leaveTypeCode.toLowerCase()] || 0;
-        
         console.log(`💰 After reinitialization: ${newAvailable} days available`);
-        
+
         if (newAvailable < leave.totalDays) {
           return sendResponse(
             res,
@@ -818,8 +819,44 @@ exports.updateLeaveStatus = async (req, res, next) => {
       }
     }
 
-    // Update approval based on current stage and role
-    if (req.user.role === "manager" && leave.currentStage === "Manager") {
+    // ✅ FIXED: Admin can approve at ANY stage, not just HR stage
+    if (req.user.role === "admin") {
+      console.log("👑 Admin override - approving at current stage:", leave.currentStage);
+      
+      // Update appropriate approval based on current stage
+      if (leave.currentStage === "Manager") {
+        leave.managerApproval = {
+          status,
+          comments,
+          approvedBy: approver._id,
+          approvedOn: new Date(),
+        };
+      } else if (leave.currentStage === "HR") {
+        leave.hrApproval = {
+          status,
+          comments,
+          approvedBy: approver._id,
+          approvedOn: new Date(),
+        };
+      }
+
+      // For admins, always finalize the leave
+      leave.status = status;
+      leave.currentStage = "Completed";
+
+      if (status === "Approved") {
+        console.log('💾 Updating leave balance (Admin approval)...');
+        await updateLeaveBalance(
+          leave.employee._id,
+          leave.leaveTypeCode,
+          leave.totalDays,
+          "debit"
+        );
+        console.log('✅ Balance updated successfully');
+      }
+    } 
+    // Manager approval logic
+    else if (req.user.role === "manager" && leave.currentStage === "Manager") {
       leave.managerApproval = {
         status,
         comments,
@@ -829,12 +866,12 @@ exports.updateLeaveStatus = async (req, res, next) => {
 
       if (status === "Approved") {
         const leaveTypeConfig = await LeaveType.findOne({ code: leave.leaveTypeCode });
-        const requiresHrApproval = leaveTypeConfig?.approvalWorkflow === "Both" || 
-                                  leaveTypeConfig?.approvalWorkflow === "HR";
-        
+        const requiresHrApproval = leaveTypeConfig?.approvalWorkflow === "Both" ||
+          leaveTypeConfig?.approvalWorkflow === "HR";
+
         leave.currentStage = requiresHrApproval ? "HR" : "Completed";
         leave.status = requiresHrApproval ? "Pending" : "Approved";
-        
+
         if (!requiresHrApproval) {
           console.log('💾 Updating leave balance (Manager final approval)...');
           await updateLeaveBalance(
@@ -849,17 +886,15 @@ exports.updateLeaveStatus = async (req, res, next) => {
         leave.status = "Rejected";
         leave.currentStage = "Completed";
       }
-    } else if (
-      (req.user.role === "hr" || req.user.role === "admin") &&
-      leave.currentStage === "HR"
-    ) {
+    } 
+    // HR approval logic
+    else if (req.user.role === "hr" && leave.currentStage === "HR") {
       leave.hrApproval = {
         status,
         comments,
         approvedBy: approver._id,
         approvedOn: new Date(),
       };
-
       leave.status = status;
       leave.currentStage = "Completed";
 
@@ -873,12 +908,19 @@ exports.updateLeaveStatus = async (req, res, next) => {
         );
         console.log('✅ Balance updated successfully');
       }
+    } else {
+      return sendResponse(
+        res,
+        403,
+        false,
+        `Cannot approve leave at ${leave.currentStage} stage with ${req.user.role} role`
+      );
     }
 
     // Add to history
     leave.addHistory(
-      `${status} by ${req.user.role}`, 
-      approver._id, 
+      `${status} by ${req.user.role}`,
+      approver._id,
       comments || `Leave application ${status.toLowerCase()}`
     );
 
@@ -907,6 +949,7 @@ exports.updateLeaveStatus = async (req, res, next) => {
     next(error);
   }
 };
+
 
 
 // controllers/leaveController.js

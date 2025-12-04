@@ -1,9 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, Filter, Search, Download, Clock, AlertCircle, CheckCircle, XCircle, Eye, Trash2, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext'; // ✅ Fixed path
-import { useNotification } from '../../context/NotificationContext'; // ✅ Fixed path
-import { apiService } from '../../services/apiService'; // ✅ Changed to named import
-import AdminLeaveBalanceManager from './AdminLeaveBalanceManager';
+import React, { useState, useEffect } from "react";
+import {
+  Plus,
+  Calendar,
+  Filter,
+  Search,
+  Download,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Trash2,
+  RefreshCw,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useNotification } from "../../context/NotificationContext";
+import { apiService } from "../../services/apiService";
+import AdminLeaveBalanceManager from "./AdminLeaveBalanceManager";
 
 const LeavesPage = () => {
   const { user } = useAuth();
@@ -25,57 +40,63 @@ const LeavesPage = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   // Active tab: 'my-leaves', 'pending-approvals', or 'manage-balance'
-  const [activeTab, setActiveTab] = useState('my-leaves');
+  const [activeTab, setActiveTab] = useState("my-leaves");
 
   const [filters, setFilters] = useState({
     year: new Date().getFullYear(),
-    status: '',
-    leaveType: '',
+    status: "",
+    leaveType: "",
     page: 1,
     limit: 10,
   });
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const isAdminOrHR = user?.role === 'admin' || user?.role === 'hr' || user?.role === 'manager';
-  const isAdminOrHROnly = user?.role === 'admin' || user?.role === 'hr';
+  const isAdminOrHR =
+    user?.role === "admin" || user?.role === "hr" || user?.role === "manager";
+  const isAdminOrHROnly = user?.role === "admin" || user?.role === "hr";
 
   useEffect(() => {
-    if (activeTab === 'my-leaves') {
+    if (activeTab === "my-leaves") {
       loadLeaves();
       loadLeaveBalance();
-    } else if (activeTab === 'pending-approvals' && isAdminOrHR) {
+    } else if (activeTab === "pending-approvals" && isAdminOrHR) {
       loadPendingLeaves();
     }
-    // No need to load anything for 'manage-balance' - the AdminLeaveBalanceManager handles its own data
-  }, [filters.year, filters.status, filters.leaveType, filters.page, activeTab]);
+  }, [
+    filters.year,
+    filters.status,
+    filters.leaveType,
+    filters.page,
+    activeTab,
+  ]);
 
   const loadLeaves = async () => {
     try {
-      console.log('Loading my leaves...');
+      console.log("Loading my leaves...");
       const response = await apiService.getMyLeaves(filters);
-      console.log('My leaves response:', response);
+      console.log("My leaves response:", response);
       setLeaves(response.data?.leaves || []);
       setSummary(response.data?.summary || {});
       setLoading(false);
     } catch (error) {
-      console.error('Failed to load leaves', error);
-      showError('Failed to load leaves');
+      console.error("Failed to load leaves", error);
+      showError("Failed to load leaves");
       setLoading(false);
     }
   };
 
   const loadPendingLeaves = async () => {
     try {
-      console.log('Loading pending leaves for approval...');
+      console.log("Loading pending leaves for approval...");
       const response = await apiService.getPendingLeaves(filters);
-      console.log('Pending leaves response:', response);
+      console.log("Pending leaves response:", response);
       setPendingLeaves(response.data?.leaves || []);
       setPendingCount(response.data?.pagination?.totalRecords || 0);
       setLoading(false);
     } catch (error) {
-      console.error('Failed to load pending leaves', error);
-      showError('Failed to load pending leaves');
+      console.error("Failed to load pending leaves", error);
+      showError("Failed to load pending leaves");
       setLoading(false);
     }
   };
@@ -85,26 +106,25 @@ const LeavesPage = () => {
       const response = await apiService.getLeaveBalance();
       setLeaveBalance(response.data?.balance || []);
     } catch (error) {
-      console.error('Failed to load leave balance');
+      console.error("Failed to load leave balance");
     }
   };
 
   const handleApplyLeave = async (formData) => {
     try {
-      console.log('Applying leave', formData);
+      console.log("Applying leave", formData);
       await apiService.applyLeave(formData);
-      showSuccess('Leave application submitted successfully!');
+      showSuccess("Leave application submitted successfully!");
       setShowApplyModal(false);
       loadLeaves();
       loadLeaveBalance();
 
-      // Refresh pending leaves if admin is viewing
-      if (isAdminOrHR && activeTab === 'pending-approvals') {
+      if (isAdminOrHR && activeTab === "pending-approvals") {
         loadPendingLeaves();
       }
     } catch (error) {
-      console.error('Apply leave error:', error);
-      showError(error.message || 'Failed to apply leave');
+      console.error("Apply leave error:", error);
+      showError(error.message || "Failed to apply leave");
     }
   };
 
@@ -123,51 +143,70 @@ const LeavesPage = () => {
   };
 
   const handleCancelLeave = async (leaveId) => {
-    if (window.confirm('Are you sure you want to cancel this leave application?')) {
+    if (
+      window.confirm("Are you sure you want to cancel this leave application?")
+    ) {
       try {
         await apiService.cancelLeave(leaveId);
-        showSuccess('Leave application cancelled successfully!');
+        showSuccess("Leave application cancelled successfully!");
         loadLeaves();
         loadLeaveBalance();
       } catch (error) {
-        showError(error.message || 'Failed to cancel leave');
+        showError(error.message || "Failed to cancel leave");
       }
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Approved': return 'bg-green-100 text-green-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelled': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Approved":
+        return "bg-green-100 text-green-800";
+      case "Rejected":
+        return "bg-red-100 text-red-800";
+      case "Pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "Cancelled":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'Approved': return <CheckCircle className="h-4 w-4" />;
-      case 'Rejected': return <XCircle className="h-4 w-4" />;
-      case 'Pending': return <Clock className="h-4 w-4" />;
-      default: return <AlertCircle className="h-4 w-4" />;
+      case "Approved":
+        return <CheckCircle className="h-4 w-4" />;
+      case "Rejected":
+        return <XCircle className="h-4 w-4" />;
+      case "Pending":
+        return <Clock className="h-4 w-4" />;
+      default:
+        return <AlertCircle className="h-4 w-4" />;
     }
   };
 
-  const filteredLeaves = leaves.filter(leave =>
-    leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.status?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLeaves = leaves.filter(
+    (leave) =>
+      leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      leave.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      leave.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredPendingLeaves = pendingLeaves.filter(leave =>
-    leave.employee?.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.employee?.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.employee?.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPendingLeaves = pendingLeaves.filter(
+    (leave) =>
+      leave.employee?.firstName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      leave.employee?.lastName
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      leave.employee?.employeeId
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      leave.leaveType?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading && activeTab !== 'manage-balance') {
+  if (loading && activeTab !== "manage-balance") {
     return (
       <div className="p-6 flex justify-center">
         <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full"></div>
@@ -182,12 +221,14 @@ const LeavesPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
           <p className="text-gray-600 mt-1">
-            {activeTab === 'my-leaves' ? 'Manage your leave applications and balance' : 
-             activeTab === 'pending-approvals' ? 'Review and approve pending leave requests' :
-             'Manage employee leave balances'}
+            {activeTab === "my-leaves"
+              ? "Manage your leave applications and balance"
+              : activeTab === "pending-approvals"
+              ? "Review and approve pending leave requests"
+              : "Manage employee leave balances"}
           </p>
         </div>
-        {activeTab !== 'manage-balance' && (
+        {activeTab !== "manage-balance" && (
           <div className="flex space-x-3">
             <button
               onClick={() => setShowApplyModal(true)}
@@ -204,18 +245,18 @@ const LeavesPage = () => {
         )}
       </div>
 
-      {/* Tabs for Admin/HR/Manager */}
+      {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="flex border-b">
           <button
             onClick={() => {
-              setActiveTab('my-leaves');
+              setActiveTab("my-leaves");
               setFilters({ ...filters, page: 1 });
             }}
             className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-              activeTab === 'my-leaves'
-                ? 'border-b-2 border-indigo-600 text-indigo-600'
-                : 'text-gray-600 hover:text-gray-900'
+              activeTab === "my-leaves"
+                ? "border-b-2 border-indigo-600 text-indigo-600"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             My Leaves
@@ -224,13 +265,13 @@ const LeavesPage = () => {
           {isAdminOrHR && (
             <button
               onClick={() => {
-                setActiveTab('pending-approvals');
+                setActiveTab("pending-approvals");
                 setFilters({ ...filters, page: 1 });
               }}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors relative ${
-                activeTab === 'pending-approvals'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                activeTab === "pending-approvals"
+                  ? "border-b-2 border-indigo-600 text-indigo-600"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Pending Approvals
@@ -245,12 +286,12 @@ const LeavesPage = () => {
           {isAdminOrHROnly && (
             <button
               onClick={() => {
-                setActiveTab('manage-balance');
+                setActiveTab("manage-balance");
               }}
               className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === 'manage-balance'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                activeTab === "manage-balance"
+                  ? "border-b-2 border-indigo-600 text-indigo-600"
+                  : "text-gray-600 hover:text-gray-900"
               }`}
             >
               Manage Balance
@@ -260,38 +301,51 @@ const LeavesPage = () => {
       </div>
 
       {/* My Leaves Tab Content */}
-      {activeTab === 'my-leaves' && (
+      {activeTab === "my-leaves" && (
         <>
           {/* Leave Balance Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {leaveBalance.map((balance) => (
-              <div key={balance.code} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+              <div
+                key={balance.code}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+              >
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900 text-sm">{balance.name}</h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">
+                    {balance.name}
+                  </h3>
                   <span
                     className={`px-2 py-1 text-xs rounded-full ${
                       balance.currentBalance > 0
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? "bg-green-100 text-green-800"
+                        : "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {balance.isPaid ? 'Paid' : 'Unpaid'}
+                    {balance.isPaid ? "Paid" : "Unpaid"}
                   </span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-gray-900">{balance.currentBalance}</span>
-                    <span className="text-sm text-gray-500">/ {balance.maxBalance}</span>
+                    <span className="text-2xl font-bold text-gray-900">
+                      {balance.currentBalance}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      / {balance.maxBalance}
+                    </span>
                   </div>
                   <div className="text-xs text-gray-600 space-y-1">
                     <div className="flex justify-between">
                       <span>Available:</span>
-                      <span className="font-medium">{balance.currentBalance} days</span>
+                      <span className="font-medium">
+                        {balance.currentBalance} days
+                      </span>
                     </div>
                     {balance.usedBalance > 0 && (
                       <div className="flex justify-between">
                         <span>Used:</span>
-                        <span className="font-medium">{balance.usedBalance} days</span>
+                        <span className="font-medium">
+                          {balance.usedBalance} days
+                        </span>
                       </div>
                     )}
                   </div>
@@ -306,7 +360,9 @@ const LeavesPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Applications</p>
-                  <p className="text-2xl font-bold text-gray-900">{summary.total || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {summary.total || 0}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-100 rounded-lg">
                   <Calendar className="h-6 w-6 text-blue-600" />
@@ -317,7 +373,9 @@ const LeavesPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Approved</p>
-                  <p className="text-2xl font-bold text-green-600">{summary.approved || 0}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {summary.approved || 0}
+                  </p>
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <CheckCircle className="h-6 w-6 text-green-600" />
@@ -328,7 +386,9 @@ const LeavesPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-600">{summary.pending || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {summary.pending || 0}
+                  </p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-lg">
                   <Clock className="h-6 w-6 text-yellow-600" />
@@ -339,7 +399,9 @@ const LeavesPage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Total Days</p>
-                  <p className="text-2xl font-bold text-purple-600">{summary.totalDays || 0}</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {summary.totalDays || 0}
+                  </p>
                 </div>
                 <div className="p-3 bg-purple-100 rounded-lg">
                   <Calendar className="h-6 w-6 text-purple-600" />
@@ -370,14 +432,18 @@ const LeavesPage = () => {
       )}
 
       {/* Pending Approvals Tab Content */}
-      {activeTab === 'pending-approvals' && isAdminOrHR && (
+      {activeTab === "pending-approvals" && isAdminOrHR && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-2">Pending Leave Requests</h2>
+            <h2 className="text-lg font-semibold mb-2">
+              Pending Leave Requests
+            </h2>
             <p className="text-gray-600">
-              {pendingCount} {pendingCount !== 1 ? 'leaves' : 'leave'} waiting for your approval
+              {pendingCount} {pendingCount !== 1 ? "leaves" : "leave"} waiting
+              for your approval
             </p>
           </div>
+
           <LeaveHistoryTable
             leaves={filteredPendingLeaves}
             filters={filters}
@@ -394,7 +460,9 @@ const LeavesPage = () => {
             onRefresh={loadPendingLeaves}
             showEmployeeColumn={true}
             showApprovalActions={true}
-            onApprove={(leave) => handleApproveReject(leave._id, 'Approved', '')}
+            onApprove={(leave) => {
+              handleApproveReject(leave._id, "Approved", "Quick approved");
+            }}
             onReject={(leave) => {
               setSelectedLeave(leave);
               setShowApprovalModal(true);
@@ -403,8 +471,8 @@ const LeavesPage = () => {
         </>
       )}
 
-      {/* Manage Balance Tab - Show AdminLeaveBalanceManager Component */}
-      {activeTab === 'manage-balance' && isAdminOrHROnly && (
+      {/* Manage Balance Tab */}
+      {activeTab === "manage-balance" && isAdminOrHROnly && (
         <AdminLeaveBalanceManager />
       )}
 
@@ -435,8 +503,12 @@ const LeavesPage = () => {
             setShowApprovalModal(false);
             setSelectedLeave(null);
           }}
-          onApprove={(comments) => handleApproveReject(selectedLeave._id, 'Approved', comments)}
-          onReject={(comments) => handleApproveReject(selectedLeave._id, 'Rejected', comments)}
+          onApprove={(comments) =>
+            handleApproveReject(selectedLeave._id, "Approved", comments)
+          }
+          onReject={(comments) =>
+            handleApproveReject(selectedLeave._id, "Rejected", comments)
+          }
         />
       )}
     </div>
@@ -470,7 +542,11 @@ const LeaveHistoryTable = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder={showEmployeeColumn ? "Search by employee, type, or reason..." : "Search leaves by type, reason, or status..."}
+              placeholder={
+                showEmployeeColumn
+                  ? "Search by employee, type, or reason..."
+                  : "Search leaves by type, reason, or status..."
+              }
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -529,7 +605,10 @@ const LeaveHistoryTable = ({
             {showApprovalActions ? "Pending Requests" : "Leave History"}
           </h2>
           <p className="text-sm text-gray-600 mt-1">
-            {summary.total || leaves.length} {showApprovalActions ? "pending request(s)" : `application(s) in ${filters.year}`}
+            {summary.total || leaves.length}{" "}
+            {showApprovalActions
+              ? "pending request(s)"
+              : `application(s) in ${filters.year}`}
           </p>
         </div>
 
@@ -573,7 +652,9 @@ const LeaveHistoryTable = ({
                         <p className="text-sm font-medium text-gray-900">
                           {leave.employee?.firstName} {leave.employee?.lastName}
                         </p>
-                        <p className="text-xs text-gray-500">{leave.employee?.employeeId}</p>
+                        <p className="text-xs text-gray-500">
+                          {leave.employee?.employeeId}
+                        </p>
                       </div>
                     </td>
                   )}
@@ -643,7 +724,8 @@ const LeaveHistoryTable = ({
                           </button>
                         </>
                       ) : (
-                        leave.status === "Pending" && onCancel && (
+                        leave.status === "Pending" &&
+                        onCancel && (
                           <button
                             onClick={() => onCancel(leave._id)}
                             className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
@@ -1109,22 +1191,35 @@ const LeaveDetailsModal = ({ leave, onClose, onCancel }) => {
   );
 };
 
-// Approval Modal Component
+// Approval Modal Component - FIXED VERSION
 const ApprovalModal = ({ leave, onClose, onApprove, onReject }) => {
   const [comments, setComments] = useState("");
-  const [action, setAction] = useState(""); // "approve" or "reject"
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (action === "approve") {
-      onApprove(comments);
-    } else if (action === "reject") {
-      if (!comments.trim()) {
-        alert("Please provide a reason for rejection");
-        return;
-      }
-      onReject(comments);
+  const handleApprove = async () => {
+    setIsSubmitting(true);
+    try {
+      await onApprove(comments);
+      onClose();
+    } catch (error) {
+      console.error("Error approving:", error);
+      setIsSubmitting(false);
     }
-    onClose();
+  };
+
+  const handleReject = async () => {
+    if (!comments.trim()) {
+      alert("Please provide a reason for rejection");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await onReject(comments);
+      onClose();
+    } catch (error) {
+      console.error("Error rejecting:", error);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1135,35 +1230,56 @@ const ApprovalModal = ({ leave, onClose, onApprove, onReject }) => {
         <div className="space-y-4 mb-6">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-600">Employee</label>
-              <p className="text-gray-900">{leave.employee?.firstName} {leave.employee?.lastName}</p>
+              <label className="text-sm font-medium text-gray-600">
+                Employee
+              </label>
+              <p className="text-gray-900">
+                {leave.employee?.firstName} {leave.employee?.lastName}
+              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Leave Type</label>
+              <label className="text-sm font-medium text-gray-600">
+                Leave Type
+              </label>
               <p className="text-gray-900">{leave.leaveType}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Start Date</label>
-              <p className="text-gray-900">{new Date(leave.startDate).toLocaleDateString()}</p>
+              <label className="text-sm font-medium text-gray-600">
+                Start Date
+              </label>
+              <p className="text-gray-900">
+                {new Date(leave.startDate).toLocaleDateString()}
+              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">End Date</label>
-              <p className="text-gray-900">{new Date(leave.endDate).toLocaleDateString()}</p>
+              <label className="text-sm font-medium text-gray-600">
+                End Date
+              </label>
+              <p className="text-gray-900">
+                {new Date(leave.endDate).toLocaleDateString()}
+              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-600">Duration</label>
+              <label className="text-sm font-medium text-gray-600">
+                Duration
+              </label>
               <p className="text-gray-900">{leave.totalDays} days</p>
             </div>
           </div>
 
           <div>
             <label className="text-sm font-medium text-gray-600">Reason</label>
-            <p className="text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">{leave.reason}</p>
+            <p className="text-gray-900 bg-gray-50 p-3 rounded-lg mt-1">
+              {leave.reason}
+            </p>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Comments {action === "reject" && <span className="text-red-500">*</span>}
+              Comments{" "}
+              <span className="text-gray-500">
+                (Optional for approval, Required for rejection)
+              </span>
             </label>
             <textarea
               value={comments}
@@ -1171,32 +1287,30 @@ const ApprovalModal = ({ leave, onClose, onApprove, onReject }) => {
               rows="3"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Add your comments here..."
+              disabled={isSubmitting}
             />
           </div>
         </div>
 
         <div className="flex space-x-3">
           <button
-            onClick={() => {
-              setAction("approve");
-              handleSubmit();
-            }}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            onClick={handleApprove}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            Approve
+            {isSubmitting ? "Processing..." : "Approve"}
           </button>
           <button
-            onClick={() => {
-              setAction("reject");
-              handleSubmit();
-            }}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            onClick={handleReject}
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
-            Reject
+            {isSubmitting ? "Processing..." : "Reject"}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            disabled={isSubmitting}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             Cancel
           </button>
