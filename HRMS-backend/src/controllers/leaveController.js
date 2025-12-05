@@ -1170,6 +1170,340 @@ exports.getLeaveAnalytics = async (req, res, next) => {
   }
 };
 
+
+// ==================== GET APPROVED LEAVES (Admin/HR/Manager) ====================
+exports.getApprovedLeaves = async (req, res, next) => {
+  try {
+    const { 
+      startDate, 
+      endDate, 
+      department, 
+      employeeId, 
+      leaveType,
+      page = 1,
+      limit = 50,
+      year
+    } = req.query;
+
+    console.log('📅 Fetching approved leaves...');
+
+    // Build query
+    const query = { status: 'Approved' };
+
+    // Year-based filter (most common use case)
+    if (year) {
+      const yearStart = new Date(`${year}-01-01`);
+      const yearEnd = new Date(`${year}-12-31T23:59:59`);
+      query.$or = [
+        { startDate: { $gte: yearStart, $lte: yearEnd } },
+        { endDate: { $gte: yearStart, $lte: yearEnd } },
+        { 
+          startDate: { $lte: yearStart },
+          endDate: { $gte: yearEnd }
+        }
+      ];
+    }
+    // Custom date range filter
+    else if (startDate || endDate) {
+      query.$or = [
+        {
+          startDate: {
+            $gte: startDate ? new Date(startDate) : new Date('1900-01-01'),
+            $lte: endDate ? new Date(endDate) : new Date('2100-12-31')
+          }
+        },
+        {
+          endDate: {
+            $gte: startDate ? new Date(startDate) : new Date('1900-01-01'),
+            $lte: endDate ? new Date(endDate) : new Date('2100-12-31')
+          }
+        }
+      ];
+    }
+
+    if (leaveType) {
+      query.leaveTypeCode = leaveType;
+    }
+
+    // Employee filter
+    if (employeeId) {
+      const employee = await Employee.findOne({ employeeId });
+      if (employee) {
+        query.employee = employee._id;
+      }
+    }
+
+    // Department filter
+    if (department) {
+      const deptEmployees = await Employee.find({ department }).select('_id');
+      const empIds = deptEmployees.map(e => e._id);
+      
+      if (query.employee) {
+        if (!empIds.some(id => id.equals(query.employee))) {
+          query.employee = { $in: [] };
+        }
+      } else {
+        query.employee = { $in: empIds };
+      }
+    }
+
+    console.log('🔍 Approved leaves query:', JSON.stringify(query, null, 2));
+
+    const leaves = await Leave.find(query)
+      .populate('employee', 'firstName lastName employeeId department designation profilePicture')
+      .populate('managerApproval.approvedBy', 'firstName lastName')
+      .populate('hrApproval.approvedBy', 'firstName lastName')
+      .sort({ startDate: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await Leave.countDocuments(query);
+
+    console.log(`✅ Found ${leaves.length} approved leaves out of ${total} total`);
+
+    sendResponse(res, 200, true, 'Approved leaves fetched successfully', {
+      leaves,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalRecords: total,
+        hasNext: parseInt(page) * parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1,
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error in getApprovedLeaves:', error);
+    next(error);
+  }
+};
+
+// ==================== GET EMPLOYEES ON LEAVE TODAY ====================
+exports.getEmployeesOnLeaveToday = async (req, res, next) => {
+  try {
+    const today = moment().startOf('day').toDate();
+    const todayEnd = moment().endOf('day').toDate();
+
+    console.log('📅 Fetching employees on leave today:', today);
+
+    const leavesToday = await Leave.find({
+      status: 'Approved',
+      startDate: { $lte: todayEnd },
+      endDate: { $gte: today }
+    })
+      .populate('employee', 'firstName lastName employeeId department designation profilePicture email')
+      .populate({
+        path: 'employee',
+        populate: {
+          path: 'department',
+          select: 'name'
+        }
+      })
+      .sort({ 'employee.firstName': 1 });
+
+    console.log(`✅ Found ${leavesToday.length} employees on leave today`);
+
+    // Group by department
+    const byDepartment = leavesToday.reduce((acc, leave) => {
+      const deptName = leave.employee?.department?.name || 'Unknown Department';
+      if (!acc[deptName]) acc[deptName] = [];
+      acc[deptName].push(leave);
+      return acc;
+    }, {});
+
+    // Calculate stats
+    const stats = {
+      total: leavesToday.length,
+      byType: leavesToday.reduce((acc, leave) => {
+        acc[leave.leaveType] = (acc[leave.leaveType] || 0) + 1;
+        return acc;
+      }, {}),
+      byDepartmentCount: Object.keys(byDepartment).map(dept => ({
+        department: dept,
+        count: byDepartment[dept].length
+      }))
+    };
+
+    sendResponse(res, 200, true, 'Employees on leave today fetched successfully', {
+      total: leavesToday.length,
+      leaves: leavesToday,
+      byDepartment,
+      stats
+    });
+  } catch (error) {
+    console.error('❌ Error in getEmployeesOnLeaveToday:', error);
+    next(error);
+  }
+};
+
+// ==================== GET LEAVE CALENDAR DATA ====================
+exports.getLeaveCalendar = async (req, res, next) => {
+  try {
+    const { year = moment().year(), month } = req.query;
+
+    let startDate, endDate;
+    
+    if (month) {
+      // Specific month
+      startDate = moment(`${year}-${String(month).padStart(2, '0')}-01`).startOf('month').toDate();
+      endDate = moment(`${year}-${String(month).padStart(2, '0')}-01`).endOf('month').toDate();
+    } else {
+      // Entire year
+      startDate = moment(`${year}-01-01`).startOf('year').toDate();
+      endDate = moment(`${year}-12-31`).endOf('year').toDate();
+    }
+
+    console.log('📅 Fetching leave calendar:', { year, month, startDate, endDate });
+
+    const leaves = await Leave.find({
+      status: 'Approved',
+      $or: [
+        { startDate: { $gte: startDate, $lte: endDate } },
+        { endDate: { $gte: startDate, $lte: endDate } },
+        { 
+          startDate: { $lte: startDate },
+          endDate: { $gte: endDate }
+        }
+      ]
+    })
+      .populate('employee', 'firstName lastName employeeId department profilePicture')
+      .populate({
+        path: 'employee',
+        populate: {
+          path: 'department',
+          select: 'name'
+        }
+      })
+      .sort({ startDate: 1 });
+
+    // Helper function for leave type colors
+    const getLeaveTypeColor = (code) => {
+      const colors = {
+        CASUAL: '#3B82F6',    // Blue
+        SICK: '#EF4444',      // Red
+        EARNED: '#10B981',    // Green
+        MATERNITY: '#F59E0B', // Orange
+        PATERNITY: '#8B5CF6', // Purple
+        UNPAID: '#6B7280'     // Gray
+      };
+      return colors[code] || '#6B7280';
+    };
+
+    // Format for calendar view
+    const calendarEvents = leaves.map(leave => ({
+      id: leave._id,
+      title: `${leave.employee?.firstName} ${leave.employee?.lastName} - ${leave.leaveType}`,
+      start: leave.startDate,
+      end: leave.endDate,
+      employeeId: leave.employee?.employeeId,
+      employeeName: `${leave.employee?.firstName} ${leave.employee?.lastName}`,
+      leaveType: leave.leaveType,
+      leaveTypeCode: leave.leaveTypeCode,
+      totalDays: leave.totalDays,
+      isHalfDay: leave.isHalfDay,
+      halfDayType: leave.halfDayType,
+      department: leave.employee?.department?.name,
+      reason: leave.reason,
+      color: getLeaveTypeColor(leave.leaveTypeCode),
+      profilePicture: leave.employee?.profilePicture
+    }));
+
+    console.log(`✅ Generated ${calendarEvents.length} calendar events`);
+
+    sendResponse(res, 200, true, 'Leave calendar fetched successfully', {
+      events: calendarEvents,
+      totalLeaves: leaves.length,
+      dateRange: {
+        start: startDate,
+        end: endDate
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error in getLeaveCalendar:', error);
+    next(error);
+  }
+};
+
+
+// ==================== GET LEAVE ANALYTICS ====================
+exports.getLeaveAnalytics = async (req, res, next) => {
+  try {
+    const { year = moment().year() } = req.query;
+    
+    const startDate = moment(`${year}-01-01`).startOf('year').toDate();
+    const endDate = moment(`${year}-12-31`).endOf('year').toDate();
+
+    const approvedLeaves = await Leave.find({
+      status: 'Approved',
+      startDate: { $gte: startDate, $lte: endDate }
+    }).populate('employee', 'department');
+
+    // Analytics
+    const analytics = {
+      totalApprovedLeaves: approvedLeaves.length,
+      totalDaysTaken: approvedLeaves.reduce((sum, l) => sum + l.totalDays, 0),
+      byType: calculateLeavesByType(approvedLeaves),
+      byMonth: calculateLeavesByMonth(approvedLeaves, year),
+      byDepartment: calculateLeavesByDepartment(approvedLeaves),
+      topEmployees: await getTopLeaveUsers(year)
+    };
+
+    sendResponse(res, 200, true, 'Leave analytics fetched successfully', analytics);
+  } catch (error) {
+    console.error('❌ Error in getLeaveAnalytics:', error);
+    next(error);
+  }
+};
+
+// Helper function for leave type colors
+const getLeaveTypeColor = (code) => {
+  const colors = {
+    CASUAL: '#3B82F6',    // Blue
+    SICK: '#EF4444',      // Red
+    EARNED: '#10B981',    // Green
+    MATERNITY: '#F59E0B', // Orange
+    PATERNITY: '#8B5CF6', // Purple
+    UNPAID: '#6B7280'     // Gray
+  };
+  return colors[code] || '#6B7280';
+};
+
+// Helper to get top leave users
+const getTopLeaveUsers = async (year) => {
+  const startDate = moment(`${year}-01-01`).startOf('year').toDate();
+  const endDate = moment(`${year}-12-31`).endOf('year').toDate();
+
+  const topUsers = await Leave.aggregate([
+    {
+      $match: {
+        status: 'Approved',
+        startDate: { $gte: startDate, $lte: endDate }
+      }
+    },
+    {
+      $group: {
+        _id: '$employee',
+        totalDays: { $sum: '$totalDays' },
+        leaveCount: { $sum: 1 }
+      }
+    },
+    { $sort: { totalDays: -1 } },
+    { $limit: 10 }
+  ]);
+
+  // Populate employee details
+  await Employee.populate(topUsers, {
+    path: '_id',
+    select: 'firstName lastName employeeId department'
+  });
+
+  return topUsers.map(u => ({
+    employee: u._id,
+    totalDays: u.totalDays,
+    leaveCount: u.leaveCount
+  }));
+};
+
+
 // NEW: Debug route to check leave types
 exports.getLeaveTypesDebug = async (req, res, next) => {
   try {

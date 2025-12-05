@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const connectDB = require("./src/config/database");
 const errorHandler = require("./src/middlewares/errorHandler.middleware");
 const logger = require("./src/utils/logger");
-
+const meetingRoutes = require('./src/routes/meeting.routes'); // adjust path
 const app = express();
 
 // ==================== MIDDLEWARE ====================
@@ -90,6 +90,9 @@ app.use('/api/v1/events', require('./src/routes/event.routes'));
 // contract
 app.use("/api/v1/contracts", require("./src/routes/contract.routes"));
 
+// mwetings 
+
+app.use('/api/v1/meetings', meetingRoutes);
 
 // ==================== 404 HANDLER ====================
 app.use((req, res) => {

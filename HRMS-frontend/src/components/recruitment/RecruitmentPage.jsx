@@ -29,7 +29,7 @@ import {
   Edit,
   Trash2,
   BarChart3,
-  Brain
+  Brain,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotification } from "../../hooks/useNotification";
@@ -38,19 +38,19 @@ import { apiService } from "../../services/apiService";
 const RecruitmentPage = () => {
   const { showSuccess, showError } = useNotification();
   const { user } = useAuth();
-  
+
   // ==================== STATE MANAGEMENT ====================
   const [jobs, setJobs] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [managers, setManagers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
-  
+
   // Active view state
   const [activeView, setActiveView] = useState("jobs"); // "jobs" | "candidates" | "analytics"
   const [selectedJob, setSelectedJob] = useState(null);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
-  
+
   // Filters
   const [filters, setFilters] = useState({
     department: "",
@@ -60,14 +60,14 @@ const RecruitmentPage = () => {
     search: "",
     status: "",
   });
-  
+
   // Modals
   const [showJobModal, setShowJobModal] = useState(false);
   const [showJobDetailsModal, setShowJobDetailsModal] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [showCandidateModal, setShowCandidateModal] = useState(false);
   const [showInterviewModal, setShowInterviewModal] = useState(false);
-  
+
   // New job form
   const [newJob, setNewJob] = useState({
     title: "",
@@ -91,7 +91,7 @@ const RecruitmentPage = () => {
     recruitmentProcess: "Standard",
     status: "Open",
   });
-  
+
   // Application form
   const [applicationForm, setApplicationForm] = useState({
     resume: null,
@@ -102,7 +102,7 @@ const RecruitmentPage = () => {
     linkedinUrl: "",
     githubUrl: "",
   });
-  
+
   // Interview scheduling
   const [interviewData, setInterviewData] = useState({
     candidateId: "",
@@ -132,7 +132,8 @@ const RecruitmentPage = () => {
     try {
       setLoading(true);
       const response = await apiService.getAllJobs(filters);
-      const jobsData = response.data?.jobs || response.jobs || response.data || [];
+      const jobsData =
+        response.data?.jobs || response.jobs || response.data || [];
       setJobs(jobsData);
     } catch (error) {
       console.error("Error loading jobs:", error);
@@ -143,7 +144,7 @@ const RecruitmentPage = () => {
     }
   };
 
-const loadStats = async () => {
+  const loadStats = async () => {
     try {
       // Only load analytics if user is HR, Admin, or Manager
       if (["hr", "admin", "manager"].includes(user?.role?.toLowerCase())) {
@@ -177,7 +178,7 @@ const loadStats = async () => {
       });
     }
   };
-const loadManagers = async () => {
+  const loadManagers = async () => {
     try {
       // Only load managers if user is HR, Admin, or Manager
       if (["hr", "admin", "manager"].includes(user?.role?.toLowerCase())) {
@@ -185,10 +186,10 @@ const loadManagers = async () => {
           role: "manager",
           status: "active",
         });
-        
+
         // Handle different response structures
         let employeeList = [];
-        
+
         if (response.success && response.data) {
           // Check if data is array or object with employees property
           if (Array.isArray(response.data)) {
@@ -197,18 +198,22 @@ const loadManagers = async () => {
             employeeList = response.data.employees;
           }
         }
-        
+
         // Filter and map managers
         const managersList = employeeList
-          .filter((emp) => 
-            emp && (emp.role === "manager" || emp.role === "hr" || emp.role === "admin")
+          .filter(
+            (emp) =>
+              emp &&
+              (emp.role === "manager" ||
+                emp.role === "hr" ||
+                emp.role === "admin")
           )
           .map((emp) => ({
             _id: emp._id,
-            name: `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+            name: `${emp.firstName || ""} ${emp.lastName || ""}`.trim(),
             department: emp.department || "N/A",
           }));
-        
+
         setManagers(managersList);
       } else {
         // For employees, set empty managers list
@@ -237,7 +242,7 @@ const loadManagers = async () => {
   // ==================== JOB MANAGEMENT FUNCTIONS ====================
   const handleCreateJob = async (e) => {
     e.preventDefault();
-    
+
     if (!newJob.hiringManager) {
       showError("Please select a hiring manager");
       return;
@@ -246,17 +251,23 @@ const loadManagers = async () => {
     try {
       const jobData = {
         ...newJob,
-        requirements: newJob.requirements.filter(req => req.trim() !== ""),
-        responsibilities: newJob.responsibilities.filter(resp => resp.trim() !== ""),
-        skills: newJob.skills.filter(skill => skill.trim() !== ""),
-        preferredSkills: newJob.preferredSkills.filter(skill => skill.trim() !== ""),
-        qualifications: newJob.qualifications.filter(qual => qual.trim() !== ""),
-        benefits: newJob.benefits.filter(benefit => benefit.trim() !== ""),
+        requirements: newJob.requirements.filter((req) => req.trim() !== ""),
+        responsibilities: newJob.responsibilities.filter(
+          (resp) => resp.trim() !== ""
+        ),
+        skills: newJob.skills.filter((skill) => skill.trim() !== ""),
+        preferredSkills: newJob.preferredSkills.filter(
+          (skill) => skill.trim() !== ""
+        ),
+        qualifications: newJob.qualifications.filter(
+          (qual) => qual.trim() !== ""
+        ),
+        benefits: newJob.benefits.filter((benefit) => benefit.trim() !== ""),
         salary: {
           ...newJob.salary,
           min: newJob.salary.min ? parseInt(newJob.salary.min) : undefined,
           max: newJob.salary.max ? parseInt(newJob.salary.max) : undefined,
-        }
+        },
       };
 
       await apiService.createJob(jobData);
@@ -282,7 +293,7 @@ const loadManagers = async () => {
 
   const handleDeleteJob = async (jobId) => {
     if (!window.confirm("Are you sure you want to delete this job?")) return;
-    
+
     try {
       await apiService.deleteJob(jobId);
       showSuccess("Job deleted successfully!");
@@ -295,7 +306,7 @@ const loadManagers = async () => {
   // ==================== APPLICATION FUNCTIONS ====================
   const handleApplyForJob = async (e) => {
     e.preventDefault();
-    
+
     if (!applicationForm.resume) {
       showError("Please upload your resume");
       return;
@@ -303,13 +314,13 @@ const loadManagers = async () => {
 
     try {
       const formData = new FormData();
-      formData.append('resume', applicationForm.resume);
-      formData.append('coverLetter', applicationForm.coverLetter);
-      formData.append('expectedSalary', applicationForm.expectedSalary);
-      formData.append('noticePeriod', applicationForm.noticePeriod);
-      formData.append('portfolioUrl', applicationForm.portfolioUrl);
-      formData.append('linkedinUrl', applicationForm.linkedinUrl);
-      formData.append('githubUrl', applicationForm.githubUrl);
+      formData.append("resume", applicationForm.resume);
+      formData.append("coverLetter", applicationForm.coverLetter);
+      formData.append("expectedSalary", applicationForm.expectedSalary);
+      formData.append("noticePeriod", applicationForm.noticePeriod);
+      formData.append("portfolioUrl", applicationForm.portfolioUrl);
+      formData.append("linkedinUrl", applicationForm.linkedinUrl);
+      formData.append("githubUrl", applicationForm.githubUrl);
 
       await apiService.applyForJob(selectedJob._id, formData);
       showSuccess("Application submitted successfully!");
@@ -322,7 +333,11 @@ const loadManagers = async () => {
   };
 
   // ==================== CANDIDATE MANAGEMENT FUNCTIONS ====================
-  const handleUpdateCandidateStatus = async (candidateId, status, feedback = "") => {
+  const handleUpdateCandidateStatus = async (
+    candidateId,
+    status,
+    feedback = ""
+  ) => {
     try {
       await apiService.updateCandidateStatus(candidateId, { status, feedback });
       showSuccess(`Candidate status updated to ${status}`);
@@ -334,16 +349,16 @@ const loadManagers = async () => {
 
   const handleScheduleInterview = async (e) => {
     e.preventDefault();
-    
+
     try {
       await apiService.scheduleInterview(interviewData.candidateId, {
         date: `${interviewData.interviewDate}T${interviewData.interviewTime}`,
         type: interviewData.interviewType,
         interviewers: interviewData.interviewers,
         meetingLink: interviewData.meetingLink,
-        notes: interviewData.notes
+        notes: interviewData.notes,
       });
-      
+
       showSuccess("Interview scheduled successfully!");
       setShowInterviewModal(false);
       resetInterviewForm();
@@ -512,7 +527,9 @@ const loadManagers = async () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recruitment & ATS</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Recruitment & ATS
+          </h1>
           <p className="text-gray-600">
             Manage job postings, candidates, and interviews
           </p>
@@ -580,7 +597,10 @@ const loadManagers = async () => {
                 Open Positions
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.openJobs || stats.openPositions || jobs.filter(job => job.status === 'Open').length || 0}
+                {stats.openJobs ||
+                  stats.openPositions ||
+                  jobs.filter((job) => job.status === "Open").length ||
+                  0}
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-lg">
@@ -744,9 +764,13 @@ const loadManagers = async () => {
           {jobs.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <Briefcase className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No jobs found</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                No jobs found
+              </h3>
               <p className="text-gray-600 mb-4">
-                {canCreateJob ? "Post a new job to get started." : "No open positions at the moment."}
+                {canCreateJob
+                  ? "Post a new job to get started."
+                  : "No open positions at the moment."}
               </p>
             </div>
           ) : (
@@ -760,7 +784,9 @@ const loadManagers = async () => {
                     {job.title}
                   </h3>
                   <span
-                    className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ml-2 ${getStatusColor(job.status)}`}
+                    className={`px-2 py-1 text-xs rounded-full flex-shrink-0 ml-2 ${getStatusColor(
+                      job.status
+                    )}`}
                   >
                     {job.status}
                   </span>
@@ -773,7 +799,9 @@ const loadManagers = async () => {
 
                 <div className="flex items-center text-sm text-gray-500 mb-4">
                   <MapPin className="h-4 w-4 mr-1" />
-                  <span>{job.location} • {job.employmentType}</span>
+                  <span>
+                    {job.location} • {job.employmentType}
+                  </span>
                 </div>
 
                 <div className="flex items-center space-x-2 mb-3">
@@ -819,7 +847,7 @@ const loadManagers = async () => {
                 </div>
 
                 <div className="flex space-x-2">
-                  <button 
+                  <button
                     onClick={() => {
                       setSelectedJob(job);
                       setShowJobDetailsModal(true);
@@ -829,10 +857,10 @@ const loadManagers = async () => {
                     <Eye className="h-4 w-4 inline mr-1" />
                     View Details
                   </button>
-                  
+
                   {/* Employee Apply Button */}
                   {!isHROrAdmin && job.status === "Open" && (
-                    <button 
+                    <button
                       onClick={() => {
                         setSelectedJob(job);
                         setShowApplyModal(true);
@@ -843,10 +871,10 @@ const loadManagers = async () => {
                       Apply Now
                     </button>
                   )}
-                  
+
                   {/* HR/Admin Manage Button */}
                   {isHROrAdmin && (
-                    <button 
+                    <button
                       onClick={() => {
                         setSelectedJob(job);
                         setActiveView("candidates");
@@ -887,7 +915,10 @@ const loadManagers = async () => {
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <div className="flex items-center text-xs text-gray-500">
                       <Clock className="h-3 w-3 mr-1" />
-                      <span>Apply before: {new Date(job.deadline).toLocaleDateString()}</span>
+                      <span>
+                        Apply before:{" "}
+                        {new Date(job.deadline).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -905,11 +936,14 @@ const loadManagers = async () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedJob ? `Candidates for: ${selectedJob.title}` : "Select a job to view candidates"}
+                  {selectedJob
+                    ? `Candidates for: ${selectedJob.title}`
+                    : "Select a job to view candidates"}
                 </h3>
                 {selectedJob && (
                   <p className="text-sm text-gray-600">
-                    {candidates.length} total application{candidates.length !== 1 ? "s" : ""}
+                    {candidates.length} total application
+                    {candidates.length !== 1 ? "s" : ""}
                   </p>
                 )}
               </div>
@@ -926,7 +960,7 @@ const loadManagers = async () => {
                 <select
                   value={selectedJob?._id || ""}
                   onChange={(e) => {
-                    const job = jobs.find(j => j._id === e.target.value);
+                    const job = jobs.find((j) => j._id === e.target.value);
                     setSelectedJob(job);
                     if (job) loadCandidates(job._id);
                   }}
@@ -947,9 +981,13 @@ const loadManagers = async () => {
           {candidates.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
               <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No candidates yet</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                No candidates yet
+              </h3>
               <p className="text-gray-600">
-                {selectedJob ? "Applications will appear here once candidates apply." : "Select a job to view candidates."}
+                {selectedJob
+                  ? "Applications will appear here once candidates apply."
+                  : "Select a job to view candidates."}
               </p>
             </div>
           ) : (
@@ -988,7 +1026,10 @@ const loadManagers = async () => {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">
-                                {candidate.name || candidate.user?.firstName + " " + candidate.user?.lastName}
+                                {candidate.name ||
+                                  candidate.user?.firstName +
+                                    " " +
+                                    candidate.user?.lastName}
                               </div>
                               <div className="text-sm text-gray-500">
                                 {candidate.email || candidate.user?.email}
@@ -1012,10 +1053,16 @@ const loadManagers = async () => {
                           {candidate.experience || "N/A"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(candidate.appliedAt || candidate.createdAt).toLocaleDateString()}
+                          {new Date(
+                            candidate.appliedAt || candidate.createdAt
+                          ).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(candidate.status)}`}>
+                          <span
+                            className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                              candidate.status
+                            )}`}
+                          >
                             {candidate.status}
                           </span>
                         </td>
@@ -1032,7 +1079,10 @@ const loadManagers = async () => {
                             </button>
                             <button
                               onClick={() => {
-                                setInterviewData({ ...interviewData, candidateId: candidate._id });
+                                setInterviewData({
+                                  ...interviewData,
+                                  candidateId: candidate._id,
+                                });
                                 setShowInterviewModal(true);
                               }}
                               className="text-green-600 hover:text-green-900"
@@ -1040,13 +1090,20 @@ const loadManagers = async () => {
                               <Calendar className="h-5 w-5" />
                             </button>
                             <button
-                              onClick={() => window.open(candidate.resumeUrl, '_blank')}
+                              onClick={() =>
+                                window.open(candidate.resumeUrl, "_blank")
+                              }
                               className="text-blue-600 hover:text-blue-900"
                             >
                               <Download className="h-5 w-5" />
                             </button>
                             <button
-                              onClick={() => handleUpdateCandidateStatus(candidate._id, "Rejected")}
+                              onClick={() =>
+                                handleUpdateCandidateStatus(
+                                  candidate._id,
+                                  "Rejected"
+                                )
+                              }
                               className="text-red-600 hover:text-red-900"
                             >
                               <XCircle className="h-5 w-5" />
@@ -1071,19 +1128,26 @@ const loadManagers = async () => {
             Advanced Analytics Coming Soon
           </h3>
           <p className="text-gray-600 mb-6">
-            Get insights on hiring trends, time-to-hire, source effectiveness, and more.
+            Get insights on hiring trends, time-to-hire, source effectiveness,
+            and more.
           </p>
           <div className="grid grid-cols-3 gap-4 max-w-2xl mx-auto">
             <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{stats.avgTimeToHire || "N/A"}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.avgTimeToHire || "N/A"}
+              </p>
               <p className="text-sm text-gray-600">Avg. Time to Hire</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">{stats.offerAcceptanceRate || "N/A"}%</p>
+              <p className="text-2xl font-bold text-gray-900">
+                {stats.offerAcceptanceRate || "N/A"}%
+              </p>
               <p className="text-sm text-gray-600">Offer Acceptance</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-bold text-gray-900">₹{stats.costPerHire || "N/A"}</p>
+              <p className="text-2xl font-bold text-gray-900">
+                ₹{stats.costPerHire || "N/A"}
+              </p>
               <p className="text-sm text-gray-600">Cost Per Hire</p>
             </div>
           </div>
@@ -1518,7 +1582,11 @@ const loadManagers = async () => {
                         type="text"
                         value={requirement}
                         onChange={(e) =>
-                          updateArrayField("requirements", index, e.target.value)
+                          updateArrayField(
+                            "requirements",
+                            index,
+                            e.target.value
+                          )
                         }
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Enter requirement"
@@ -1526,7 +1594,9 @@ const loadManagers = async () => {
                       {newJob.requirements.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => removeArrayField("requirements", index)}
+                          onClick={() =>
+                            removeArrayField("requirements", index)
+                          }
                           className="px-3 py-2 text-red-600 hover:text-red-700"
                         >
                           <X className="h-5 w-5" />
@@ -1612,9 +1682,15 @@ const loadManagers = async () => {
           <div className="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 sticky top-0 bg-white flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selectedJob.title}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedJob.title}
+                </h2>
                 <div className="flex items-center space-x-3 mt-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(selectedJob.status)}`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                      selectedJob.status
+                    )}`}
+                  >
                     {selectedJob.status}
                   </span>
                   <span className="text-sm text-gray-600">
@@ -1638,7 +1714,9 @@ const loadManagers = async () => {
             <div className="p-6 space-y-6">
               {/* Job Details */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Job Details</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                  Job Details
+                </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Employment Type</p>
@@ -1662,24 +1740,35 @@ const loadManagers = async () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Salary</p>
-                    <p className="font-medium">{formatSalary(selectedJob.salary)}</p>
+                    <p className="font-medium">
+                      {formatSalary(selectedJob.salary)}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Description */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                <p className="text-gray-700 whitespace-pre-line">{selectedJob.description}</p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Description
+                </h3>
+                <p className="text-gray-700 whitespace-pre-line">
+                  {selectedJob.description}
+                </p>
               </div>
 
               {/* Skills */}
               {selectedJob.skills && selectedJob.skills.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Required Skills</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Required Skills
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {selectedJob.skills.map((skill, index) => (
-                      <span key={index} className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm"
+                      >
                         {skill}
                       </span>
                     ))}
@@ -1688,33 +1777,41 @@ const loadManagers = async () => {
               )}
 
               {/* Responsibilities */}
-              {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Responsibilities</h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    {selectedJob.responsibilities.map((resp, index) => (
-                      <li key={index}>{resp}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {selectedJob.responsibilities &&
+                selectedJob.responsibilities.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Responsibilities
+                    </h3>
+                    <ul className="list-disc list-inside space-y-2 text-gray-700">
+                      {selectedJob.responsibilities.map((resp, index) => (
+                        <li key={index}>{resp}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {/* Requirements */}
-              {selectedJob.requirements && selectedJob.requirements.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Requirements</h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-700">
-                    {selectedJob.requirements.map((req, index) => (
-                      <li key={index}>{req}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              {selectedJob.requirements &&
+                selectedJob.requirements.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Requirements
+                    </h3>
+                    <ul className="list-disc list-inside space-y-2 text-gray-700">
+                      {selectedJob.requirements.map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {/* Benefits */}
               {selectedJob.benefits && selectedJob.benefits.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Benefits</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Benefits
+                  </h3>
                   <ul className="list-disc list-inside space-y-2 text-gray-700">
                     {selectedJob.benefits.map((benefit, index) => (
                       <li key={index}>{benefit}</li>
@@ -1749,8 +1846,12 @@ const loadManagers = async () => {
           <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 sticky top-0 bg-white flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Apply for {selectedJob.title}</h2>
-                <p className="text-sm text-gray-600 mt-1">{selectedJob.department} • {selectedJob.location}</p>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Apply for {selectedJob.title}
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {selectedJob.department} • {selectedJob.location}
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -1773,7 +1874,10 @@ const loadManagers = async () => {
                   required
                   accept=".pdf,.doc,.docx"
                   onChange={(e) =>
-                    setApplicationForm(prev => ({ ...prev, resume: e.target.files[0] }))
+                    setApplicationForm((prev) => ({
+                      ...prev,
+                      resume: e.target.files[0],
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 />
@@ -1787,7 +1891,10 @@ const loadManagers = async () => {
                   rows="4"
                   value={applicationForm.coverLetter}
                   onChange={(e) =>
-                    setApplicationForm(prev => ({ ...prev, coverLetter: e.target.value }))
+                    setApplicationForm((prev) => ({
+                      ...prev,
+                      coverLetter: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="Tell us why you're a great fit for this role..."
@@ -1803,7 +1910,10 @@ const loadManagers = async () => {
                     type="number"
                     value={applicationForm.expectedSalary}
                     onChange={(e) =>
-                      setApplicationForm(prev => ({ ...prev, expectedSalary: e.target.value }))
+                      setApplicationForm((prev) => ({
+                        ...prev,
+                        expectedSalary: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     placeholder="e.g., 800000"
@@ -1818,7 +1928,10 @@ const loadManagers = async () => {
                     type="number"
                     value={applicationForm.noticePeriod}
                     onChange={(e) =>
-                      setApplicationForm(prev => ({ ...prev, noticePeriod: e.target.value }))
+                      setApplicationForm((prev) => ({
+                        ...prev,
+                        noticePeriod: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     placeholder="e.g., 30"
@@ -1834,7 +1947,10 @@ const loadManagers = async () => {
                   type="url"
                   value={applicationForm.portfolioUrl}
                   onChange={(e) =>
-                    setApplicationForm(prev => ({ ...prev, portfolioUrl: e.target.value }))
+                    setApplicationForm((prev) => ({
+                      ...prev,
+                      portfolioUrl: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="https://yourportfolio.com"
@@ -1849,7 +1965,10 @@ const loadManagers = async () => {
                   type="url"
                   value={applicationForm.linkedinUrl}
                   onChange={(e) =>
-                    setApplicationForm(prev => ({ ...prev, linkedinUrl: e.target.value }))
+                    setApplicationForm((prev) => ({
+                      ...prev,
+                      linkedinUrl: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="https://linkedin.com/in/yourprofile"
@@ -1864,7 +1983,10 @@ const loadManagers = async () => {
                   type="url"
                   value={applicationForm.githubUrl}
                   onChange={(e) =>
-                    setApplicationForm(prev => ({ ...prev, githubUrl: e.target.value }))
+                    setApplicationForm((prev) => ({
+                      ...prev,
+                      githubUrl: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="https://github.com/yourusername"
@@ -1902,9 +2024,14 @@ const loadManagers = async () => {
             <div className="p-6 border-b border-gray-200 sticky top-0 bg-white flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {selectedCandidate.name || selectedCandidate.user?.firstName + " " + selectedCandidate.user?.lastName}
+                  {selectedCandidate.name ||
+                    selectedCandidate.user?.firstName +
+                      " " +
+                      selectedCandidate.user?.lastName}
                 </h2>
-                <p className="text-sm text-gray-600">{selectedCandidate.email || selectedCandidate.user?.email}</p>
+                <p className="text-sm text-gray-600">
+                  {selectedCandidate.email || selectedCandidate.user?.email}
+                </p>
               </div>
               <button
                 onClick={() => setShowCandidateModal(false)}
@@ -1919,19 +2046,31 @@ const loadManagers = async () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-gray-600">Experience</p>
-                  <p className="font-medium">{selectedCandidate.experience || "N/A"}</p>
+                  <p className="font-medium">
+                    {selectedCandidate.experience || "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Expected Salary</p>
-                  <p className="font-medium">₹{selectedCandidate.expectedSalary?.toLocaleString() || "N/A"}</p>
+                  <p className="font-medium">
+                    ₹
+                    {selectedCandidate.expectedSalary?.toLocaleString() ||
+                      "N/A"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Notice Period</p>
-                  <p className="font-medium">{selectedCandidate.noticePeriod || "N/A"} days</p>
+                  <p className="font-medium">
+                    {selectedCandidate.noticePeriod || "N/A"} days
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(selectedCandidate.status)}`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                      selectedCandidate.status
+                    )}`}
+                  >
                     {selectedCandidate.status}
                   </span>
                 </div>
@@ -1944,8 +2083,12 @@ const loadManagers = async () => {
                     <div className="flex items-center">
                       <Brain className="h-6 w-6 text-yellow-600 mr-2" />
                       <div>
-                        <p className="font-semibold text-gray-900">AI Matching Score</p>
-                        <p className="text-sm text-gray-600">Based on resume analysis</p>
+                        <p className="font-semibold text-gray-900">
+                          AI Matching Score
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          Based on resume analysis
+                        </p>
                       </div>
                     </div>
                     <div className="text-3xl font-bold text-yellow-600">
@@ -1958,7 +2101,9 @@ const loadManagers = async () => {
               {/* Cover Letter */}
               {selectedCandidate.coverLetter && (
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Cover Letter</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Cover Letter
+                  </h3>
                   <p className="text-gray-700 whitespace-pre-line bg-gray-50 p-4 rounded-lg">
                     {selectedCandidate.coverLetter}
                   </p>
@@ -2003,14 +2148,22 @@ const loadManagers = async () => {
               {/* Actions */}
               <div className="flex space-x-3 pt-6 border-t border-gray-200">
                 <button
-                  onClick={() => handleUpdateCandidateStatus(selectedCandidate._id, "Screening")}
+                  onClick={() =>
+                    handleUpdateCandidateStatus(
+                      selectedCandidate._id,
+                      "Screening"
+                    )
+                  }
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Move to Screening
                 </button>
                 <button
                   onClick={() => {
-                    setInterviewData({ ...interviewData, candidateId: selectedCandidate._id });
+                    setInterviewData({
+                      ...interviewData,
+                      candidateId: selectedCandidate._id,
+                    });
                     setShowCandidateModal(false);
                     setShowInterviewModal(true);
                   }}
@@ -2020,7 +2173,12 @@ const loadManagers = async () => {
                   Schedule Interview
                 </button>
                 <button
-                  onClick={() => handleUpdateCandidateStatus(selectedCandidate._id, "Rejected")}
+                  onClick={() =>
+                    handleUpdateCandidateStatus(
+                      selectedCandidate._id,
+                      "Rejected"
+                    )
+                  }
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Reject
@@ -2036,7 +2194,9 @@ const loadManagers = async () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-200 sticky top-0 bg-white flex justify-between items-center">
-              <h2 className="text-xl font-bold text-gray-900">Schedule Interview</h2>
+              <h2 className="text-xl font-bold text-gray-900">
+                Schedule Interview
+              </h2>
               <button
                 onClick={() => {
                   setShowInterviewModal(false);
@@ -2059,7 +2219,10 @@ const loadManagers = async () => {
                     required
                     value={interviewData.interviewDate}
                     onChange={(e) =>
-                      setInterviewData(prev => ({ ...prev, interviewDate: e.target.value }))
+                      setInterviewData((prev) => ({
+                        ...prev,
+                        interviewDate: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   />
@@ -2074,7 +2237,10 @@ const loadManagers = async () => {
                     required
                     value={interviewData.interviewTime}
                     onChange={(e) =>
-                      setInterviewData(prev => ({ ...prev, interviewTime: e.target.value }))
+                      setInterviewData((prev) => ({
+                        ...prev,
+                        interviewTime: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   />
@@ -2089,7 +2255,10 @@ const loadManagers = async () => {
                   required
                   value={interviewData.interviewType}
                   onChange={(e) =>
-                    setInterviewData(prev => ({ ...prev, interviewType: e.target.value }))
+                    setInterviewData((prev) => ({
+                      ...prev,
+                      interviewType: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                 >
@@ -2108,7 +2277,10 @@ const loadManagers = async () => {
                     type="url"
                     value={interviewData.meetingLink}
                     onChange={(e) =>
-                      setInterviewData(prev => ({ ...prev, meetingLink: e.target.value }))
+                      setInterviewData((prev) => ({
+                        ...prev,
+                        meetingLink: e.target.value,
+                      }))
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                     placeholder="https://meet.google.com/xyz"
@@ -2124,8 +2296,14 @@ const loadManagers = async () => {
                   multiple
                   value={interviewData.interviewers}
                   onChange={(e) => {
-                    const selected = Array.from(e.target.selectedOptions, option => option.value);
-                    setInterviewData(prev => ({ ...prev, interviewers: selected }));
+                    const selected = Array.from(
+                      e.target.selectedOptions,
+                      (option) => option.value
+                    );
+                    setInterviewData((prev) => ({
+                      ...prev,
+                      interviewers: selected,
+                    }));
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   size="4"
@@ -2136,7 +2314,9 @@ const loadManagers = async () => {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Hold Ctrl/Cmd to select multiple
+                </p>
               </div>
 
               <div>
@@ -2147,7 +2327,10 @@ const loadManagers = async () => {
                   rows="3"
                   value={interviewData.notes}
                   onChange={(e) =>
-                    setInterviewData(prev => ({ ...prev, notes: e.target.value }))
+                    setInterviewData((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="Any additional notes for the interview..."

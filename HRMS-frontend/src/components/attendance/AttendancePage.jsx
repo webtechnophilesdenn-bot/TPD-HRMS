@@ -990,7 +990,10 @@ const AttendancePage = () => {
                           : "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.workingHours ? Number(record.workingHours).toFixed(1) : '0.0'} hrs
+                        {record.workingHours
+                          ? Number(record.workingHours).toFixed(1)
+                          : "0.0"}{" "}
+                        hrs
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {record.overtime ? record.overtime.toFixed(1) : "0"} hrs
@@ -1224,7 +1227,10 @@ const AttendancePage = () => {
                         hrs
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {record.overtime ? Number(record.overtime).toFixed(1) : '0.0'} hrs
+                        {record.overtime
+                          ? Number(record.overtime).toFixed(1)
+                          : "0.0"}{" "}
+                        hrs
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span

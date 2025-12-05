@@ -21,6 +21,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   FileSignature,
+  Video, // ✅ Added for Meetings
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -116,6 +117,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         { id: "payroll", label: "Payroll", icon: DollarSign },
         { id: "recruitment", label: "Recruitment", icon: UserPlus },
         { id: "events", label: "Events Calendar", icon: Calendar },
+        { id: "meetings", label: "Meetings", icon: Video }, // ✅ Added Meetings
         ...(isAdminOrHR
           ? [
               { id: "onboarding", label: "Onboarding", icon: UserCheck },

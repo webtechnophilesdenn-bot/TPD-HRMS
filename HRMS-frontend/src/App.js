@@ -10,6 +10,10 @@ import AttendancePage from "./components/attendance/AttendancePage";
 import LeavesPage from "./components/leaves/LeavesPage";
 import ContractsPage from "./components/legal/ContractsPage";
 
+// Meeting Pages
+import MeetingsPage from './pages/MeetingsPage';
+import MeetingRoom from './pages/MeetingRoom';
+
 // Payroll Pages
 import PayrollDashboard from "./components/payroll/PayrollDashboard";
 import EmployeePayslipView from "./components/payroll/EmployeePayslipView";
@@ -25,14 +29,20 @@ import ChatbotPage from "./components/chatbot/ChatbotPage";
 import OnboardingPage from "./components/onboarding/OnboardingPage";
 import OffboardingPage from "./components/offboarding/OffboardingPage";
 import CompliancePage from "./components/compliancePage/CompliancePage";
-import EventsPage from "./components/Events/EventsPage"; // ✅ Already imported
+import EventsPage from "./components/Events/EventsPage";
 
 const AppContent = () => {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState("dashboard");
+  const [meetingId, setMeetingId] = useState(null); // For meeting room navigation
 
   const renderPage = () => {
+    // Special case for meeting room (needs meetingId)
+    if (activeMenu === "meeting-room" && meetingId) {
+      return <MeetingRoom meetingId={meetingId} />;
+    }
+
     switch (activeMenu) {
       case "dashboard":
         return <Dashboard />;
@@ -65,9 +75,18 @@ const AppContent = () => {
       case "recruitment":
         return <RecruitmentPage />;
 
-      // ✅ ADD EVENTS ROUTE
+      // ==================== EVENTS ROUTE ====================
       case "events":
         return <EventsPage />;
+      // ==================== END EVENTS ROUTE ====================
+
+      // ==================== MEETINGS ROUTE ====================
+      case "meetings":
+        return <MeetingsPage onJoinMeeting={(id) => {
+          setMeetingId(id);
+          setActiveMenu("meeting-room");
+        }} />;
+      // ==================== END MEETINGS ROUTE ====================
 
       case "contracts":
         return (
@@ -75,7 +94,6 @@ const AppContent = () => {
             isAdmin={user?.role === "admin" || user?.role === "hr"}
           />
         );
-      // ==================== END EVENTS ROUTE ====================
 
       case "onboarding":
         return <OnboardingPage />;
@@ -132,7 +150,13 @@ const AppContent = () => {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           activeMenu={activeMenu}
-          setActiveMenu={setActiveMenu}
+          setActiveMenu={(menu) => {
+            setActiveMenu(menu);
+            // Reset meetingId when changing menu
+            if (menu !== "meeting-room") {
+              setMeetingId(null);
+            }
+          }}
         />
         <main className="flex-1 min-w-0">{renderPage()}</main>
       </div>

@@ -433,7 +433,76 @@ getDepartmentAttendanceDetail: async (departmentId, filters = {}) => {
       body: JSON.stringify({ updates }),
     });
   },
+// ==================== MEETINGS ====================
 
+createMeeting: async (meetingData) => {
+  return await apiService.request('/meetings', {
+    method: 'POST',
+    body: JSON.stringify(meetingData),
+  });
+},
+
+getAllMeetings: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (
+      filters[key] !== '' &&
+      filters[key] !== undefined &&
+      filters[key] !== null
+    ) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  return await apiService.request(`/meetings${queryString ? '?' + queryString : ''}`);
+},
+
+getMyMeetings: async (upcoming = true) => {
+  return await apiService.request(`/meetings/my-meetings?upcoming=${upcoming}`);
+},
+
+getMeetingById: async (id) => {
+  return await apiService.request(`/meetings/${id}`);
+},
+
+getMeetingByMeetingId: async (meetingId) => {
+  return await apiService.request(`/meetings/join/${meetingId}`);
+},
+
+joinMeeting: async (meetingId, password, name, email) => {
+  return await apiService.request(`/meetings/join/${meetingId}`, {
+    method: 'POST',
+    body: JSON.stringify({ password, name, email }),
+  });
+},
+
+updateMeeting: async (id, updates) => {
+  return await apiService.request(`/meetings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+},
+
+cancelMeeting: async (id) => {
+  return await apiService.request(`/meetings/${id}/cancel`, {
+    method: 'PATCH',
+  });
+},
+
+endMeeting: async (id) => {
+  return await apiService.request(`/meetings/${id}/end`, {
+    method: 'PATCH',
+  });
+},
+
+deleteMeeting: async (id) => {
+  return await apiService.request(`/meetings/${id}`, {
+    method: 'DELETE',
+  });
+},
+
+
+  
   // // ==================== LEAVE MANAGEMENT ====================
   // applyLeave: async (leaveData) => {
   //   return await apiService.request("/leaves/apply", {
@@ -1075,6 +1144,37 @@ getDepartmentAttendanceDetail: async (departmentId, filters = {}) => {
       body: JSON.stringify(rules),
     });
   },
+
+
+  // Find your leave-related methods and add these:
+
+
+
+
+
+
+
+
+// Find line 1163 in your apiService.js and replace the NEW methods with these:
+
+// ✅ CORRECTED: Approved leaves endpoints
+getApprovedLeaves: async (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  console.log('🔄 Fetching approved leaves:', `/leaves/approved?${queryString}`);
+  return await apiService.request(`/leaves/approved?${queryString}`); // ✅ Use apiService.request
+},
+
+getEmployeesOnLeaveToday: async () => {
+  console.log('🔄 Fetching employees on leave today');
+  return await apiService.request('/leaves/on-leave-today'); // ✅ Use apiService.request
+},
+
+getLeaveCalendar: async (params = {}) => {
+  const queryString = new URLSearchParams(params).toString();
+  console.log('🔄 Fetching leave calendar:', `/leaves/calendar?${queryString}`);
+  return await apiService.request(`/leaves/calendar?${queryString}`); // ✅ Use apiService.request
+},
+
 
   // ==================== LEAVE DASHBOARD & WIDGETS ====================
 

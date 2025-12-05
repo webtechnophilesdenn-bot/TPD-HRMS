@@ -1,8 +1,11 @@
-// src/components/Events/EventModal.jsx
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { apiService } from '../../services/apiService';
+import { useNotification } from '../../context/NotificationContext';
 
 const EventModal = ({ onClose, onSubmit, event = null }) => {
+  const { showError } = useNotification();
+  
   const [formData, setFormData] = useState({
     title: event?.title || '',
     description: event?.description || '',
@@ -13,6 +16,8 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
     meetingLink: event?.meetingLink || '',
     visibility: event?.visibility || 'Public',
   });
+  
+  const [loading, setLoading] = useState(false);
 
   const eventTypes = [
     'Company Meeting',
@@ -27,9 +32,32 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
     'Other',
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    setLoading(true);
+    
+    try {
+      let response;
+      let createdEvent;
+      
+      if (event) {
+        // Update existing event
+        response = await apiService.updateEvent(event._id, formData);
+        createdEvent = response?.data?.data || formData;
+      } else {
+        // Create new event
+        response = await apiService.createEvent(formData);
+        createdEvent = response?.data?.data || formData;
+      }
+      
+      // Pass the created/updated event back to parent
+      onSubmit(createdEvent);
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      showError(event ? 'Failed to update event' : 'Failed to create event');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,6 +70,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            disabled={loading}
           >
             <X className="h-6 w-6" />
           </button>
@@ -59,6 +88,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               placeholder="Enter event title"
+              disabled={loading}
             />
           </div>
 
@@ -72,6 +102,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
               rows={3}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               placeholder="Event description (optional)"
+              disabled={loading}
             />
           </div>
 
@@ -85,6 +116,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               >
                 {eventTypes.map((type) => (
                   <option key={type} value={type}>
@@ -102,6 +134,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
                 value={formData.visibility}
                 onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               >
                 <option value="Public">Public</option>
                 <option value="Department">Department Only</option>
@@ -121,6 +154,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
                 value={formData.startDate}
                 onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               />
             </div>
 
@@ -134,6 +168,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
                 value={formData.endDate}
                 onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                disabled={loading}
               />
             </div>
           </div>
@@ -148,6 +183,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
               placeholder="Office, Room 301, etc."
+              disabled={loading}
             />
           </div>
 
@@ -161,6 +197,7 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
               onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
               placeholder="https://meet.google.com/..."
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+              disabled={loading}
             />
           </div>
 
@@ -169,14 +206,16 @@ const EventModal = ({ onClose, onSubmit, event = null }) => {
               type="button"
               onClick={onClose}
               className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              disabled={loading}
+              className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {event ? 'Update Event' : 'Create Event'}
+              {loading ? 'Saving...' : (event ? 'Update Event' : 'Create Event')}
             </button>
           </div>
         </form>
