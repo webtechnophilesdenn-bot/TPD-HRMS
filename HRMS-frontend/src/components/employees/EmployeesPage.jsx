@@ -29,6 +29,7 @@ import {
   IndianRupee,
   Star,
   Settings,
+  X,
 } from "lucide-react";
 
 import { apiService } from "../../services/apiService";
@@ -54,150 +55,72 @@ const EmployeesPage = () => {
     workLocation: "",
   });
 
-  // Mock data for departments and designations
-  const departments = [
-    { _id: "dept1", name: "Engineering", code: "ENG" },
-    { _id: "dept2", name: "Human Resources", code: "HR" },
-    { _id: "dept3", name: "Finance", code: "FIN" },
-    { _id: "dept4", name: "Sales", code: "SALES" },
-    { _id: "dept5", name: "Marketing", code: "MKT" },
-    { _id: "dept6", name: "Operations", code: "OPS" },
-    { _id: "dept7", name: "Customer Support", code: "CS" },
-    { _id: "dept8", name: "Product Management", code: "PM" },
-    { _id: "dept9", name: "Quality Assurance", code: "QA" },
-    { _id: "dept10", name: "Research & Development", code: "R&D" },
-  ];
-
-  const designations = [
-    { _id: "desig1", title: "Software Engineer", level: "Junior" },
-    { _id: "desig2", title: "Senior Software Engineer", level: "Senior" },
-    { _id: "desig3", title: "Tech Lead", level: "Lead" },
-    { _id: "desig4", title: "Engineering Manager", level: "Manager" },
-    { _id: "desig5", title: "HR Manager", level: "Manager" },
-    { _id: "desig6", title: "HR Executive", level: "Junior" },
-    { _id: "desig7", title: "Finance Analyst", level: "Junior" },
-    { _id: "desig8", title: "Finance Manager", level: "Manager" },
-    { _id: "desig9", title: "Sales Executive", level: "Junior" },
-    { _id: "desig10", title: "Sales Manager", level: "Manager" },
-    { _id: "desig11", title: "Marketing Specialist", level: "Junior" },
-    { _id: "desig12", title: "Product Manager", level: "Manager" },
-    { _id: "desig13", title: "QA Engineer", level: "Junior" },
-    { _id: "desig14", title: "DevOps Engineer", level: "Senior" },
-    { _id: "desig15", title: "Data Scientist", level: "Senior" },
-  ];
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [showDesigModal, setShowDesigModal] = useState(false);
+  const [editingDept, setEditingDept] = useState(null);
+  const [editingDesig, setEditingDesig] = useState(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
+  const loadDepartmentsAndDesignations = async () => {
+    try {
+      const [deptResponse, desigResponse] = await Promise.all([
+        apiService.getDepartments(),
+        apiService.getDesignations(),
+      ]);
+
+      const deptData = (deptResponse?.data || []).map((d) => ({
+        _id: d._id,
+        id: d._id,
+        name: d.name,
+        code: d.code,
+        description: d.description,
+        head: d.head,
+        isActive: d.isActive,
+      }));
+      setDepartments(deptData);
+
+      const desigData = (desigResponse?.data || []).map((d) => ({
+        _id: d._id,
+        id: d._id,
+        title: d.title,
+        level: d.level,
+        department: d.department,
+        description: d.description,
+        grade: d.grade,
+        minExperience: d.minExperience,
+        maxExperience: d.maxExperience,
+        isActive: d.isActive,
+      }));
+      setDesignations(desigData);
+
+      return { deptData, desigData };
+    } catch (error) {
+      console.error("Failed to load departments/designations:", error);
+      setDepartments([]);
+      setDesignations([]);
+      return { deptData: [], desigData: [] };
+    }
+  };
+
   const loadData = async () => {
     try {
       setLoading(true);
 
-      // Always load current user's profile
+      // Load departments and designations from API first
+      await loadDepartmentsAndDesignations();
+
+      // Load current user's profile
       try {
         const myProfileResponse = await apiService.getMyProfile();
         setMyProfile(myProfileResponse.data);
       } catch (error) {
         console.error("Failed to load my profile:", error);
-        // Create mock profile for demo
-        setMyProfile({
-          _id: "emp1",
-          employeeId: "EMP001",
-          firstName: "John",
-          lastName: "Doe",
-          personalEmail: "john.doe@company.com",
-          phone: "+91 9876543210",
-          dateOfBirth: "1990-05-15",
-          gender: "Male",
-          department: departments[0],
-          designation: designations[1],
-          joiningDate: "2022-01-15",
-          employmentType: "Full-Time",
-          status: "Active",
-          ctc: 1200000,
-          workLocation: "Bangalore",
-          workShift: "Day",
-          probationPeriod: 3,
-          address: {
-            street: "123 Main Street",
-            city: "Bangalore",
-            state: "Karnataka",
-            zipCode: "560001",
-            country: "India",
-          },
-          bankDetails: {
-            accountNumber: "123456789012",
-            ifscCode: "SBIN0001234",
-            bankName: "State Bank of India",
-            branch: "MG Road",
-            accountHolderName: "John Doe",
-            accountType: "Savings",
-          },
-          statutoryDetails: {
-            panNumber: "ABCDE1234F",
-            aadharNumber: "123456789012",
-            uanNumber: "123456789012",
-            epfNumber: "MHBAN123456789012",
-            esiNumber: "123456789012345",
-          },
-          leaveBalance: {
-            casual: 12,
-            sick: 8,
-            earned: 15,
-            maternity: 0,
-            paternity: 0,
-            compOff: 2,
-            lossOfPay: 0,
-          },
-          emergencyContact: {
-            name: "Jane Doe",
-            relationship: "Spouse",
-            phone: "+91 9876543211",
-            alternatePhone: "+91 9876543212",
-            address: "123 Main Street, Bangalore",
-          },
-          performance: {
-            lastReviewDate: "2024-01-15",
-            nextReviewDate: "2024-07-15",
-            currentRating: 4.2,
-          },
-          education: [
-            {
-              degree: "Bachelor of Engineering",
-              institution: "ABC University",
-              specialization: "Computer Science",
-              yearOfPassing: 2012,
-              percentage: 85,
-              grade: "A",
-            },
-          ],
-          workExperience: [
-            {
-              company: "Tech Solutions Inc",
-              designation: "Software Developer",
-              from: "2012-07-01",
-              to: "2021-12-31",
-              isCurrent: false,
-              responsibilities: "Full stack development, Team leadership",
-              reasonForLeaving: "Better opportunity",
-            },
-          ],
-          skills: [
-            { name: "JavaScript", level: "Expert", yearsOfExperience: 8 },
-            { name: "React", level: "Expert", yearsOfExperience: 6 },
-            { name: "Node.js", level: "Advanced", yearsOfExperience: 5 },
-          ],
-          documents: [
-            {
-              type: "Aadhar",
-              fileName: "aadhar_card.pdf",
-              fileUrl: "/documents/aadhar.pdf",
-              uploadedAt: "2022-01-20",
-              isVerified: true,
-            },
-          ],
-        });
+        setMyProfile(null);
       }
 
       // Only load all employees if user is admin/hr/manager
@@ -207,14 +130,9 @@ const EmployeesPage = () => {
           setEmployees(
             Array.isArray(employeesResponse.data) ? employeesResponse.data : []
           );
-          // If no employees, create mock data
-          if (!employeesResponse.data || employeesResponse.data.length === 0) {
-            setEmployees(generateMockEmployees());
-          }
         } catch (error) {
           console.error("Failed to load all employees:", error);
-          // Create mock employees for demo
-          setEmployees(generateMockEmployees());
+          setEmployees([]);
         }
       }
 
@@ -223,6 +141,81 @@ const EmployeesPage = () => {
       console.error("Failed to load data:", error);
       showError("Failed to load data");
       setLoading(false);
+    }
+  };
+
+  // ✅ NEW: Handle Department CRUD
+  const handleSaveDepartment = async (deptData) => {
+    try {
+      if (editingDept) {
+        await apiService.updateDepartment(editingDept._id, deptData);
+        showSuccess("Department updated successfully");
+      } else {
+        await apiService.createDepartment(deptData);
+        showSuccess("Department created successfully");
+      }
+      setShowDeptModal(false);
+      setEditingDept(null);
+      await loadDepartmentsAndDesignations();
+    } catch (error) {
+      showError(error.message || "Failed to save department");
+    }
+  };
+
+  const handleDeleteDepartment = async (deptId) => {
+    if (window.confirm("Are you sure you want to delete this department?")) {
+      try {
+        await apiService.deleteDepartment(deptId);
+        showSuccess("Department deleted successfully");
+        await loadDepartmentsAndDesignations();
+      } catch (error) {
+        showError(error.message || "Failed to delete department");
+      }
+    }
+  };
+
+  // ✅ NEW: Handle Designation CRUD
+  const handleSaveDesignation = async (desigData) => {
+    try {
+      if (editingDesig) {
+        await apiService.updateDesignation(editingDesig._id, desigData);
+        showSuccess("Designation updated successfully");
+      } else {
+        await apiService.createDesignation(desigData);
+        showSuccess("Designation created successfully");
+      }
+      setShowDesigModal(false);
+      setEditingDesig(null);
+      await loadDepartmentsAndDesignations();
+    } catch (error) {
+      showError(error.message || "Failed to save designation");
+    }
+  };
+
+  const handleDeleteDesignation = async (desigId) => {
+    if (window.confirm("Are you sure you want to delete this designation?")) {
+      try {
+        await apiService.deleteDesignation(desigId);
+        showSuccess("Designation deleted successfully");
+        await loadDepartmentsAndDesignations();
+      } catch (error) {
+        showError(error.message || "Failed to delete designation");
+      }
+    }
+  };
+
+  const handleDeleteEmployee = async (employeeId) => {
+    if (window.confirm("Are you sure you want to terminate this employee?")) {
+      try {
+        await apiService.updateEmployee(employeeId, {
+          status: "Terminated",
+          exitDate: new Date(),
+        });
+        showSuccess("Employee terminated successfully");
+        loadData();
+      } catch (error) {
+        showError("Failed to terminate employee");
+      }
     }
   };
 
@@ -313,21 +306,7 @@ const EmployeesPage = () => {
     return mockEmployees;
   };
 
-  const handleDeleteEmployee = async (employeeId) => {
-    if (window.confirm("Are you sure you want to terminate this employee?")) {
-      try {
-        await apiService.updateEmployee(employeeId, {
-          status: "Terminated",
-          exitDate: new Date(),
-        });
-        showSuccess("Employee terminated successfully");
-        loadData();
-      } catch (error) {
-        showError("Failed to terminate employee");
-      }
-    }
-  };
-
+  // ✅ FIXED: filteredEmployees with proper _id handling
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,13 +314,16 @@ const EmployeesPage = () => {
       emp.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.personalEmail?.toLowerCase().includes(searchTerm.toLowerCase());
 
+    const empDeptId = emp.department?._id || emp.department;
+    const empDesigId = emp.designation?._id || emp.designation;
+
     const matchesDepartment =
-      !filters.department || emp.department?._id === filters.department;
+      !filters.department || empDeptId === filters.department;
     const matchesStatus = !filters.status || emp.status === filters.status;
     const matchesEmploymentType =
       !filters.employmentType || emp.employmentType === filters.employmentType;
     const matchesDesignation =
-      !filters.designation || emp.designation?._id === filters.designation;
+      !filters.designation || empDesigId === filters.designation;
     const matchesWorkLocation =
       !filters.workLocation || emp.workLocation === filters.workLocation;
 
@@ -367,7 +349,7 @@ const EmployeesPage = () => {
     <div className="p-3 space-y-6 pt-6">
       {/* Header with Toggle for Admin/HR */}
       {["hr", "admin", "manager"].includes(user?.role) ? (
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div className="flex space-x-2">
             <button
               onClick={() => setViewMode("myProfile")}
@@ -393,19 +375,43 @@ const EmployeesPage = () => {
             </button>
           </div>
 
+          {/* ✅ NEW: Admin action buttons */}
           {(user?.role === "hr" || user?.role === "admin") &&
             viewMode === "allEmployees" && (
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors shadow-sm"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Add Employee</span>
-              </button>
+              <div className="flex space-x-2 flex-wrap gap-2">
+                <button
+                  onClick={() => {
+                    setEditingDept(null);
+                    setShowDeptModal(true);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2 transition-colors shadow-sm"
+                >
+                  <Building className="h-5 w-5" />
+                  <span>Departments</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditingDesig(null);
+                    setShowDesigModal(true);
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2 transition-colors shadow-sm"
+                >
+                  <Briefcase className="h-5 w-5" />
+                  <span>Designations</span>
+                </button>
+
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center space-x-2 transition-colors shadow-sm"
+                >
+                  <Plus className="h-5 w-5" />
+                  <span>Add Employee</span>
+                </button>
+              </div>
             )}
         </div>
       ) : (
-        // Regular employee header
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
             <User className="h-8 w-8" />
@@ -490,12 +496,578 @@ const EmployeesPage = () => {
         <EmployeeDetailsModal
           employee={selectedEmployee}
           onClose={() => setSelectedEmployee(null)}
-          onEdit={() => {
-            setShowEditModal(true);
-          }}
+          onEdit={() => setShowEditModal(true)}
           userRole={user?.role}
         />
       )}
+
+      {/* ✅ NEW: Department Management Modal */}
+      {showDeptModal && (
+        <DepartmentManagementModal
+          departments={departments}
+          onClose={() => {
+            setShowDeptModal(false);
+            setEditingDept(null);
+          }}
+          onSave={handleSaveDepartment}
+          onDelete={handleDeleteDepartment}
+          editingDept={editingDept}
+          setEditingDept={setEditingDept}
+        />
+      )}
+
+      {/* ✅ NEW: Designation Management Modal */}
+      {showDesigModal && (
+        <DesignationManagementModal
+          designations={designations}
+          departments={departments}
+          onClose={() => {
+            setShowDesigModal(false);
+            setEditingDesig(null);
+          }}
+          onSave={handleSaveDesignation}
+          onDelete={handleDeleteDesignation}
+          editingDesig={editingDesig}
+          setEditingDesig={setEditingDesig}
+        />
+      )}
+    </div>
+  );
+};
+
+// ✅ NEW: Department Management Modal Component
+const DepartmentManagementModal = ({
+  departments,
+  onClose,
+  onSave,
+  onDelete,
+  editingDept,
+  setEditingDept,
+}) => {
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    description: "",
+  });
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    if (editingDept) {
+      setFormData({
+        name: editingDept.name || "",
+        code: editingDept.code || "",
+        description: editingDept.description || "",
+      });
+      setShowForm(true);
+    } else {
+      setFormData({ name: "", code: "", description: "" });
+    }
+  }, [editingDept]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return;
+
+    onSave({
+      ...formData,
+      code: formData.code || formData.name.substring(0, 4).toUpperCase(),
+    });
+    setFormData({ name: "", code: "", description: "" });
+    setShowForm(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+            <Building className="h-6 w-6 text-green-600" />
+            <span>Manage Departments</span>
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {!showForm && (
+          <button
+            onClick={() => {
+              setEditingDept(null);
+              setFormData({ name: "", code: "", description: "" });
+              setShowForm(true);
+            }}
+            className="mb-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add New Department</span>
+          </button>
+        )}
+
+        {showForm && (
+          <form
+            onSubmit={handleSubmit}
+            className="mb-6 p-4 bg-gray-50 rounded-lg"
+          >
+            <h3 className="font-semibold mb-4">
+              {editingDept ? "Edit Department" : "Add New Department"}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., Engineering"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department Code
+                </label>
+                <input
+                  type="text"
+                  value={formData.code}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      code: e.target.value.toUpperCase(),
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  placeholder="e.g., ENG"
+                  maxLength={10}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  rows={2}
+                  placeholder="Brief description of the department"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                {editingDept ? "Update" : "Create"} Department
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingDept(null);
+                  setFormData({ name: "", code: "", description: "" });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="space-y-2">
+          <h3 className="font-semibold text-gray-700 mb-2">
+            Existing Departments ({departments.length})
+          </h3>
+          {departments.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">
+              No departments found. Add your first department above.
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-200 border rounded-lg">
+              {departments.map((dept) => (
+                <div
+                  key={dept._id}
+                  className="p-4 flex justify-between items-center hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{dept.name}</p>
+                    <p className="text-sm text-gray-500">
+                      Code: {dept.code}{" "}
+                      {dept.description && `• ${dept.description}`}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingDept(dept)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      title="Edit"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(dept._id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ✅ NEW: Designation Management Modal Component
+const DesignationManagementModal = ({
+  designations,
+  departments,
+  onClose,
+  onSave,
+  onDelete,
+  editingDesig,
+  setEditingDesig,
+}) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    level: "Junior",
+    department: "",
+    description: "",
+    grade: "",
+    minExperience: "",
+    maxExperience: "",
+  });
+  const [showForm, setShowForm] = useState(false);
+
+  const levels = [
+    "Intern",
+    "Junior",
+    "Mid",
+    "Senior",
+    "Lead",
+    "Manager",
+    "Director",
+    "VP",
+    "C-Level",
+  ];
+
+  useEffect(() => {
+    if (editingDesig) {
+      setFormData({
+        title: editingDesig.title || "",
+        level: editingDesig.level || "Junior",
+        department:
+          editingDesig.department?._id || editingDesig.department || "",
+        description: editingDesig.description || "",
+        grade: editingDesig.grade || "",
+        minExperience: editingDesig.minExperience || "",
+        maxExperience: editingDesig.maxExperience || "",
+      });
+      setShowForm(true);
+    } else {
+      setFormData({
+        title: "",
+        level: "Junior",
+        department: "",
+        description: "",
+        grade: "",
+        minExperience: "",
+        maxExperience: "",
+      });
+    }
+  }, [editingDesig]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.title.trim() || !formData.level) return;
+
+    const submitData = {
+      title: formData.title,
+      level: formData.level,
+      description: formData.description,
+      grade: formData.grade,
+      minExperience: formData.minExperience
+        ? parseInt(formData.minExperience)
+        : undefined,
+      maxExperience: formData.maxExperience
+        ? parseInt(formData.maxExperience)
+        : undefined,
+    };
+
+    // Only add department if valid ObjectId
+    if (formData.department && /^[0-9a-fA-F]{24}$/.test(formData.department)) {
+      submitData.department = formData.department;
+    }
+
+    onSave(submitData);
+    setFormData({
+      title: "",
+      level: "Junior",
+      department: "",
+      description: "",
+      grade: "",
+      minExperience: "",
+      maxExperience: "",
+    });
+    setShowForm(false);
+  };
+
+  console.log(designations)
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
+            <Briefcase className="h-6 w-6 text-purple-600" />
+            <span>Manage Designations</span>
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {!showForm && (
+          <button
+            onClick={() => {
+              setEditingDesig(null);
+              setFormData({
+                title: "",
+                level: "Junior",
+                department: "",
+                description: "",
+                grade: "",
+                minExperience: "",
+                maxExperience: "",
+              });
+              setShowForm(true);
+            }}
+            className="mb-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add New Designation</span>
+          </button>
+        )}
+
+        {showForm && (
+          <form
+            onSubmit={handleSubmit}
+            className="mb-6 p-4 bg-gray-50 rounded-lg"
+          >
+            <h3 className="font-semibold mb-4">
+              {editingDesig ? "Edit Designation" : "Add New Designation"}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="e.g., Software Engineer"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Level <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.level}
+                  onChange={(e) =>
+                    setFormData({ ...formData, level: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  required
+                >
+                  {levels.map((level) => (
+                    <option key={level} value={level}>
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Department (Optional)
+                </label>
+                <select
+                  value={formData.department}
+                  onChange={(e) =>
+                    setFormData({ ...formData, department: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">All Departments</option>
+                  {departments.map((dept) => (
+                    <option key={dept._id} value={dept._id}>
+                      {dept.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Grade
+                </label>
+                <input
+                  type="text"
+                  value={formData.grade}
+                  onChange={(e) =>
+                    setFormData({ ...formData, grade: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="e.g., L3, G5"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Min Experience (years)
+                </label>
+                <input
+                  type="number"
+                  value={formData.minExperience}
+                  onChange={(e) =>
+                    setFormData({ ...formData, minExperience: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  min={0}
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Max Experience (years)
+                </label>
+                <input
+                  type="number"
+                  value={formData.maxExperience}
+                  onChange={(e) =>
+                    setFormData({ ...formData, maxExperience: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  min={0}
+                  placeholder="10"
+                />
+              </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  rows={2}
+                  placeholder="Brief description of the role"
+                />
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-4">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                {editingDesig ? "Update" : "Create"} Designation
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false);
+                  setEditingDesig(null);
+                  setFormData({
+                    title: "",
+                    level: "Junior",
+                    department: "",
+                    description: "",
+                    grade: "",
+                    minExperience: "",
+                    maxExperience: "",
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="space-y-2">
+          <h3 className="font-semibold text-gray-700 mb-2">
+            Existing Designations ({designations.length})
+          </h3>
+          {designations.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">
+              No designations found. Add your first designation above.
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-200 border rounded-lg">
+              {designations.map((desig) => (
+                <div
+                  key={desig._id}
+                  className="p-4 flex justify-between items-center hover:bg-gray-50"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{desig.title}</p>
+                    <p className="text-sm text-gray-500">
+                      Level: <span className="font-medium">{desig.level}</span>
+                      {desig.grade && ` • Grade: ${desig.grade}`}
+                      {desig.department?.name &&
+                        ` • Dept: ${desig.department.name}`}
+                      {(desig.minExperience || desig.maxExperience) &&
+                        ` • Exp: ${desig.minExperience || 0}-${
+                          desig.maxExperience || "∞"
+                        } yrs`}
+                    </p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingDesig(desig)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      title="Edit"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(desig._id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
@@ -693,7 +1265,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
                 value={employee.designation?.title || "Not assigned"}
                 icon={<Briefcase className="h-4 w-4" />}
               />
-             
+
               <InfoField
                 label="Reporting Manager"
                 value={
@@ -1558,21 +2130,20 @@ const EmployeeFormModal = ({
     }
   }, [user?.role]); // REMOVED showAddModal and showEditModal from dependencies
 
- const loadReportingManagers = async () => {
-  try {
-    const response = await apiService.getReportingManagers();
-    setReportingManagers(response.data);
-  } catch (error) {
-    // fallback: filter from employees by role manager/hr/admin and status active
-    const managers = employees.filter(
-      emp =>
-        ['manager', 'hr', 'admin'].includes(emp.userId?.role) &&
-        emp.status === 'Active'
-    );
-    setReportingManagers(managers);
-  }
-};
-
+  const loadReportingManagers = async () => {
+    try {
+      const response = await apiService.getReportingManagers();
+      setReportingManagers(response.data);
+    } catch (error) {
+      // fallback: filter from employees by role manager/hr/admin and status active
+      const managers = employees.filter(
+        (emp) =>
+          ["manager", "hr", "admin"].includes(emp.userId?.role) &&
+          emp.status === "Active"
+      );
+      setReportingManagers(managers);
+    }
+  };
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -1582,15 +2153,15 @@ const EmployeeFormModal = ({
       const submitData = { ...formData };
 
       // Clean up empty values
-      Object.keys(submitData).forEach(key => {
+      Object.keys(submitData).forEach((key) => {
         if (submitData[key] === "" || submitData[key] === null) {
           delete submitData[key];
         }
       });
 
       // Validate and clean ObjectId fields
-      const objectIdFields = ['department', 'designation', 'reportingManager'];
-      objectIdFields.forEach(field => {
+      const objectIdFields = ["department", "designation", "reportingManager"];
+      objectIdFields.forEach((field) => {
         if (submitData[field] && !/^[0-9a-fA-F]{24}$/.test(submitData[field])) {
           delete submitData[field];
         }
@@ -1599,11 +2170,20 @@ const EmployeeFormModal = ({
       // For regular employees: Remove admin-only fields during edit
       if (mode === "edit" && !["hr", "admin"].includes(user?.role)) {
         const adminFields = [
-          'password', 'role', 'employeeId', 'department', 'designation', 
-          'ctc', 'employmentType', 'joiningDate', 'status', 'bankDetails', 
-          'statutoryDetails', 'reportingManager'
+          "password",
+          "role",
+          "employeeId",
+          "department",
+          "designation",
+          "ctc",
+          "employmentType",
+          "joiningDate",
+          "status",
+          "bankDetails",
+          "statutoryDetails",
+          "reportingManager",
         ];
-        adminFields.forEach(field => delete submitData[field]);
+        adminFields.forEach((field) => delete submitData[field]);
       }
 
       // Remove password if empty for new employees
@@ -1919,8 +2499,8 @@ const ProfessionalInfoSection = ({
   reportingManagers = [],
 }) => {
   // Fix reporting manager options - filter out current employee if editing
-  const reportingManagerOptions = reportingManagers.filter(manager => 
-    mode === "add" || manager._id !== formData._id
+  const reportingManagerOptions = reportingManagers.filter(
+    (manager) => mode === "add" || manager._id !== formData._id
   );
 
   return (
@@ -1993,7 +2573,8 @@ const ProfessionalInfoSection = ({
           <option value="">Select Reporting Manager</option>
           {reportingManagerOptions.map((manager) => (
             <option key={manager._id} value={manager._id}>
-              {manager.firstName} {manager.lastName} - {manager.designation?.title}
+              {manager.firstName} {manager.lastName} -{" "}
+              {manager.designation?.title}
             </option>
           ))}
         </select>

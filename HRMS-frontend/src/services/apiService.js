@@ -300,20 +300,41 @@ export const apiService = {
     });
   },
 
+  updateDepartment: async (id, updates) => {
+  return await apiService.request(`departments/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+},
+
+deleteDepartment: async (id) => {
+  return await apiService.request(`departments/${id}`, {
+    method: 'DELETE',
+  });
+},
+
   getReportingManagers: async () => {
     return await apiService.request("/employees/reporting-managers");
   },
+createDesignation: async (designationData) => {
+  return await apiService.request(`/designations`, {
+    method: 'POST',
+    body: JSON.stringify(designationData),
+  });
+},
 
-  getDesignations: async () => {
-    return await apiService.request("/designations");
-  },
+updateDesignation: async (id, updates) => {
+  return await apiService.request(`/designations/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+},
 
-  createDesignation: async (designationData) => {
-    return await apiService.request("/designations", {
-      method: "POST",
-      body: JSON.stringify(designationData),
-    });
-  },
+deleteDesignation: async (id) => {
+  return await apiService.request(`/designations/${id}`, {
+    method: 'DELETE',
+  });
+},
 
   // Add new method
   getMyFullProfile: () => {
@@ -347,6 +368,25 @@ export const apiService = {
       `/attendance/my-attendance?${params.toString()}`
     );
   },
+
+
+// Department-wise attendance (Admin/HR)
+getDepartmentAttendanceSummary: async (date, month, year) => {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+  if (month) params.append('month', month);
+  if (year) params.append('year', year);
+  return await apiService.request(`/attendance/departments/summary?${params.toString()}`);
+},
+
+getDepartmentAttendanceDetail: async (departmentId, filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`/attendance/departments/${departmentId}/detail?${params.toString()}`);
+},
+
 
   getTeamAttendance: async (
     month,

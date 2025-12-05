@@ -470,6 +470,201 @@ exports.handleRegularization = async (req, res, next) => {
   }
 };
 
+// Get Department-wise Attendance Summary (Admin/HR)
+exports.getDepartmentAttendanceSummary = async (req, res, next) => {
+  try {
+    const { date, month, year } = req.query;
+    
+    let dateQuery = {};
+    if (date) {
+      const targetDate = moment(date).startOf('day');
+      dateQuery = {
+        $gte: targetDate.toDate(),
+        $lte: moment(targetDate).endOf('day').toDate()
+      };
+    } else if (month && year) {
+      const startDate = moment({ year: parseInt(year), month: parseInt(month) - 1, day: 1 }).startOf('month');
+      const endDate = moment(startDate).endOf('month');
+      dateQuery = { $gte: startDate.toDate(), $lte: endDate.toDate() };
+    } else {
+      // Default to today
+      const today = moment().startOf('day');
+      dateQuery = { $gte: today.toDate(), $lte: moment(today).endOf('day').toDate() };
+    }
+
+    const departmentStats = await Attendance.aggregate([
+      {
+        $match: { date: dateQuery }
+      },
+      {
+        $lookup: {
+          from: 'employees',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
+      },
+      {
+        $unwind: '$employeeData'
+      },
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'employeeData.department',
+          foreignField: '_id',
+          as: 'departmentData'
+        }
+      },
+      {
+        $unwind: '$departmentData'
+      },
+      {
+        $group: {
+          _id: '$departmentData._id',
+          departmentName: { $first: '$departmentData.name' },
+          departmentCode: { $first: '$departmentData.code' },
+          totalEmployees: { $addToSet: '$employee' },
+          present: {
+            $sum: { $cond: [{ $eq: ['$status', 'Present'] }, 1, 0] }
+          },
+          absent: {
+            $sum: { $cond: [{ $eq: ['$status', 'Absent'] }, 1, 0] }
+          },
+          onLeave: {
+            $sum: { $cond: [{ $eq: ['$status', 'On Leave'] }, 1, 0] }
+          },
+          halfDay: {
+            $sum: { $cond: [{ $eq: ['$status', 'Half-Day'] }, 1, 0] }
+          },
+          late: {
+            $sum: { $cond: ['$isLate', 1, 0] }
+          },
+          avgWorkingHours: { $avg: '$workingHours' },
+          totalOvertime: { $sum: '$overtime' }
+        }
+      },
+      {
+        $project: {
+          departmentId: '$_id',
+          departmentName: 1,
+          departmentCode: 1,
+          totalEmployees: { $size: '$totalEmployees' },
+          present: 1,
+          absent: 1,
+          onLeave: 1,
+          halfDay: 1,
+          late: 1,
+          avgWorkingHours: { $round: ['$avgWorkingHours', 2] },
+          totalOvertime: { $round: ['$totalOvertime', 2] },
+          attendanceRate: {
+            $round: [
+              {
+                $multiply: [
+                  { $divide: ['$present', { $size: '$totalEmployees' }] },
+                  100
+                ]
+              },
+              1
+            ]
+          }
+        }
+      },
+      { $sort: { departmentName: 1 } }
+    ]);
+
+    sendResponse(res, 200, true, 'Department attendance summary fetched successfully', {
+      departments: departmentStats,
+      date: dateQuery
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get Department Attendance Detail (All employees in a department)
+exports.getDepartmentAttendanceDetail = async (req, res, next) => {
+  try {
+    const { departmentId } = req.params;
+    const { date, month, year, status, page = 1, limit = 50 } = req.query;
+
+    // Build date query
+    let dateQuery = {};
+    if (date) {
+      const targetDate = moment(date).startOf('day');
+      dateQuery = {
+        $gte: targetDate.toDate(),
+        $lte: moment(targetDate).endOf('day').toDate()
+      };
+    } else if (month && year) {
+      const startDate = moment({ year: parseInt(year), month: parseInt(month) - 1, day: 1 }).startOf('month');
+      const endDate = moment(startDate).endOf('month');
+      dateQuery = { $gte: startDate.toDate(), $lte: endDate.toDate() };
+    } else {
+      const today = moment().startOf('day');
+      dateQuery = { $gte: today.toDate(), $lte: moment(today).endOf('day').toDate() };
+    }
+
+    // Get employees in this department
+    const employees = await Employee.find({ department: departmentId }).select('_id');
+    const employeeIds = employees.map(emp => emp._id);
+
+    // Build query
+    const query = {
+      employee: { $in: employeeIds },
+      date: dateQuery
+    };
+
+    if (status) {
+      query.status = status;
+    }
+
+    const attendance = await Attendance.find(query)
+      .populate({
+        path: 'employee',
+        select: 'firstName lastName employeeId department designation profilePicture',
+        populate: [
+          { path: 'department', select: 'name code' },
+          { path: 'designation', select: 'title' }
+        ]
+      })
+      .sort({ date: -1, 'employee.employeeId': 1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Attendance.countDocuments(query);
+
+    // Calculate summary
+    const allAttendance = await Attendance.find(query);
+    const summary = {
+      totalRecords: allAttendance.length,
+      present: allAttendance.filter(a => a.status === 'Present').length,
+      absent: allAttendance.filter(a => a.status === 'Absent').length,
+      onLeave: allAttendance.filter(a => a.status === 'On Leave').length,
+      halfDay: allAttendance.filter(a => a.status === 'Half-Day').length,
+      late: allAttendance.filter(a => a.isLate).length,
+      avgWorkingHours: (allAttendance.reduce((sum, a) => sum + (a.workingHours || 0), 0) / allAttendance.length || 0).toFixed(2),
+      totalOvertime: allAttendance.reduce((sum, a) => sum + (a.overtime || 0), 0).toFixed(2)
+    };
+
+    sendResponse(res, 200, true, 'Department attendance detail fetched successfully', {
+      attendance,
+      summary,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalRecords: total,
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
 // Get Attendance Statistics
 exports.getAttendanceStats = async (req, res, next) => {
   try {
