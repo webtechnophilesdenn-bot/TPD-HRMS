@@ -80,7 +80,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     };
 
     window.addEventListener("employeeUpdated", handleEmployeeUpdate);
-
     return () => {
       window.removeEventListener("employeeUpdated", handleEmployeeUpdate);
     };
@@ -89,7 +88,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   const displayName = employeeData
     ? `${employeeData.firstName} ${employeeData.lastName}`
     : user?.employee?.name || "User";
-
   const displayInitial = displayName.charAt(0).toUpperCase();
   const displayRole = user?.role || "Employee";
 
@@ -114,17 +112,15 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
     document.body.style.userSelect = "none";
   };
 
-  const handleMouseMove = useCallback(
-    (e) => {
-      if (!isResizing.current) return;
-      const newWidth = e.clientX;
-      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-        setSidebarWidth(newWidth);
-        setIsCollapsed(newWidth <= 80);
-      }
-    },
-    []
-  );
+  const handleMouseMove = useCallback((e) => {
+    if (!isResizing.current) return;
+
+    const newWidth = e.clientX;
+    if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+      setSidebarWidth(newWidth);
+      setIsCollapsed(newWidth <= 80);
+    }
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     if (isResizing.current) {
@@ -137,6 +133,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   useEffect(() => {
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
@@ -161,17 +158,53 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       section: "HR MANAGEMENT",
       key: "hrManagement",
       items: [
-        { id: "employees", label: "Employees", icon: Users },
-        { id: "attendance", label: "Attendance", icon: Clock },
-        { id: "leaves", label: "Leave Management", icon: Calendar },
-        { id: "payroll", label: "Payroll", icon: DollarSign },
-        { id: "recruitment", label: "Recruitment", icon: UserPlus },
-        { id: "events", label: "Events Calendar", icon: Calendar },
-        { id: "meetings", label: "Meetings", icon: Video },
+        {
+          id: "employees",
+          label: isAdminOrHR ? "Employees" : "My Info", // Dynamic label based on role
+          icon: Users,
+        },
+        {
+          id: "attendance",
+          label: "Attendance",
+          icon: Clock,
+        },
+        {
+          id: "leaves",
+          label: "Leave Management",
+          icon: Calendar,
+        },
+        {
+          id: "payroll",
+          label: "Payroll",
+          icon: DollarSign,
+        },
+        {
+          id: "recruitment",
+          label: "Recruitment",
+          icon: UserPlus,
+        },
+        {
+          id: "events",
+          label: "Events Calendar",
+          icon: Calendar,
+        },
+        {
+          id: "meetings",
+          label: "Meetings",
+          icon: Video,
+        },
         ...(isAdminOrHR
           ? [
-              { id: "onboarding", label: "Onboarding", icon: UserCheck },
-              { id: "offboarding", label: "Offboarding", icon: UserX },
+              {
+                id: "onboarding",
+                label: "Onboarding",
+                icon: UserCheck,
+              },
+              {
+                id: "offboarding",
+                label: "Offboarding",
+                icon: UserX,
+              },
             ]
           : []),
       ],
@@ -180,25 +213,57 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       section: "EMPLOYEE SERVICES",
       key: "employeeServices",
       items: [
-        { id: "assets", label: "Assets", icon: Package },
-        { id: "training", label: "Training & LMS", icon: BookOpen },
-        { id: "recognition", label: "Recognition", icon: Award },
+        {
+          id: "assets",
+          label: "Assets",
+          icon: Package,
+        },
+        {
+          id: "training",
+          label: "Training & LMS",
+          icon: BookOpen,
+        },
+        {
+          id: "recognition",
+          label: "Recognition",
+          icon: Award,
+        },
       ],
     },
     {
       section: "Communication",
       key: "communication",
-      items: [{ id: "announcements", label: "Announcements", icon: Megaphone }],
+      items: [
+        {
+          id: "announcements",
+          label: "Announcements",
+          icon: Megaphone,
+        },
+      ],
     },
     {
       section: "Administration",
       key: "administration",
       items: [
-        { id: "compliance", label: "Compliance & Policy", icon: Shield },
+        {
+          id: "compliance",
+          label: "Compliance & Policy",
+          icon: Shield,
+        },
         ...(isAdminOrHR
-          ? [{ id: "reports", label: "Reports", icon: FileText }]
+          ? [
+              {
+                id: "reports",
+                label: "Reports",
+                icon: FileText,
+              },
+            ]
           : []),
-        { id: "contracts", label: "Legal & Contracts", icon: FileSignature },
+        {
+          id: "contracts",
+          label: "Legal & Contracts",
+          icon: FileSignature,
+        },
       ],
     },
   ];
@@ -237,7 +302,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                   <p className="text-sm font-semibold text-gray-900 truncate">
                     {displayName}
                   </p>
-                  <p className="text-xs text-gray-500 capitalize">{displayRole}</p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {displayRole}
+                  </p>
                 </div>
               )}
             </div>
@@ -270,7 +337,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                       onClose();
                     }}
                     className={`w-full flex items-center ${
-                      isCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+                      isCollapsed
+                        ? "justify-center px-2"
+                        : "space-x-3 px-3"
                     } py-2.5 rounded-lg text-sm font-medium transition-all ${
                       activeMenu === group.id
                         ? "bg-blue-50 text-blue-600"
@@ -298,11 +367,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                       <ExpandIcon className="w-4 h-4" />
                     </button>
                   )}
-
                   {isCollapsed && (
                     <div className="h-px bg-gray-200 mx-3 my-2" />
                   )}
-
                   {(isExpanded || isCollapsed) && (
                     <div className="space-y-1 mt-1">
                       {group.items.map((item) => {
@@ -315,7 +382,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                               onClose();
                             }}
                             className={`w-full flex items-center ${
-                              isCollapsed ? "justify-center px-2" : "space-x-3 px-3"
+                              isCollapsed
+                                ? "justify-center px-2"
+                                : "space-x-3 px-3"
                             } py-2.5 rounded-lg text-sm font-medium transition-all ${
                               activeMenu === item.id
                                 ? "bg-blue-50 text-blue-600"
@@ -344,7 +413,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
               onClose();
             }}
             className={`w-full flex items-center ${
-              isCollapsed ? "justify-center px-2" : "justify-center space-x-2 px-3"
+              isCollapsed
+                ? "justify-center px-2"
+                : "justify-center space-x-2 px-3"
             } py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-md font-medium text-sm`}
             title={isCollapsed ? "AI Assistant" : ""}
           >
