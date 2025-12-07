@@ -233,7 +233,7 @@ const CreateMeetingModal = ({ meeting, onClose, onSuccess }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-3">
           {/* Basic Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Title */}

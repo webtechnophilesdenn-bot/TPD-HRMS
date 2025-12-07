@@ -183,19 +183,13 @@ const payrollAPI = {
     });
   },
 
-  // ==================== PAYROLL ANALYTICS ====================
-  getAnalytics: async (filters = {}) => {
-    const params = new URLSearchParams();
-    Object.keys(filters).forEach((key) => {
-      if (filters[key] !== undefined && filters[key] !== null && filters[key] !== '') {
-        params.append(key, filters[key]);
-      }
-    });
-    const queryString = params.toString();
-    const url = queryString ? `/payroll/analytics?${queryString}` : '/payroll/analytics';
-    console.log('📊 Fetching payroll analytics:', url);
-    return await request(url);
-  },
+ getAnalytics: async (filters) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key]) params.append(key, filters[key]);
+  });
+  return await apiService.request(`payroll/analytics?${params.toString()}`);
+},
 
   // ==================== LOAN MANAGEMENT APIs ====================
 
@@ -219,6 +213,31 @@ const payrollAPI = {
     const url = queryString ? `/loans/my-loans?${queryString}` : '/loans/my-loans';
     return await request(url);
   },
+
+  // Add to PAYROLL section in apiService.js
+
+// Salary Structure Management
+checkMissingSalaryStructures: async () => {
+  return await apiService.request('salary-structures/missing');
+},
+
+createMissingSalaryStructures: async (data) => {
+  return await apiService.request('salary-structures/create-missing', {
+    method: 'POST',
+    body: JSON.stringify(data || { effectiveFrom: new Date() })
+  });
+},
+
+validatePayrollEligibility: async (filters) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== '') {
+      params.append(key, filters[key]);
+    }
+  });
+  return await apiService.request(`payroll/validate-eligibility?${params.toString()}`);
+},
+
 
   // Get all loans (HR/Admin)
   getAllLoans: async (filters = {}) => {

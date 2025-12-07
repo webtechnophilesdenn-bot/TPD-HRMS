@@ -219,6 +219,23 @@ const EmployeesPage = () => {
     }
   };
 
+  // Add this function after handleDeleteEmployee
+  const handleUpdateEmployeeSuccess = async (updatedEmployee) => {
+    // Check if the updated employee is the current logged-in user
+    const currentUserId = user?.employee?._id || user?._id;
+
+    if (
+      updatedEmployee._id === currentUserId ||
+      updatedEmployee.userId === user?._id
+    ) {
+      // Dispatch event to notify Navbar/Sidebar to refresh
+      window.dispatchEvent(new Event("employeeUpdated"));
+    }
+
+    // Reload all data
+    await loadData();
+  };
+
   // Generate mock employees for demo
   const generateMockEmployees = () => {
     const mockEmployees = [];
@@ -346,7 +363,7 @@ const EmployeesPage = () => {
   }
 
   return (
-    <div className="p-3 space-y-6 pt-6">
+    <div className="p-3 space-y-3 ">
       {/* Header with Toggle for Admin/HR */}
       {["hr", "admin", "manager"].includes(user?.role) ? (
         <div className="flex justify-between items-center flex-wrap gap-4">
@@ -412,7 +429,7 @@ const EmployeesPage = () => {
             )}
         </div>
       ) : (
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center ">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
             <User className="h-8 w-8" />
             <span>My Employee Profile</span>
@@ -461,9 +478,10 @@ const EmployeesPage = () => {
         <EmployeeFormModal
           mode="add"
           onClose={() => setShowAddModal(false)}
-          onSuccess={() => {
+          onSuccess={async () => {
             setShowAddModal(false);
-            loadData();
+            await loadData();
+            showSuccess("Employee added successfully");
           }}
           departments={departments}
           designations={designations}
@@ -480,10 +498,22 @@ const EmployeesPage = () => {
             setShowEditModal(false);
             setSelectedEmployee(null);
           }}
-          onSuccess={() => {
+          onSuccess={async (updatedEmployee) => {
             setShowEditModal(false);
             setSelectedEmployee(null);
-            loadData();
+
+            // Check if the updated employee is the current logged-in user
+            const currentUserId = user?.employee?._id || user?._id;
+            const updatedUserId =
+              updatedEmployee?._id || updatedEmployee?.userId;
+
+            if (updatedUserId === currentUserId) {
+              // Dispatch event to notify Navbar/Sidebar to refresh
+              window.dispatchEvent(new Event("employeeUpdated"));
+            }
+
+            await loadData();
+            showSuccess("Employee updated successfully");
           }}
           departments={departments}
           designations={designations}
@@ -827,7 +857,7 @@ const DesignationManagementModal = ({
     setShowForm(false);
   };
 
-  console.log(designations)
+  console.log(designations);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -1180,7 +1210,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Personal Information */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <User className="h-5 w-5 text-indigo-600" />
@@ -1248,7 +1278,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
           </div>
 
           {/* Professional Information */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
               <Briefcase className="h-5 w-5 text-indigo-600" />
               <span>Professional Information</span>
@@ -1354,7 +1384,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Address Information */}
           {employee.address && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <MapPin className="h-5 w-5 text-indigo-600" />
                 <span>Address Information</span>
@@ -1375,7 +1405,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Bank Details */}
           {employee.bankDetails && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Landmark className="h-5 w-5 text-indigo-600" />
                 <span>Bank Details</span>
@@ -1412,7 +1442,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Statutory Details */}
           {employee.statutoryDetails && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Shield className="h-5 w-5 text-indigo-600" />
                 <span>Statutory Details</span>
@@ -1449,7 +1479,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Leave Balance */}
           {employee.leaveBalance && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Calendar className="h-5 w-5 text-indigo-600" />
                 <span>Leave Balance</span>
@@ -1504,7 +1534,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Emergency Contact */}
           {employee.emergencyContact && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Heart className="h-5 w-5 text-indigo-600" />
                 <span>Emergency Contact</span>
@@ -1538,7 +1568,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Performance */}
           {employee.performance && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <TrendingUp className="h-5 w-5 text-indigo-600" />
                 <span>Performance</span>
@@ -1594,7 +1624,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Education */}
           {employee.education && employee.education.length > 0 && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <GraduationCap className="h-5 w-5 text-indigo-600" />
                 <span>Education</span>
@@ -1632,7 +1662,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Work Experience */}
           {employee.workExperience && employee.workExperience.length > 0 && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Briefcase className="h-5 w-5 text-indigo-600" />
                 <span>Work Experience</span>
@@ -1675,7 +1705,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Skills */}
           {employee.skills && employee.skills.length > 0 && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <Award className="h-5 w-5 text-indigo-600" />
                 <span>Skills</span>
@@ -1704,7 +1734,7 @@ const EmployeeProfileView = ({ employee, onEdit }) => {
 
           {/* Documents */}
           {employee.documents && employee.documents.length > 0 && (
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-3">
               <h2 className="text-lg font-semibold text-gray-900 flex items-center space-x-2">
                 <FileText className="h-5 w-5 text-indigo-600" />
                 <span>Documents</span>
@@ -1783,7 +1813,7 @@ const AllEmployeesView = ({
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
@@ -2128,13 +2158,14 @@ const EmployeeFormModal = ({
     if (["hr", "admin", "manager"].includes(user?.role)) {
       loadReportingManagers();
     }
-  }, [user?.role]); // REMOVED showAddModal and showEditModal from dependencies
+  }, [user?.role]);
 
   const loadReportingManagers = async () => {
     try {
       const response = await apiService.getReportingManagers();
       setReportingManagers(response.data);
     } catch (error) {
+      console.error("Failed to load reporting managers:", error);
       // fallback: filter from employees by role manager/hr/admin and status active
       const managers = employees.filter(
         (emp) =>
@@ -2186,21 +2217,60 @@ const EmployeeFormModal = ({
         adminFields.forEach((field) => delete submitData[field]);
       }
 
-      // Remove password if empty for new employees
-      if (mode === "add" && !submitData.password) {
+      // Remove password if empty
+      if (!submitData.password) {
         delete submitData.password;
       }
 
+      let response;
+
       if (mode === "add") {
-        await apiService.createEmployee(submitData);
+        response = await apiService.createEmployee(submitData);
         showSuccess("Employee added successfully");
+
+        // Pass the created employee data to onSuccess
+        const createdEmployee = response?.data?.employee || response?.data;
+        if (onSuccess) {
+          onSuccess(createdEmployee);
+        }
       } else {
-        await apiService.updateEmployee(employee._id, submitData);
+        response = await apiService.updateEmployee(employee._id, submitData);
         showSuccess("Employee updated successfully");
+
+        // Get the updated employee data
+        const updatedEmployee = response?.data?.employee || response?.data;
+
+        // Check if the updated employee is the current logged-in user
+        const currentUserId = user?.employee?._id || user?._id;
+        const updatedUserId = updatedEmployee?._id;
+        const updatedUserIdFromResponse = updatedEmployee?.userId;
+
+        // Dispatch event if current user's profile was updated
+        if (
+          updatedUserId === currentUserId ||
+          updatedUserIdFromResponse === currentUserId ||
+          employee._id === currentUserId
+        ) {
+          // Notify Navbar/Sidebar to refresh
+          window.dispatchEvent(new Event("employeeUpdated"));
+        }
+
+        // Pass the updated employee data to onSuccess
+        if (onSuccess) {
+          onSuccess(updatedEmployee);
+        }
       }
-      onSuccess();
+
+      // Close modal only on success
+      onClose();
     } catch (error) {
-      showError(error.message || "Failed to " + mode + " employee");
+      console.error("Failed to save employee:", error);
+      showError(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to " + mode + " employee"
+      );
+      // Don't close modal on error - let user fix the issue
     } finally {
       setLoading(false);
     }
@@ -2308,14 +2378,14 @@ const EmployeeFormModal = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex space-x-1 mb-6 p-1 bg-gray-100 rounded-lg">
+        <div className="flex space-x-1 mb-6 p-1 bg-gray-100 rounded-lg overflow-x-auto">
           {sections.map((section) => {
             const Icon = section.icon;
             return (
               <button
                 key={section.id}
                 onClick={() => setActiveSection(section.id)}
-                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                   activeSection === section.id
                     ? "bg-white text-indigo-600 shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
@@ -2331,7 +2401,7 @@ const EmployeeFormModal = ({
         </div>
 
         {/* Form Content */}
-        <div className="space-y-6">{renderSection()}</div>
+        <div className="space-y-3">{renderSection()}</div>
 
         {/* Action Buttons */}
         <div className="flex space-x-3 mt-6 pt-6 border-t">
@@ -3294,7 +3364,7 @@ const EmployeeDetailsModal = ({ employee, onClose, onEdit, userRole }) => {
           </button>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Personal Information */}
           <div>
             <h3 className="text-lg font-semibold mb-3 text-gray-900 border-b pb-2">

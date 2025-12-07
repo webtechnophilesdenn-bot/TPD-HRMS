@@ -564,7 +564,7 @@ const AnnouncementsPage = () => {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-3">
               <div className="prose max-w-none">
                 <p className="text-gray-700 whitespace-pre-wrap">
                   {selectedAnnouncement.content}
@@ -641,7 +641,7 @@ const AnnouncementsPage = () => {
                 <X className="h-6 w-6" />
               </button>
             </div>
-            <form onSubmit={handleCreateAnnouncement} className="p-6 space-y-6">
+            <form onSubmit={handleCreateAnnouncement} className="p-6 space-y-3">
               {/* Title */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

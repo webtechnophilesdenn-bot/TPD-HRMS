@@ -430,127 +430,100 @@ salaryStructureSchema.methods.calculateSalary = function() {
   return this.summary;
 };
 
-// ==================== METHOD: CALCULATE MONTHLY PAYROLL ====================
+// models/SalaryStructure.js - Add proper calculation method
 salaryStructureSchema.methods.calculateMonthlyPayroll = function(
   paidDays,
   totalWorkingDays,
   overtimeHours = 0,
   loanRecovery = 0,
-  advanceRecovery = 0,
-  otherDeductions = 0
+  advanceRecovery = 0
 ) {
-  const earnings = this.earnings;
-  const deductions = this.deductions;
+  const perDayRate = this.summary.grossSalary / totalWorkingDays;
   
-  // Calculate pro-rata if LOP exists
-  const attendanceFactor = totalWorkingDays > 0 ? paidDays / totalWorkingDays : 1;
+  // Calculate prorated earnings
+  const earnings = {
+    basic: (this.earnings.basic / totalWorkingDays) * paidDays,
+    hra: (this.earnings.hra / totalWorkingDays) * paidDays,
+    specialAllowance: (this.earnings.specialAllowance / totalWorkingDays) * paidDays,
+    conveyance: (this.earnings.conveyance / totalWorkingDays) * paidDays,
+    medicalAllowance: (this.earnings.medicalAllowance / totalWorkingDays) * paidDays,
+    educationAllowance: (this.earnings.educationAllowance || 0 / totalWorkingDays) * paidDays,
+    lta: (this.earnings.lta || 0 / totalWorkingDays) * paidDays,
+    overtime: overtimeHours * (this.earnings.basic / (totalWorkingDays * 8)) * 2, // 2x hourly rate
+    otherAllowances: (this.earnings.otherAllowances || 0 / totalWorkingDays) * paidDays
+  };
   
-  // 1. Calculate pro-rated earnings
-  const proratedBasic = Math.round((earnings.basic || 0) * attendanceFactor);
-  const proratedHRA = Math.round((earnings.hra || 0) * attendanceFactor);
-  const proratedDA = Math.round((earnings.da || 0) * attendanceFactor);
-  const proratedSpecial = Math.round((earnings.specialAllowance || 0) * attendanceFactor);
-  const proratedConveyance = Math.round((earnings.conveyance || 0) * attendanceFactor);
-  const proratedMedical = Math.round((earnings.medicalAllowance || 0) * attendanceFactor);
-  const proratedEducation = Math.round((earnings.educationAllowance || 0) * attendanceFactor);
-  const proratedLTA = Math.round((earnings.lta || 0) * attendanceFactor);
+  const grossEarnings = Object.values(earnings).reduce((sum, val) => sum + val, 0);
   
-  // 2. Calculate overtime
-  const overtimeAmount = earnings.overtime.enabled && overtimeHours > 0
-    ? Math.round(overtimeHours * (earnings.overtime.hourlyRate || 0))
+  // Calculate statutory deductions
+  const deductions = {};
+  
+  // PF Calculation (12% employee + 12% employer on basic)
+  if (this.deductions.pf.applicable) {
+    const pfBase = Math.min(earnings.basic, 15000); // PF ceiling
+    deductions.pfEmployee = Math.round((pfBase * 12) / 100);
+    deductions.pfEmployer = Math.round((pfBase * 12) / 100);
+  } else {
+    deductions.pfEmployee = 0;
+    deductions.pfEmployer = 0;
+  }
+  
+  // ESI Calculation (0.75% employee + 3.25% employer)
+  if (this.deductions.esi.applicable && grossEarnings <= 21000) {
+    deductions.esiEmployee = Math.round((grossEarnings * 0.75) / 100);
+    deductions.esiEmployer = Math.round((grossEarnings * 3.25) / 100);
+  } else {
+    deductions.esiEmployee = 0;
+    deductions.esiEmployer = 0;
+  }
+  
+  // Professional Tax (state-specific)
+  deductions.professionalTax = this.deductions.professionalTax.applicable 
+    ? this.deductions.professionalTax.amount 
     : 0;
   
-  // 3. Calculate LOP amount
+  // TDS Calculation (simplified - should use actual tax slabs)
+  const annualIncome = grossEarnings * 12;
+  deductions.tds = this.calculateTDS(annualIncome) / 12;
+  
+  // Loss of Pay calculation
   const lopDays = totalWorkingDays - paidDays;
-  const dailyGross = totalWorkingDays > 0 ? this.summary.grossSalary / totalWorkingDays : 0;
-  const lopAmount = Math.round(lopDays * dailyGross);
+  deductions.lossOfPay = lopDays > 0 ? Math.round(perDayRate * lopDays) : 0;
   
-  // 4. Gross Earnings
-  const grossEarnings = 
-    proratedBasic +
-    proratedHRA +
-    proratedDA +
-    proratedSpecial +
-    proratedConveyance +
-    proratedMedical +
-    proratedEducation +
-    proratedLTA +
-    overtimeAmount +
-    (earnings.performanceBonus || 0) +
-    (earnings.otherAllowances || 0);
+  // Loan and Advance Recovery
+  deductions.loanRecovery = loanRecovery;
+  deductions.advanceRecovery = advanceRecovery;
   
-  // 5. Calculate statutory deductions on pro-rated salary
-  const pfEmployee = deductions.pf.applicable
-    ? Math.round((Math.min(proratedBasic, deductions.pf.maxWageLimit || 15000) * deductions.pf.employeePercentage) / 100)
-    : 0;
-    
-  const pfEmployer = deductions.pf.applicable
-    ? Math.round((Math.min(proratedBasic, deductions.pf.maxWageLimit || 15000) * deductions.pf.employerPercentage) / 100)
-    : 0;
+  const totalDeductions = deductions.pfEmployee + deductions.esiEmployee + 
+    deductions.professionalTax + deductions.tds + deductions.lossOfPay + 
+    deductions.loanRecovery + deductions.advanceRecovery;
   
-  const esiEmployee = deductions.esi.applicable && grossEarnings <= (deductions.esi.maxWageLimit || 21000)
-    ? Math.round((grossEarnings * deductions.esi.employeePercentage) / 100)
-    : 0;
-    
-  const esiEmployer = deductions.esi.applicable && grossEarnings <= (deductions.esi.maxWageLimit || 21000)
-    ? Math.round((grossEarnings * deductions.esi.employerPercentage) / 100)
-    : 0;
-  
-  const professionalTax = deductions.professionalTax.applicable 
-    ? (deductions.professionalTax.amount || 0)
-    : 0;
-    
-  const tds = deductions.tds.applicable 
-    ? (deductions.tds.monthlyTDS || 0)
-    : 0;
-  
-  // 6. Total Deductions
-  const totalDeductions = 
-    pfEmployee +
-    esiEmployee +
-    professionalTax +
-    tds +
-    loanRecovery +
-    advanceRecovery +
-    lopAmount +
-    otherDeductions;
-  
-  // 7. Net Salary
-  const netSalary = Math.round(grossEarnings - totalDeductions);
+  const netSalary = grossEarnings - totalDeductions;
+  const ctc = grossEarnings + deductions.pfEmployer + deductions.esiEmployer;
   
   return {
     grossEarnings: Math.round(grossEarnings),
     totalDeductions: Math.round(totalDeductions),
-    netSalary,
-    lossOfPay: Math.round(lopAmount),
-    breakdown: {
-      earnings: {
-        basic: proratedBasic,
-        hra: proratedHRA,
-        da: proratedDA,
-        specialAllowance: proratedSpecial,
-        conveyance: proratedConveyance,
-        medicalAllowance: proratedMedical,
-        educationAllowance: proratedEducation,
-        lta: proratedLTA,
-        overtime: overtimeAmount,
-        otherAllowances: earnings.otherAllowances || 0
-      },
-      deductions: {
-        pfEmployee,
-        pfEmployer,
-        esiEmployee,
-        esiEmployer,
-        professionalTax,
-        tds,
-        loanRecovery,
-        advanceRecovery,
-        lossOfPay: lopAmount,
-        otherDeductions
-      }
-    }
+    netSalary: Math.round(netSalary),
+    costToCompany: Math.round(ctc),
+    lossOfPay: Math.round(deductions.lossOfPay),
+    breakdown: { earnings, deductions }
   };
 };
+
+// TDS Calculation based on new tax regime (FY 2024-25)
+salaryStructureSchema.methods.calculateTDS = function(annualIncome) {
+  let tax = 0;
+  if (annualIncome <= 300000) tax = 0;
+  else if (annualIncome <= 600000) tax = (annualIncome - 300000) * 0.05;
+  else if (annualIncome <= 900000) tax = 15000 + (annualIncome - 600000) * 0.10;
+  else if (annualIncome <= 1200000) tax = 45000 + (annualIncome - 900000) * 0.15;
+  else if (annualIncome <= 1500000) tax = 90000 + (annualIncome - 1200000) * 0.20;
+  else tax = 150000 + (annualIncome - 1500000) * 0.30;
+  
+  return Math.round(tax);
+};
+
 
 // ==================== METHOD: DEACTIVATE ====================
 salaryStructureSchema.methods.deactivate = function(effectiveTo) {

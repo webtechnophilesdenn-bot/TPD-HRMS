@@ -117,7 +117,7 @@ const AdminLeaveBalanceManager = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Employee List */}
         <div className="bg-white rounded-xl shadow-sm border p-4">

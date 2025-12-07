@@ -1,18 +1,26 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-
+// models/User.js - Update with proper roles
 const userSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true, lowercase: true },
-  password: { type: String, required: true, select: false },
-  role: { 
-    type: String, 
-    enum: ['admin', 'hr', 'manager', 'employee'], 
-    default: 'employee' 
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ['admin', 'hr', 'manager', 'finance', 'employee'],
+    default: 'employee'
   },
-  isActive: { type: Boolean, default: true },
-  lastLogin: Date,
-  passwordChangedAt: Date,
-}, { timestamps: true });
+  permissions: {
+    payroll: {
+      view: { type: Boolean, default: false },
+      create: { type: Boolean, default: false },
+      approve: { type: Boolean, default: false },
+      process: { type: Boolean, default: false }
+    },
+    departments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Department' }]
+  },
+  department: { type: mongoose.Schema.Types.ObjectId, ref: 'Department' }
+});
+
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

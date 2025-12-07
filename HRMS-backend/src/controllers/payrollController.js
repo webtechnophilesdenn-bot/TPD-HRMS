@@ -638,7 +638,105 @@ exports.approvePayroll = async (req, res, next) => {
   }
 };
 
-// In payrollController.js - getAllPayrolls function
+// controllers/payrollController.js - ADD getAnalytics function
+
+exports.getAnalytics = async (req, res, next) => {
+  try {
+    const { year, month, department } = req.query;
+    const user = req.user;
+
+    const matchQuery = {};
+    
+    if (year) matchQuery['period.year'] = parseInt(year);
+    if (month) matchQuery['period.month'] = parseInt(month);
+
+    // Role-based filtering
+    if (user.role === 'employee') {
+      const employee = await Employee.findOne({ userId: user._id });
+      if (!employee) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Employee not found' 
+        });
+      }
+      matchQuery.employee = employee._id;
+    } else if (department) {
+      const employees = await Employee.find({ department }).select('_id');
+      matchQuery.employee = { $in: employees.map(e => e._id) };
+    }
+
+    console.log('Analytics Query:', matchQuery);
+
+    // Get payrolls matching criteria
+    const payrolls = await Payroll.find(matchQuery)
+      .populate({
+        path: 'employee',
+        populate: [
+          { path: 'department', select: 'name code' },
+          { path: 'designation', select: 'title' }
+        ]
+      });
+
+    // Calculate summary
+    const summary = {
+      totalGross: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
+      totalNet: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
+      totalDeductions: payrolls.reduce((sum, p) => sum + (p.summary?.totalDeductions || 0), 0),
+      employeeCount: payrolls.length
+    };
+
+    // Department breakdown
+    const deptMap = {};
+    payrolls.forEach(p => {
+      const deptName = p.employee?.department?.name || 'Unassigned';
+      const deptId = p.employee?.department?._id || 'unassigned';
+      const deptCode = p.employee?.department?.code || 'N/A';
+      
+      if (!deptMap[deptId]) {
+        deptMap[deptId] = {
+          _id: {
+            departmentId: deptId,
+            departmentName: deptName,
+            departmentCode: deptCode
+          },
+          totalGross: 0,
+          totalNet: 0,
+          totalDeductions: 0,
+          employeeCount: 0,
+          avgSalary: 0
+        };
+      }
+      
+      deptMap[deptId].totalGross += (p.summary?.grossEarnings || 0);
+      deptMap[deptId].totalNet += (p.summary?.netSalary || 0);
+      deptMap[deptId].totalDeductions += (p.summary?.totalDeductions || 0);
+      deptMap[deptId].employeeCount += 1;
+    });
+
+    // Calculate averages
+    const departmentBreakdown = Object.values(deptMap).map(dept => ({
+      ...dept,
+      avgSalary: dept.employeeCount > 0 ? dept.totalNet / dept.employeeCount : 0
+    }));
+
+    console.log('Analytics Summary:', summary);
+    console.log('Department Breakdown:', departmentBreakdown);
+
+    res.status(200).json({
+      success: true,
+      message: 'Analytics fetched successfully',
+      summary: summary,
+      departmentBreakdown: departmentBreakdown
+    });
+
+  } catch (error) {
+    console.error('Error in getAnalytics:', error);
+    next(error);
+  }
+};
+
+
+// controllers/payrollController.js - FIX getAllPayrolls response format
 exports.getAllPayrolls = async (req, res, next) => {
   try {
     const { year, month, department, status, page = 1, limit = 20 } = req.query;
@@ -648,27 +746,25 @@ exports.getAllPayrolls = async (req, res, next) => {
 
     // Role-based filtering
     if (user.role === 'employee') {
-      const employee = await Employee.findOne({ userId: user.id });
+      const employee = await Employee.findOne({ userId: user._id });
       if (!employee) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Employee record not found' 
+        return res.status(404).json({
+          success: false,
+          message: 'Employee record not found'
         });
       }
       query.employee = employee._id;
-    } else {
-      if (department) {
-        const employees = await Employee.find({ department }).select('_id');
-        query.employee = { $in: employees.map(emp => emp._id) };
-      }
+    } else if (department) {
+      const employees = await Employee.find({ department }).select('_id');
+      query.employee = { $in: employees.map(emp => emp._id) };
     }
 
     // Filters
-    if (year) query.year = parseInt(year);
-    if (month) query.month = parseInt(month);
+    if (year) query['period.year'] = parseInt(year);
+    if (month) query['period.month'] = parseInt(month);
     if (status) query.status = status;
 
-    console.log('📊 Payroll Query:', query); // Debug log
+    console.log('Payroll Query:', query);
 
     const payrolls = await Payroll.find(query)
       .populate({
@@ -681,64 +777,48 @@ exports.getAllPayrolls = async (req, res, next) => {
       })
       .populate('generatedBy', 'firstName lastName')
       .populate('approvedBy', 'firstName lastName')
-      .sort({ year: -1, month: -1, createdAt: -1 })
+      .sort({ 'period.year': -1, 'period.month': -1, createdAt: -1 })
       .limit(parseInt(limit))
       .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Payroll.countDocuments(query);
 
-    // ✅ Transform data to match frontend expectations
-    const transformedPayrolls = payrolls.map(p => ({
-      _id: p._id,
-      employee: p.employee,
-      month: p.month,
-      year: p.year,
-      status: p.status,
-      // Transform to match frontend field names
-      summary: {
-        grossEarnings: p.grossSalary || 0,
-        totalDeductions: p.totalDeductions || 0,
-        netSalary: p.netSalary || 0,
-      },
-      earnings: p.earnings,
-      deductions: p.deductions,
-      attendance: p.attendance,
-      paymentDate: p.paymentDate,
-      paymentMethod: p.paymentMethod,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
-
-    // Calculate summary
+    // Calculate summary from actual payroll data
     const summary = {
-      totalGrossEarnings: payrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0),
-      totalDeductions: payrolls.reduce((sum, p) => sum + (p.totalDeductions || 0), 0),
-      totalNetSalary: payrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0),
-      totalEmployees: payrolls.length,
+      totalGross: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || p.grossSalary || 0), 0),
+      totalGrossEarnings: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || p.grossSalary || 0), 0),
+      totalDeductions: payrolls.reduce((sum, p) => sum + (p.summary?.totalDeductions || p.totalDeductions || 0), 0),
+      totalNet: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || p.netSalary || 0), 0),
+      totalNetSalary: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || p.netSalary || 0), 0),
+      employeeCount: payrolls.length
     };
 
-    console.log('✅ Found', transformedPayrolls.length, 'payrolls'); // Debug log
+    console.log('Summary:', summary);
+    console.log('Found', payrolls.length, 'payrolls');
 
+    // ✅ FIX: Return flat structure that frontend expects
     res.status(200).json({
       success: true,
       message: 'Payrolls fetched successfully',
-      data: {
-        payrolls: transformedPayrolls,
-        summary,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(total / parseInt(limit)),
-          totalRecords: total,
-          hasNext: parseInt(page) * parseInt(limit) < total,
-          hasPrev: parseInt(page) > 1,
-        },
-      },
+      payrolls: payrolls,  // ✅ Return payrolls at root level
+      data: payrolls,      // ✅ Also include in data for compatibility
+      summary: summary,    // ✅ Summary at root level
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalRecords: total,
+        hasNext: parseInt(page) * parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
+      }
     });
+
   } catch (error) {
-    console.error('❌ Error in getAllPayrolls:', error);
+    console.error('Error in getAllPayrolls:', error);
     next(error);
   }
 };
+
+
 
 
 // ==================== GET MY PAYSLIPS (EMPLOYEE) ====================
@@ -974,59 +1054,83 @@ exports.bulkUpdatePayrollStatus = async (req, res, next) => {
 };
 
 
-// ==================== GET PAYROLL ANALYTICS ====================
+// controllers/payrollController.js - Enhanced analytics
 exports.getPayrollAnalytics = async (req, res, next) => {
   try {
-    const { year, month, department } = req.query;
+    const { year, month } = req.query;
+    const user = req.user;
     const currentYear = year ? parseInt(year) : moment().year();
-
-    const matchQuery = { 'period.year': currentYear };
-    if (month) matchQuery['period.month'] = parseInt(month);
-
-    if (department) {
-      const employees = await Employee.find({ department }).select('_id');
+    
+    let matchQuery = { 'period.year': currentYear };
+    
+    // Apply department filtering based on role
+    if (user.role === 'manager') {
+      const employees = await Employee.find({ department: user.department }).select('_id');
+      matchQuery.employee = { $in: employees.map(e => e._id) };
+    } else if (user.role === 'hr' && user.permissions?.departments?.length > 0) {
+      const employees = await Employee.find({ 
+        department: { $in: user.permissions.departments } 
+      }).select('_id');
       matchQuery.employee = { $in: employees.map(e => e._id) };
     }
-
-    const monthlyTrend = await Payroll.aggregate([
-      { $match: { 'period.year': { $gte: currentYear - 1 } } },
-      {
-        $group: {
-          _id: { year: '$period.year', month: '$period.month' },
-          totalGross: { $sum: '$summary.grossEarnings' },
-          totalNet: { $sum: '$summary.netSalary' },
-          totalDeductions: { $sum: '$summary.totalDeductions' },
-          totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
-          totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
-          employeeCount: { $sum: 1 },
-        },
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } },
-      { $limit: 12 },
-    ]);
-
+    
+    if (month) matchQuery['period.month'] = parseInt(month);
+    
+    // Department-wise breakdown
     const departmentBreakdown = await Payroll.aggregate([
       { $match: matchQuery },
-      { $lookup: { from: 'employees', localField: 'employee', foreignField: '_id', as: 'employeeData' } },
+      {
+        $lookup: {
+          from: 'employees',
+          localField: 'employee',
+          foreignField: '_id',
+          as: 'employeeData'
+        }
+      },
       { $unwind: '$employeeData' },
-      { $lookup: { from: 'departments', localField: 'employeeData.department', foreignField: '_id', as: 'deptData' } },
+      {
+        $lookup: {
+          from: 'departments',
+          localField: 'employeeData.department',
+          foreignField: '_id',
+          as: 'deptData'
+        }
+      },
       { $unwind: '$deptData' },
       {
         $group: {
-          _id: '$deptData.name',
+          _id: {
+            departmentId: '$deptData._id',
+            departmentName: '$deptData.name',
+            departmentCode: '$deptData.code'
+          },
           totalGross: { $sum: '$summary.grossEarnings' },
           totalNet: { $sum: '$summary.netSalary' },
+          totalDeductions: { $sum: '$summary.totalDeductions' },
+          totalPF: { $sum: { $add: ['$deductions.pfEmployee', '$deductions.pfEmployer'] } },
+          totalESI: { $sum: { $add: ['$deductions.esiEmployee', '$deductions.esiEmployer'] } },
+          totalTDS: { $sum: '$deductions.tds' },
+          totalLOP: { $sum: '$deductions.lossOfPay' },
           employeeCount: { $sum: 1 },
-          avgSalary: { $avg: '$summary.netSalary' },
-        },
+          avgSalary: { $avg: '$summary.netSalary' }
+        }
       },
+      { $sort: { '_id.departmentName': 1 } }
     ]);
-
+    
+    // Status breakdown
     const statusBreakdown = await Payroll.aggregate([
       { $match: matchQuery },
-      { $group: { _id: '$status', count: { $sum: 1 }, totalAmount: { $sum: '$summary.netSalary' } } },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          totalAmount: { $sum: '$summary.netSalary' }
+        }
+      }
     ]);
-
+    
+    // Overall summary
     const overallSummary = await Payroll.aggregate([
       { $match: matchQuery },
       {
@@ -1036,27 +1140,32 @@ exports.getPayrollAnalytics = async (req, res, next) => {
           totalNet: { $sum: '$summary.netSalary' },
           totalDeductions: { $sum: '$summary.totalDeductions' },
           totalPF: { $sum: '$deductions.pfEmployee' },
+          totalPFEmployer: { $sum: '$deductions.pfEmployer' },
           totalESI: { $sum: '$deductions.esiEmployee' },
+          totalESIEmployer: { $sum: '$deductions.esiEmployer' },
           totalTax: { $sum: '$deductions.professionalTax' },
+          totalTDS: { $sum: '$deductions.tds' },
           totalLOP: { $sum: '$deductions.lossOfPay' },
           totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
           totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
-          employeeCount: { $sum: 1 },
-        },
-      },
+          employeeCount: { $sum: 1 }
+        }
+      }
     ]);
-
-    sendResponse(res, 200, true, 'Analytics fetched successfully', {
-      monthlyTrend,
-      departmentBreakdown,
-      statusBreakdown,
-      summary: overallSummary[0] || {},
+    
+    res.json({
+      success: true,
+      data: {
+        departmentBreakdown,
+        statusBreakdown,
+        summary: overallSummary[0] || {}
+      }
     });
   } catch (error) {
-    console.error('Error in getPayrollAnalytics:', error);
     next(error);
   }
 };
+
 
 // controllers/payrollController.js - Update the getEligibleEmployees function
 exports.getEligibleEmployees = async (req, res, next) => {
@@ -1619,6 +1728,7 @@ exports.downloadPayrollReport = async (req, res, next) => {
   }
 };
 
+// controllers/payrollController.js - UPDATE module.exports at the bottom
 module.exports = {
   generatePayroll: exports.generatePayroll,
   approvePayroll: exports.approvePayroll,
@@ -1628,9 +1738,10 @@ module.exports = {
   getAllPayrolls: exports.getAllPayrolls,
   updatePayrollStatus: exports.updatePayrollStatus,
   bulkUpdatePayrollStatus: exports.bulkUpdatePayrollStatus,
-  getPayrollAnalytics: exports.getPayrollAnalytics,
+  getAnalytics: exports.getAnalytics,  // ✅ ADD THIS
   getEligibleEmployees: exports.getEligibleEmployees,
   getPayrollGenerationSummary: exports.getPayrollGenerationSummary,
   downloadPayrollReport: exports.downloadPayrollReport,
-   validatePayrollEligibility: exports.validatePayrollEligibility,
+  validatePayrollEligibility: exports.validatePayrollEligibility
 };
+

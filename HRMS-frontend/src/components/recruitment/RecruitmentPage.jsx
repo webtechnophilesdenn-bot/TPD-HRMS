@@ -523,7 +523,7 @@ const RecruitmentPage = () => {
 
   // ==================== MAIN RENDER ====================
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
+    <div className="min-h-screen bg-gray-50 p-6 space-y-3">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -930,7 +930,7 @@ const RecruitmentPage = () => {
 
       {/* CANDIDATES VIEW */}
       {activeView === "candidates" && isHROrAdmin && (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {/* Job Selection for Candidates */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1173,7 +1173,7 @@ const RecruitmentPage = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateJob} className="p-6 space-y-6">
+            <form onSubmit={handleCreateJob} className="p-6 space-y-3">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Basic Information */}
                 <div>
@@ -1711,7 +1711,7 @@ const RecruitmentPage = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-3">
               {/* Job Details */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -1864,7 +1864,7 @@ const RecruitmentPage = () => {
               </button>
             </div>
 
-            <form onSubmit={handleApplyForJob} className="p-6 space-y-6">
+            <form onSubmit={handleApplyForJob} className="p-6 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Resume * (PDF, DOC, DOCX)
@@ -2041,7 +2041,7 @@ const RecruitmentPage = () => {
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-3">
               {/* Candidate Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2208,7 +2208,7 @@ const RecruitmentPage = () => {
               </button>
             </div>
 
-            <form onSubmit={handleScheduleInterview} className="p-6 space-y-6">
+            <form onSubmit={handleScheduleInterview} className="p-6 space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

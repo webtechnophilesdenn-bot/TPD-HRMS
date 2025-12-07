@@ -145,7 +145,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex pt-16">
+      <div className="flex ">
         <Sidebar
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}

@@ -1,41 +1,96 @@
+// routes/payroll.routes.js - COMPLETE FILE
 const express = require("express");
 const router = express.Router();
-
-// ✅ ONLY import functions that EXIST in payrollController.js
 const {
   generatePayroll,
+  getAllPayrolls,
   getMyPayslips,
   getSalaryStructure,
   downloadPayslip,
-  getAllPayrolls,
   updatePayrollStatus,
   bulkUpdatePayrollStatus,
-  getPayrollAnalytics,
+  getAnalytics, // ✅ Add this
   getEligibleEmployees,
   getPayrollGenerationSummary,
-  approvePayroll,
-  validatePayrollEligibility
+  validatePayrollEligibility,
+  downloadPayrollReport,
 } = require("../controllers/payrollController");
-
 const { protect, authorize } = require("../middlewares/auth.middleware");
 
-// ==================== EMPLOYEE ROUTES ====================
+// ✅ ADD ANALYTICS ROUTE (Must be BEFORE /:id routes)
+router.get(
+  "/analytics",
+  protect,
+  authorize("admin", "hr", "finance", "manager"),
+  getAnalytics
+);
+
+// Generate payroll
+router.post("/generate", protect, authorize("admin", "hr"), generatePayroll);
+
+// Get eligible employees
+router.get(
+  "/eligible-employees",
+  protect,
+  authorize("admin", "hr"),
+  getEligibleEmployees
+);
+
+// Get generation summary
+router.get(
+  "/generation-summary",
+  protect,
+  authorize("admin", "hr"),
+  getPayrollGenerationSummary
+);
+
+// Validate eligibility
+router.get(
+  "/validate-eligibility",
+  protect,
+  authorize("admin", "hr"),
+  validatePayrollEligibility
+);
+
+// Get all payrolls (HR/Admin/Manager view)
+router.get(
+  "/",
+  protect,
+  authorize("admin", "hr", "finance", "manager"),
+  getAllPayrolls
+);
+
+// Get my payslips (Employee view)
 router.get("/my-payslips", protect, getMyPayslips);
+
+// Get salary structure
 router.get("/salary-structure", protect, getSalaryStructure);
+
+// Download payroll report
+router.get(
+  "/report/download",
+  protect,
+  authorize("admin", "hr", "finance"),
+  downloadPayrollReport
+);
+
+// Download single payslip
 router.get("/:id/download", protect, downloadPayslip);
 
-// ==================== HR/ADMIN ROUTES - PRE-GENERATION ====================
-router.get("/eligible-employees", protect, authorize("hr", "admin"), getEligibleEmployees);
-router.get("/generation-summary", protect, authorize("hr", "admin"), getPayrollGenerationSummary);
+// Update payroll status
+router.patch(
+  "/:id/status",
+  protect,
+  authorize("admin", "hr", "finance"),
+  updatePayrollStatus
+);
 
-// ==================== HR/ADMIN ROUTES - GENERATION ====================
-router.post("/generate", protect, authorize("hr", "admin"), generatePayroll);
-router.post("/approve", protect, authorize("hr", "admin"), approvePayroll);
-router.post("/validate-eligibility", protect, authorize("hr", "admin"), validatePayrollEligibility);
-// ==================== HR/ADMIN ROUTES - MANAGEMENT ====================
-router.get("/", protect, authorize("hr", "admin"), getAllPayrolls);
-router.get("/analytics", protect, authorize("hr", "admin"), getPayrollAnalytics);
-router.patch("/:id/status", protect, authorize("hr", "admin"), updatePayrollStatus);
-router.patch("/bulk-status", protect, authorize("hr", "admin"), bulkUpdatePayrollStatus);
+// Bulk update payroll status
+router.patch(
+  "/bulk/status",
+  protect,
+  authorize("admin", "hr", "finance"),
+  bulkUpdatePayrollStatus
+);
 
 module.exports = router;

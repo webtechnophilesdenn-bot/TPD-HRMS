@@ -157,7 +157,7 @@ const OnboardingPage = () => {
 
   // HR/Admin View
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-3">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Onboarding Management</h1>
@@ -202,7 +202,7 @@ const OnboardingPage = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-3 md:space-x-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -417,7 +417,7 @@ const EmployeeOnboardingView = ({ myOnboarding, onTaskToggle }) => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-3">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">My Onboarding</h1>
         <p className="text-gray-600 mt-1">Track your onboarding progress</p>

@@ -2,27 +2,23 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Users,
-  CheckCircle,
+  UserCheck,
   Calendar,
-  AlertCircle,
   Clock,
-  FileText,
-  BookOpen,
-  Shield,
-  AlertTriangle,
-  DollarSign,
   TrendingUp,
-  Eye,
-  Download,
-  MoreHorizontal,
+  DollarSign,
+  Activity,
+  AlertCircle,
+  Award,
+  FileText,
+  ArrowUpRight,
+  ArrowDownRight,
+  MoreVertical,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNotification } from "../../hooks/useNotification";
 import { apiService } from "../../services/apiService";
 import PAYROLL_API from "../../services/payrollAPI";
-import StatCard from "../common/StatCard";
-
-// Chart components
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -50,17 +46,22 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { showError } = useNotification();
+
+  // Role checks
+  const isAdmin = user?.role === "admin" || user?.role === "hr";
+  const isManager = user?.role === "manager";
+
+  // State
+  const [loading, setLoading] = useState(true);
+  const [employeeData, setEmployeeData] = useState(null);
   const [stats, setStats] = useState({
     totalEmployees: 0,
     presentToday: 0,
     onLeave: 0,
     pendingLeaves: 0,
   });
-  const [complianceStats, setComplianceStats] = useState(null);
-  const [payrollStats, setPayrollStats] = useState(null);
-  const [attendanceData, setAttendanceData] = useState(null);
   const [attendanceTrends, setAttendanceTrends] = useState({
     labels: [],
     presentData: [],
@@ -68,74 +69,112 @@ const Dashboard = () => {
     lateData: [],
   });
   const [departmentStats, setDepartmentStats] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [payrollStats, setPayrollStats] = useState(null);
+  const [leaveData, setLeaveData] = useState(null);
+  const [myLeaveBalance, setMyLeaveBalance] = useState(null);
 
-  const isAdmin = user?.role === "admin" || user?.role === "hr";
+  // Fetch employee data
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      try {
+        const response = await apiService.getMyProfile();
+        if (response.success) {
+          setEmployeeData(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch employee data:", error);
+      }
+    };
 
-  // Professional color palette
+    if (user) {
+      fetchEmployeeData();
+    }
+  }, [user]);
+
+  // Listen for employee update events
+  useEffect(() => {
+    const handleEmployeeUpdate = async () => {
+      try {
+        const response = await apiService.getMyProfile();
+        if (response.success) {
+          setEmployeeData(response.data);
+          if (refreshUser) {
+            await refreshUser();
+          }
+        }
+      } catch (error) {
+        console.error("Failed to refresh employee data:", error);
+      }
+    };
+
+    window.addEventListener("employeeUpdated", handleEmployeeUpdate);
+
+    return () => {
+      window.removeEventListener("employeeUpdated", handleEmployeeUpdate);
+    };
+  }, [refreshUser]);
+
+  // Get display name
+  const displayName = employeeData
+    ? `${employeeData.firstName} ${employeeData.lastName}`
+    : user?.employee?.name || user?.name || "User";
+
+  // Modern Indigo/Blue Color Theme
   const colors = {
     primary: {
-      50: "#f0f9ff",
-      100: "#e0f2fe",
-      500: "#0ea5e9",
-      600: "#0284c7",
-      700: "#0369a1",
+      50: "#eef2ff",
+      100: "#e0e7ff",
+      200: "#c7d2fe",
+      300: "#a5b4fc",
+      400: "#818cf8",
+      500: "#6366f1",
+      600: "#4f46e5",
+      700: "#4338ca",
+      800: "#3730a3",
+      900: "#312e81",
     },
     success: {
       50: "#f0fdf4",
       100: "#dcfce7",
       500: "#22c55e",
       600: "#16a34a",
-      700: "#15803d",
     },
     warning: {
       50: "#fffbeb",
       100: "#fef3c7",
       500: "#f59e0b",
       600: "#d97706",
-      700: "#b45309",
     },
     error: {
       50: "#fef2f2",
       100: "#fee2e2",
       500: "#ef4444",
       600: "#dc2626",
-      700: "#b91c1c",
     },
     gray: {
       50: "#f9fafb",
       100: "#f3f4f6",
       200: "#e5e7eb",
       300: "#d1d5db",
-      400: "#9ca3af",
       500: "#6b7280",
       600: "#4b5563",
       700: "#374151",
-      800: "#1f2937",
       900: "#111827",
     },
   };
 
-  // Function to process attendance data for trends
+  // Process attendance trends
   const processAttendanceTrends = (attendanceData) => {
     try {
-      console.log("📊 Processing attendance trends:", attendanceData);
-
-      if (
-        !attendanceData ||
-        !attendanceData.attendance ||
-        !Array.isArray(attendanceData.attendance)
-      ) {
-        console.log("📊 No attendance data available, using defaults");
+      if (!attendanceData?.attendance?.length) {
         return {
           labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-          presentData: [85, 92, 78, 95, 88, 45, 30],
-          absentData: [15, 8, 22, 5, 12, 55, 70],
-          lateData: [5, 3, 8, 2, 4, 10, 15],
+          presentData: [92, 95, 88, 94, 90, 45, 30],
+          absentData: [8, 5, 12, 6, 10, 55, 70],
+          lateData: [3, 2, 5, 3, 4, 8, 12],
         };
       }
 
-      // Group attendance by day of week
       const weeklyStats = {
         Mon: { present: 0, absent: 0, late: 0, total: 0 },
         Tue: { present: 0, absent: 0, late: 0, total: 0 },
@@ -146,573 +185,309 @@ const Dashboard = () => {
         Sun: { present: 0, absent: 0, late: 0, total: 0 },
       };
 
-      // Get data for last 7 days
-      const last7Days = attendanceData.attendance.slice(-7);
-
-      last7Days.forEach((record) => {
+      attendanceData.attendance.slice(-7).forEach((record) => {
         if (!record.date) return;
-
-        const date = new Date(record.date);
-        const dayName = date.toLocaleDateString("en-US", { weekday: "short" });
-
+        const dayName = new Date(record.date).toLocaleDateString("en-US", {
+          weekday: "short",
+        });
         if (weeklyStats[dayName]) {
           weeklyStats[dayName].total++;
-
-          if (record.status === "Present") {
-            weeklyStats[dayName].present++;
-          } else if (record.status === "Absent") {
-            weeklyStats[dayName].absent++;
-          }
-
-          if (record.isLate) {
-            weeklyStats[dayName].late++;
-          }
+          if (record.status === "Present") weeklyStats[dayName].present++;
+          else if (record.status === "Absent") weeklyStats[dayName].absent++;
+          if (record.isLate) weeklyStats[dayName].late++;
         }
       });
 
-      // Calculate percentages
       const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      const presentData = [];
-      const absentData = [];
-      const lateData = [];
-
-      labels.forEach((day) => {
-        const stats = weeklyStats[day];
-        const total = stats.total || 1; // Avoid division by zero
-        presentData.push(Math.round((stats.present / total) * 100));
-        absentData.push(Math.round((stats.absent / total) * 100));
-        lateData.push(Math.round((stats.late / total) * 100));
-      });
-
-      console.log("📊 Processed trends:", {
+      return {
         labels,
-        presentData,
-        absentData,
-        lateData,
-      });
-
-      return { labels, presentData, absentData, lateData };
+        presentData: labels.map((day) =>
+          Math.round(
+            (weeklyStats[day].present / (weeklyStats[day].total || 1)) * 100
+          )
+        ),
+        absentData: labels.map((day) =>
+          Math.round(
+            (weeklyStats[day].absent / (weeklyStats[day].total || 1)) * 100
+          )
+        ),
+        lateData: labels.map((day) =>
+          Math.round(
+            (weeklyStats[day].late / (weeklyStats[day].total || 1)) * 100
+          )
+        ),
+      };
     } catch (error) {
-      console.error("❌ Error processing attendance trends:", error);
+      console.error("Error processing attendance:", error);
       return {
         labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-        presentData: [85, 92, 78, 95, 88, 45, 30],
-        absentData: [15, 8, 22, 5, 12, 55, 70],
-        lateData: [5, 3, 8, 2, 4, 10, 15],
+        presentData: [92, 95, 88, 94, 90, 45, 30],
+        absentData: [8, 5, 12, 6, 10, 55, 70],
+        lateData: [3, 2, 5, 3, 4, 8, 12],
       };
     }
   };
 
-const loadDashboardData = useCallback(async () => {
-  try {
-    console.log("📊 Loading dashboard data...");
-
-    // Load general dashboard stats
-    const response = await apiService.getDashboardStats();
-    console.log("✅ Dashboard stats response:", response);
-
-    const dashboardData = response.data || response;
-
-    const extractedStats = {
-      totalEmployees:
-        dashboardData.totalEmployees || dashboardData.employees || 0,
-      presentToday: dashboardData.presentToday || dashboardData.present || 0,
-      onLeave: dashboardData.onLeave || dashboardData.leave || 0,
-      pendingLeaves:
-        dashboardData.pendingLeaves || dashboardData.pendingApprovals || 0,
-    };
-
-    console.log("📈 Extracted stats:", extractedStats);
-    setStats(extractedStats);
-
-    // Load attendance data for all users
+  // Load all data
+  const loadDashboardData = useCallback(async () => {
     try {
-      const currentDate = new Date();
-      const attendanceResponse = isAdmin
-        ? await apiService.getAttendanceReport(
-            currentDate.getMonth() + 1,
-            currentDate.getFullYear()
-          )
-        : await apiService.getMyAttendance(
-            currentDate.getMonth() + 1,
-            currentDate.getFullYear()
-          );
-      console.log("📊 Attendance response:", attendanceResponse);
+      setLoading(true);
 
-      const attendanceData = attendanceResponse.data || attendanceResponse;
-      setAttendanceData(attendanceData);
-
-      // Process attendance trends
-      const trends = processAttendanceTrends(attendanceData);
-      setAttendanceTrends(trends);
-    } catch (attendanceError) {
-      console.error("❌ Error loading attendance data:", attendanceError);
-    }
-
-    // Load department stats for admin only
-    if (isAdmin) {
+      // 1. Dashboard Stats
       try {
-        const deptResponse = await apiService.getDepartmentReport();
-        console.log("📊 Department stats response:", deptResponse);
-
-        // Handle different response formats
-        let departmentData = [];
-        if (Array.isArray(deptResponse.data)) {
-          departmentData = deptResponse.data;
-        } else if (Array.isArray(deptResponse)) {
-          departmentData = deptResponse;
-        } else if (
-          deptResponse.data &&
-          Array.isArray(deptResponse.data.departments)
-        ) {
-          departmentData = deptResponse.data.departments;
-        } else if (
-          deptResponse.departments &&
-          Array.isArray(deptResponse.departments)
-        ) {
-          departmentData = deptResponse.departments;
-        }
-
-        setDepartmentStats(departmentData);
-      } catch (deptError) {
-        console.error("❌ Error loading department stats:", deptError);
-        // Set default department data
-        setDepartmentStats([
-          { name: "Engineering", count: 45 },
-          { name: "HR", count: 12 },
-          { name: "Sales", count: 23 },
-          { name: "Marketing", count: 15 },
-          { name: "Finance", count: 8 },
-        ]);
-      }
-
-      // Load compliance stats for admin
-      try {
-        const complianceResponse = await apiService.getComplianceDashboard();
-        setComplianceStats(complianceResponse.data || complianceResponse);
-      } catch (complianceError) {
-        console.error("❌ Error loading compliance stats:", complianceError);
-      }
-    } else {
-      // Employee-specific compliance data
-      try {
-        const ackResponse = await apiService.getMyPendingAcknowledgments();
-        setComplianceStats({
-          pendingAcknowledgments: ackResponse.data?.length || 0,
+        const dashboardResponse = await apiService.getDashboardStats();
+        const dashboardData = dashboardResponse.data || dashboardResponse;
+        setStats({
+          totalEmployees: dashboardData.totalEmployees || 0,
+          presentToday: dashboardData.presentToday || 0,
+          onLeave: dashboardData.onLeave || 0,
+          pendingLeaves: dashboardData.pendingLeaves || 0,
         });
-      } catch (complianceError) {
-        console.error("❌ Error loading employee compliance:", complianceError);
+      } catch (error) {
+        console.error("Error loading dashboard stats:", error);
       }
-    }
 
-    // ========== FIXED: LOAD PAYROLL DATA FOR ALL USERS ==========
-    try {
-      let payrollData = null;
-      
-      if (isAdmin) {
-        // Admin: Try to get analytics first
+      // 2. Attendance Data
+      try {
+        const currentDate = new Date();
+        const attendanceResponse = await apiService.getMyAttendance(
+          currentDate.getMonth() + 1,
+          currentDate.getFullYear()
+        );
+        const attData = attendanceResponse.data || attendanceResponse;
+        setAttendanceTrends(processAttendanceTrends(attData));
+      } catch (error) {
+        console.error("Error loading attendance:", error);
+      }
+
+      // 3. Leave Balance
+      try {
+        const leaveBalanceResponse = await apiService.getLeaveBalance();
+        setMyLeaveBalance(leaveBalanceResponse.data || leaveBalanceResponse);
+      } catch (error) {
+        console.error("Error loading leave balance:", error);
+      }
+
+      // 4. Leave Data
+      try {
+        const myLeavesResponse = await apiService.getMyLeaves({ limit: 5 });
+        setLeaveData(myLeavesResponse.data || myLeavesResponse);
+      } catch (error) {
+        console.error("Error loading leaves:", error);
+      }
+
+      // 5. Department Stats (Admin/Manager only) - WITH ERROR HANDLING
+      if (isAdmin || isManager) {
         try {
-          const currentMonth = new Date().getMonth() + 1;
-          const currentYear = new Date().getFullYear();
+          const deptResponse = await apiService.getDepartmentReport();
+          console.log("Department response:", deptResponse);
 
-          console.log("💰 Admin: Fetching payroll analytics...");
-          const payrollResponse = await PAYROLL_API.getAnalytics({
-            year: currentYear,
-            month: currentMonth,
-          });
-
-          console.log("💰 Admin payroll analytics response:", payrollResponse);
-
-          if (payrollResponse) {
-            const data = payrollResponse.data || payrollResponse;
-            
-            // Handle different response structures
-            let monthlyTrend = [];
-            let summary = {};
-
-            if (data.monthlyTrend && Array.isArray(data.monthlyTrend)) {
-              monthlyTrend = data.monthlyTrend;
-            } else if (data.trend && Array.isArray(data.trend)) {
-              monthlyTrend = data.trend;
-            } else if (data.chartData && Array.isArray(data.chartData)) {
-              monthlyTrend = data.chartData;
-            } else if (data.data && Array.isArray(data.data)) {
-              monthlyTrend = data.data;
-            }
-
-            // Normalize monthly trend data
-            const normalizedMonthlyTrend = monthlyTrend.map((item) => ({
-              month: item.month || item.label || item.name || item.date || "Unknown",
-              totalPayout: item.totalPayout || item.value || item.amount || item.total || 0,
-            }));
-
-            if (data.summary && typeof data.summary === 'object') {
-              summary = data.summary;
-            } else if (data.overview && typeof data.overview === 'object') {
-              summary = data.overview;
-            } else if (data.stats && typeof data.stats === 'object') {
-              summary = data.stats;
-            } else {
-              // Extract from root level
-              summary = {
-                totalGross: data.totalGross || data.totalPayout || data.grossSalary || 0,
-                totalNet: data.totalNet || data.netAmount || data.netSalary || 0,
-                totalDeductions: data.totalDeductions || data.deductions || 0,
-                employeeCount: data.employeeCount || data.totalEmployees || data.count || 0,
-              };
-            }
-
-            payrollData = {
-              monthlyTrend: normalizedMonthlyTrend,
-              summary: {
-                totalGross: summary.totalGross || summary.grossAmount || 0,
-                totalNet: summary.totalNet || summary.netAmount || 0,
-                totalDeductions: summary.totalDeductions || summary.deductions || 0,
-                employeeCount: summary.employeeCount || summary.count || 0,
-              },
-            };
+          let deptData = [];
+          if (deptResponse.success && Array.isArray(deptResponse.data)) {
+            deptData = deptResponse.data;
+          } else if (Array.isArray(deptResponse)) {
+            deptData = deptResponse;
+          } else if (deptResponse.data?.departments) {
+            deptData = deptResponse.data.departments;
           }
-        } catch (analyticsError) {
-          console.log("💰 Admin analytics failed, trying alternative...", analyticsError);
-          
-          // Fallback: Try to get payroll list and generate trend
+
+          setDepartmentStats(deptData);
+        } catch (error) {
+          console.error("Error loading department stats:", error);
+          // Set default department data on error
+          setDepartmentStats([
+            { name: "Engineering", count: 45 },
+            { name: "HR", count: 12 },
+            { name: "Sales", count: 23 },
+            { name: "Marketing", count: 15 },
+            { name: "Finance", count: 8 },
+          ]);
+        }
+      }
+
+      // 6. Payroll Data - WITH ERROR HANDLING
+      try {
+        const currentYear = new Date().getFullYear();
+        let payrollData = null;
+
+        if (isAdmin) {
           try {
-            const currentYear = new Date().getFullYear();
-            const payrollsResponse = await PAYROLL_API.getAllPayrolls({
+            const payrollResponse = await PAYROLL_API.getAnalytics({
               year: currentYear,
             });
-            
-            console.log("💰 Admin fallback payrolls:", payrollsResponse);
-            
-            if (payrollsResponse && payrollsResponse.data) {
-              // Generate monthly trend from payrolls
-              const payrolls = Array.isArray(payrollsResponse.data) 
-                ? payrollsResponse.data 
-                : (payrollsResponse.data.payrolls || []);
-              
-              const monthlyMap = {};
-              payrolls.forEach(payroll => {
-                if (payroll.month && payroll.totalNet) {
-                  const monthKey = new Date(payroll.payrollDate || payroll.month).toLocaleString('default', { month: 'short' });
-                  if (!monthlyMap[monthKey]) {
-                    monthlyMap[monthKey] = 0;
-                  }
-                  monthlyMap[monthKey] += payroll.totalNet;
-                }
-              });
-              
-              const monthlyTrend = Object.keys(monthlyMap).map(month => ({
-                month,
-                totalPayout: monthlyMap[month]
-              })).sort((a, b) => {
-                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                return months.indexOf(a.month) - months.indexOf(b.month);
-              });
-              
-              // Calculate summary
-              const totalNet = payrolls.reduce((sum, payroll) => sum + (payroll.totalNet || 0), 0);
-              const totalGross = payrolls.reduce((sum, payroll) => sum + (payroll.totalGross || 0), 0);
-              const totalDeductions = payrolls.reduce((sum, payroll) => sum + (payroll.totalDeductions || 0), 0);
-              
-              payrollData = {
-                monthlyTrend,
-                summary: {
-                  totalGross,
-                  totalNet,
-                  totalDeductions,
-                  employeeCount: stats.totalEmployees || 0,
-                },
-              };
-            }
-          } catch (fallbackError) {
-            console.error("💰 Admin fallback also failed:", fallbackError);
+            const data = payrollResponse.data || payrollResponse;
+
+            payrollData = {
+              monthlyTrend: (data.monthlyTrend || []).map((item) => ({
+                month: item.month || "Unknown",
+                totalPayout: item.totalPayout || 0,
+              })),
+              summary: {
+                totalGross: data.summary?.totalGross || 0,
+                totalNet: data.summary?.totalNet || 0,
+                totalDeductions: data.summary?.totalDeductions || 0,
+                employeeCount: data.summary?.employeeCount || 0,
+              },
+            };
+          } catch (error) {
+            console.error("Error loading admin payroll:", error);
+          }
+        } else {
+          try {
+            const payslipsResponse = await PAYROLL_API.getMyPayslips({
+              year: currentYear,
+            });
+            const data = payslipsResponse.data || payslipsResponse;
+
+            payrollData = {
+              monthlyTrend: (data.payslips || []).map((slip) => ({
+                month: slip.month || "Unknown",
+                totalPayout: slip.netSalary || 0,
+              })),
+              summary: {
+                totalGross: data.summary?.totalGross || 0,
+                totalNet: data.summary?.totalNet || 0,
+                totalDeductions: data.summary?.totalDeductions || 0,
+                employeeCount: 1,
+              },
+            };
+          } catch (error) {
+            console.error("Error loading employee payroll:", error);
           }
         }
-      } else {
-        // Employee: Get payslips
-        try {
-          const currentYear = new Date().getFullYear();
-          const payslipsResponse = await PAYROLL_API.getMyPayslips({
-            year: currentYear,
-          });
 
-          console.log("💰 Employee payslips response:", payslipsResponse);
-
-          const data = payslipsResponse.data || payslipsResponse;
-          let monthlyTrend = [];
-          let summary = {};
-
-          if (data.monthlyData && Array.isArray(data.monthlyData)) {
-            monthlyTrend = data.monthlyData;
-          } else if (data.payslips && Array.isArray(data.payslips)) {
-            // Create monthly trend from payslips
-            const monthlyMap = {};
-            data.payslips.forEach(payslip => {
-              if (payslip.month && payslip.netSalary) {
-                const monthKey = payslip.month;
-                if (!monthlyMap[monthKey]) {
-                  monthlyMap[monthKey] = 0;
-                }
-                monthlyMap[monthKey] += payslip.netSalary;
-              }
-            });
-            
-            monthlyTrend = Object.keys(monthlyMap).map(month => ({
-              month,
-              totalPayout: monthlyMap[month]
-            }));
-          }
-
-          if (data.summary && typeof data.summary === 'object') {
-            summary = data.summary;
-          } else if (data.overview && typeof data.overview === 'object') {
-            summary = data.overview;
-          } else {
-            summary = {
-              totalGross: data.totalEarnings || data.grossSalary || 0,
-              totalNet: data.totalNetSalary || data.netSalary || 0,
-              totalDeductions: data.totalDeductions || data.deductions || 0,
-              employeeCount: 1,
-            };
-          }
-
+        // Set default data if payroll loading failed
+        if (!payrollData || !payrollData.monthlyTrend?.length) {
           payrollData = {
-            monthlyTrend,
+            monthlyTrend: [
+              { month: "Jan", totalPayout: isAdmin ? 1250000 : 75000 },
+              { month: "Feb", totalPayout: isAdmin ? 1320000 : 78000 },
+              { month: "Mar", totalPayout: isAdmin ? 1410000 : 82000 },
+              { month: "Apr", totalPayout: isAdmin ? 1480000 : 85000 },
+              { month: "May", totalPayout: isAdmin ? 1560000 : 88000 },
+              { month: "Jun", totalPayout: isAdmin ? 1620000 : 90000 },
+            ],
             summary: {
-              totalGross: summary.totalGross || summary.totalEarnings || summary.grossSalary || 0,
-              totalNet: summary.totalNet || summary.totalNetSalary || summary.netSalary || 0,
-              totalDeductions: summary.totalDeductions || summary.deductions || 0,
-              employeeCount: summary.employeeCount || summary.count || 1,
+              totalGross: isAdmin ? 8640000 : 498000,
+              totalNet: isAdmin ? 6912000 : 398400,
+              totalDeductions: isAdmin ? 1728000 : 99600,
+              employeeCount: isAdmin ? stats.totalEmployees || 0 : 1,
             },
           };
-        } catch (employeePayrollError) {
-          console.error("💰 Error loading employee payroll:", employeePayrollError);
         }
+
+        setPayrollStats(payrollData);
+      } catch (error) {
+        console.error("Error in payroll section:", error);
       }
 
-      // If payroll data is still null, set default data
-      if (!payrollData) {
-        console.log("💰 Setting default payroll data");
-        payrollData = {
-          monthlyTrend: isAdmin ? [
-            { month: "Jan", totalPayout: 1250000 },
-            { month: "Feb", totalPayout: 1320000 },
-            { month: "Mar", totalPayout: 1410000 },
-            { month: "Apr", totalPayout: 1480000 },
-            { month: "May", totalPayout: 1560000 },
-            { month: "Jun", totalPayout: 1620000 },
-          ] : [
-            { month: "Jan", totalPayout: 75000 },
-            { month: "Feb", totalPayout: 78000 },
-            { month: "Mar", totalPayout: 82000 },
-            { month: "Apr", totalPayout: 85000 },
-            { month: "May", totalPayout: 88000 },
-            { month: "Jun", totalPayout: 90000 },
-          ],
-          summary: {
-            totalGross: isAdmin ? 8640000 : 498000,
-            totalNet: isAdmin ? 6912000 : 398400,
-            totalDeductions: isAdmin ? 1728000 : 99600,
-            employeeCount: isAdmin ? stats.totalEmployees || 0 : 1,
-          },
-        };
-      }
-
-      console.log("💰 Final payroll data:", payrollData);
-      setPayrollStats(payrollData);
-      
-    } catch (payrollError) {
-      console.error("❌ General payroll error:", payrollError);
-      // Set default payroll data on error
-      setPayrollStats({
-        monthlyTrend: isAdmin ? [
-          { month: "Jan", totalPayout: 1250000 },
-          { month: "Feb", totalPayout: 1320000 },
-          { month: "Mar", totalPayout: 1410000 },
-          { month: "Apr", totalPayout: 1480000 },
-          { month: "May", totalPayout: 1560000 },
-          { month: "Jun", totalPayout: 1620000 },
-        ] : [
-          { month: "Jan", totalPayout: 75000 },
-          { month: "Feb", totalPayout: 78000 },
-          { month: "Mar", totalPayout: 82000 },
-          { month: "Apr", totalPayout: 85000 },
-          { month: "May", totalPayout: 88000 },
-          { month: "Jun", totalPayout: 90000 },
-        ],
-        summary: {
-          totalGross: isAdmin ? 8640000 : 498000,
-          totalNet: isAdmin ? 6912000 : 398400,
-          totalDeductions: isAdmin ? 1728000 : 99600,
-          employeeCount: isAdmin ? stats.totalEmployees || 0 : 1,
-        },
-      });
+      setLoading(false);
+    } catch (error) {
+      console.error("Error loading dashboard:", error);
+      showError("Failed to load dashboard data");
+      setLoading(false);
     }
-
-    setLoading(false);
-  } catch (error) {
-    console.error("❌ Failed to load dashboard data:", error);
-    showError("Failed to load dashboard data");
-    setLoading(false);
-  }
-}, [isAdmin, showError, stats.totalEmployees]);
+  }, [isAdmin, isManager, showError, stats.totalEmployees]);
 
   useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+    if (user) loadDashboardData();
+  }, [user, loadDashboardData]);
 
-  // Dynamic attendance chart data
+  // Chart Data
   const getAttendanceChartData = () => ({
     labels: attendanceTrends.labels,
     datasets: [
       {
-        label: "Present %",
+        label: "Present",
         data: attendanceTrends.presentData,
         backgroundColor: colors.success[500],
-        borderColor: colors.success[600],
-        borderWidth: 2,
-        borderRadius: 6,
-        barPercentage: 0.6,
+        borderRadius: 8,
+        barThickness: 32,
       },
       {
-        label: "Absent %",
+        label: "Absent",
         data: attendanceTrends.absentData,
         backgroundColor: colors.error[500],
-        borderColor: colors.error[600],
-        borderWidth: 2,
-        borderRadius: 6,
-        barPercentage: 0.6,
+        borderRadius: 8,
+        barThickness: 32,
       },
       {
-        label: "Late %",
+        label: "Late",
         data: attendanceTrends.lateData,
         backgroundColor: colors.warning[500],
-        borderColor: colors.warning[600],
-        borderWidth: 2,
-        borderRadius: 6,
-        barPercentage: 0.6,
+        borderRadius: 8,
+        barThickness: 32,
       },
     ],
   });
 
-  // Safe data extraction for department chart
-  const getDepartmentChartData = () => {
-    // Ensure departmentStats is an array
-    const safeDepartmentStats = Array.isArray(departmentStats)
-      ? departmentStats
-      : [];
-
-    return {
-      labels:
-        safeDepartmentStats.length > 0
-          ? safeDepartmentStats.map((dept) => dept.name)
-          : ["Engineering", "HR", "Sales", "Marketing", "Finance"],
-      datasets: [
-        {
-          data:
-            safeDepartmentStats.length > 0
-              ? safeDepartmentStats.map(
-                  (dept) => dept.count || dept.employeeCount || 0
-                )
-              : [45, 12, 23, 15, 8],
-          backgroundColor: [
-            colors.primary[500],
-            colors.success[500],
-            colors.warning[500],
-            colors.error[500],
-            colors.gray[500],
-          ],
-          borderWidth: 2,
-          borderColor: colors.gray[100],
-        },
-      ],
-    };
-  };
-
-  // Dynamic payroll trend data based on actual data
-  const getPayrollTrendData = () => {
-    console.log("📈 Generating payroll trend chart data:", payrollStats);
-
-    if (
-      payrollStats &&
-      Array.isArray(payrollStats.monthlyTrend) &&
-      payrollStats.monthlyTrend.length > 0
-    ) {
-      console.log("✅ Using real payroll trend data");
-      return {
-        labels: payrollStats.monthlyTrend.map((item) => item.month),
-        datasets: [
-          {
-            label: "Total Payout",
-            data: payrollStats.monthlyTrend.map((item) => item.totalPayout),
-            borderColor: colors.primary[500],
-            backgroundColor: colors.primary[50],
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4,
-            pointBackgroundColor: colors.primary[500],
-            pointBorderColor: colors.primary[700],
-            pointBorderWidth: 2,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-          },
+  const getDepartmentChartData = () => ({
+    labels: departmentStats.map((dept) => dept.name),
+    datasets: [
+      {
+        data: departmentStats.map(
+          (dept) => dept.count || dept.employeeCount || 0
+        ),
+        backgroundColor: [
+          colors.primary[500],
+          colors.primary[400],
+          colors.primary[600],
+          colors.primary[300],
+          colors.primary[700],
         ],
-      };
-    }
+        borderWidth: 0,
+        hoverOffset: 20,
+      },
+    ],
+  });
 
-    // Default data if no payroll trend available
-    console.log("⚠️ Using fallback payroll trend data");
+  const getPayrollTrendData = () => {
+    const monthlyData = payrollStats?.monthlyTrend || [];
     return {
-      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+      labels: monthlyData.map((item) => item.month),
       datasets: [
         {
-          label: "Total Payout",
-          data: [1250000, 1320000, 1410000, 1480000, 1560000, 1620000],
-          borderColor: colors.primary[500],
-          backgroundColor: colors.primary[50],
+          label: isAdmin ? "Company Payout" : "My Salary",
+          data: monthlyData.map((item) => item.totalPayout),
+          borderColor: colors.primary[600],
+          backgroundColor: `${colors.primary[500]}20`,
           borderWidth: 3,
           fill: true,
           tension: 0.4,
-          pointBackgroundColor: colors.primary[500],
-          pointBorderColor: colors.primary[700],
-          pointBorderWidth: 2,
-          pointRadius: 5,
-          pointHoverRadius: 7,
+          pointBackgroundColor: colors.primary[600],
+          pointBorderColor: "#fff",
+          pointBorderWidth: 3,
+          pointRadius: 6,
+          pointHoverRadius: 8,
         },
       ],
     };
   };
 
-  const departmentDistributionData = getDepartmentChartData();
-  const payrollTrendData = getPayrollTrendData();
-
+  // Chart Options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top",
+        display: true,
+        position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 20,
+          font: { size: 12, weight: "500" },
           color: colors.gray[700],
-          font: {
-            size: 12,
-          },
         },
       },
       tooltip: {
+        backgroundColor: colors.gray[900],
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        padding: 12,
+        borderRadius: 8,
+        displayColors: true,
         callbacks: {
-          label: function (context) {
-            let label = context.dataset.label || "";
-            if (label) {
-              label += ": ";
-            }
-            if (context.parsed.y !== null) {
-              label += context.parsed.y + "%";
-            }
-            return label;
-          },
+          label: (context) => `${context.dataset.label}: ${context.parsed.y}%`,
         },
       },
     },
@@ -720,28 +495,15 @@ const loadDashboardData = useCallback(async () => {
       y: {
         beginAtZero: true,
         max: 100,
-        title: {
-          display: true,
-          text: "Percentage (%)",
-          color: colors.gray[600],
-        },
-        grid: {
-          color: colors.gray[100],
-        },
+        grid: { color: colors.gray[100], drawBorder: false },
         ticks: {
           color: colors.gray[500],
-          callback: function (value) {
-            return value + "%";
-          },
+          callback: (value) => value + "%",
         },
       },
       x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: colors.gray[500],
-        },
+        grid: { display: false },
+        ticks: { color: colors.gray[500] },
       },
     },
   };
@@ -751,27 +513,32 @@ const loadDashboardData = useCallback(async () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top",
+        display: true,
+        position: "bottom",
         labels: {
           usePointStyle: true,
-          padding: 15,
+          padding: 20,
+          font: { size: 12, weight: "500" },
           color: colors.gray[700],
-          font: {
-            size: 12,
-          },
         },
       },
       tooltip: {
+        backgroundColor: colors.gray[900],
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        padding: 12,
+        borderRadius: 8,
+        displayColors: true,
         callbacks: {
-          label: function (context) {
-            let label = context.dataset.label || "";
-            if (label) {
-              label += ": ";
-            }
-            if (context.parsed.y !== null) {
-              label += formatCurrency(context.parsed.y);
-            }
-            return label;
+          label: (context) => {
+            const value = context.parsed.y;
+            return `${context.dataset.label}: ${
+              value >= 1000000
+                ? "₹" + (value / 1000000).toFixed(2) + "M"
+                : value >= 1000
+                ? "₹" + (value / 1000).toFixed(0) + "K"
+                : "₹" + value
+            }`;
           },
         },
       },
@@ -779,494 +546,450 @@ const loadDashboardData = useCallback(async () => {
     scales: {
       y: {
         beginAtZero: true,
-        grid: {
-          color: colors.gray[100],
-        },
+        grid: { color: colors.gray[100], drawBorder: false },
         ticks: {
           color: colors.gray[500],
-          callback: function (value) {
-            if (value >= 1000000) {
-              return "₹" + (value / 1000000).toFixed(1) + "M";
-            } else if (value >= 1000) {
-              return "₹" + (value / 1000).toFixed(0) + "K";
-            }
-            return "₹" + value;
-          },
-        },
-        title: {
-          display: true,
-          text: "Amount (₹)",
-          color: colors.gray[600],
+          callback: (value) =>
+            value >= 1000000
+              ? "₹" + (value / 1000000).toFixed(1) + "M"
+              : value >= 1000
+              ? "₹" + (value / 1000).toFixed(0) + "K"
+              : "₹" + value,
         },
       },
       x: {
-        grid: {
-          display: false,
-        },
-        ticks: {
-          color: colors.gray[500],
-        },
+        grid: { display: false },
+        ticks: { color: colors.gray[500] },
       },
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index',
-    },
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutQuart',
     },
   };
 
   const doughnutOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: "70%",
+    cutout: "75%",
     plugins: {
       legend: {
-        position: "bottom",
+        display: true,
+        position: "right",
         labels: {
           usePointStyle: true,
           padding: 15,
+          font: { size: 12, weight: "500" },
           color: colors.gray[700],
-          font: {
-            size: 12,
-          },
         },
       },
       tooltip: {
+        backgroundColor: colors.gray[900],
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        padding: 12,
+        borderRadius: 8,
         callbacks: {
-          label: function (context) {
-            const label = context.label || '';
-            const value = context.raw || 0;
+          label: (context) => {
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
-            const percentage = Math.round((value / total) * 100);
-            return `${label}: ${value} employees (${percentage}%)`;
+            const percentage = Math.round((context.raw / total) * 100);
+            return `${context.label}: ${context.raw} (${percentage}%)`;
           },
         },
       },
     },
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount || 0);
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Activity className="h-6 w-6 text-indigo-600 animate-pulse" />
+            </div>
+          </div>
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading your dashboard...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Dashboard Overview
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => (window.location.href = "/attendance/reports")}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-          >
-            <Eye className="h-4 w-4" />
-            View Report
-          </button>
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome back, {displayName}! 👋
+            </h1>
+            <p className="text-gray-600">
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+          </div>
           <button
             onClick={loadDashboardData}
-            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors flex items-center gap-2"
+            className="px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex items-center gap-2"
           >
-            <Download className="h-4 w-4" />
-            Refresh Data
+            <Activity className="w-4 h-4" />
+            Refresh
           </button>
         </div>
       </div>
 
-      {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatsCard
           icon={Users}
           label="Total Employees"
-          value={stats.totalEmployees || 0}
-          change="+12% from last month"
-          changeType="increase"
-          bgColor={colors.primary[500]}
-          textColor="text-white"
+          value={stats.totalEmployees}
+          change="+12%"
+          changeType="positive"
+          gradient="from-blue-500 to-indigo-600"
         />
-        <StatCard
-          icon={CheckCircle}
+        <StatsCard
+          icon={UserCheck}
           label="Present Today"
-          value={stats.presentToday || 0}
-          change={`${Math.round(
-            ((stats.presentToday || 0) / (stats.totalEmployees || 1)) * 100
-          )}% attendance`}
+          value={stats.presentToday}
+          change={`${
+            stats.totalEmployees
+              ? Math.round((stats.presentToday / stats.totalEmployees) * 100)
+              : 0
+          }% attendance`}
           changeType="neutral"
-          bgColor={colors.success[500]}
-          textColor="text-white"
+          gradient="from-green-500 to-emerald-600"
         />
-        <StatCard
+        <StatsCard
           icon={Calendar}
           label="On Leave"
-          value={stats.onLeave || 0}
-          change={`${Math.round(
-            ((stats.onLeave || 0) / (stats.totalEmployees || 1)) * 100
-          )}% of workforce`}
-          changeType="decrease"
-          bgColor={colors.warning[500]}
-          textColor="text-white"
+          value={stats.onLeave}
+          change={`${
+            stats.totalEmployees
+              ? Math.round((stats.onLeave / stats.totalEmployees) * 100)
+              : 0
+          }% of team`}
+          changeType="neutral"
+          gradient="from-yellow-500 to-orange-600"
         />
-        <StatCard
+        <StatsCard
           icon={AlertCircle}
           label="Pending Approvals"
-          value={stats.pendingLeaves || 0}
+          value={stats.pendingLeaves}
           change={stats.pendingLeaves > 0 ? "Needs attention" : "All clear"}
-          changeType={stats.pendingLeaves > 0 ? "increase" : "neutral"}
-          bgColor={colors.error[500]}
-          textColor="text-white"
+          changeType={stats.pendingLeaves > 0 ? "negative" : "positive"}
+          gradient="from-red-500 to-pink-600"
         />
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Attendance Trends */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Attendance Trends (Last 7 Days)
-            </h3>
-            <button className="text-gray-400 hover:text-gray-600">
-              <MoreHorizontal className="h-5 w-5" />
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Attendance Trends
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Last 7 days performance
+              </p>
+            </div>
+            <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5 text-gray-400" />
             </button>
           </div>
-          <div className="h-80">
+          <div className="h-72">
             <Bar data={getAttendanceChartData()} options={chartOptions} />
           </div>
         </div>
 
-        {/* Department Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Department Distribution
-            </h3>
-            <button className="text-gray-400 hover:text-gray-600">
-              <MoreHorizontal className="h-5 w-5" />
-            </button>
-          </div>
-          <div className="h-80">
-            <Doughnut
-              data={departmentDistributionData}
-              options={doughnutOptions}
-            />
-          </div>
-        </div>
-      </div>
-
-     {/* Payroll & Financials */}
-{payrollStats && (
-  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    {/* Payroll Trend */}
-    <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Payroll Trend {isAdmin ? "(Company)" : "(Personal)"}
-          {payrollStats.monthlyTrend.length > 0 ? ` (${payrollStats.monthlyTrend.length} months)` : ''}
-        </h3>
-        <button 
-          className="text-gray-400 hover:text-gray-600"
-          onClick={() => (window.location.href = "/payroll")}
-          title="View detailed analytics"
-        >
-          <MoreHorizontal className="h-5 w-5" />
-        </button>
-      </div>
-      <div className="h-80">
-        <Line data={payrollTrendData} options={lineChartOptions} />
-      </div>
-    </div>
-
-    {/* Payroll Summary */}
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {isAdmin ? "Company Payroll" : "My Payroll"}
-        </h3>
-        <button 
-          className="text-sm text-gray-600 hover:text-gray-900 font-medium"
-          onClick={() => (window.location.href = "/payroll")}
-        >
-          Details →
-        </button>
-      </div>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-          <span className="text-gray-600">Total {isAdmin ? "Gross" : "Earnings"}</span>
-          <span className="font-semibold text-gray-900">
-            {formatCurrency(payrollStats.summary.totalGross)}
-          </span>
-        </div>
-        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-          <span className="text-gray-600">Total Net</span>
-          <span className="font-semibold text-gray-900">
-            {formatCurrency(payrollStats.summary.totalNet)}
-          </span>
-        </div>
-        <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-          <span className="text-gray-600">Deductions</span>
-          <span className="font-semibold text-red-600">
-            {formatCurrency(payrollStats.summary.totalDeductions)}
-          </span>
-        </div>
-        {isAdmin && (
-          <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-            <span className="text-gray-600">Employees</span>
-            <span className="font-semibold text-gray-900">
-              {payrollStats.summary.employeeCount || stats.totalEmployees || 0}
-            </span>
+        {/* Payroll Trend */}
+        {payrollStats && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {isAdmin ? "Company Payroll" : "My Salary Trend"}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {payrollStats.monthlyTrend?.length || 0} months overview
+                </p>
+              </div>
+              <button className="p-2 hover:bg-gray-50 rounded-lg transition-colors">
+                <MoreVertical className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <div className="h-72">
+              <Line data={getPayrollTrendData()} options={lineChartOptions} />
+            </div>
           </div>
         )}
       </div>
-    </div>
-  </div>
-)}
 
-      {/* Quick Actions & Compliance */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Department Distribution (Admin Only) */}
+        {(isAdmin || isManager) && departmentStats.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Department Distribution
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">Employee breakdown</p>
+              </div>
+            </div>
+            <div className="h-64">
+              <Doughnut
+                data={getDepartmentChartData()}
+                options={doughnutOptions}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Leave Balance (Employee View) */}
+        {!isAdmin && myLeaveBalance && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow lg:col-span-2">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  My Leave Balance
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Current year availability
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myLeaveBalance.balance?.map((leave) => (
+                <div
+                  key={leave.code}
+                  className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">
+                      {leave.name}
+                    </span>
+                    <span className="text-xs text-gray-500">{leave.code}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-indigo-600">
+                      {leave.currentBalance}
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      / {leave.maxBalance} days
+                    </span>
+                  </div>
+                  <div className="mt-2">
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all"
+                        style={{
+                          width: `${
+                            (leave.currentBalance / leave.maxBalance) * 100
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">
             Quick Actions
           </h3>
           <div className="space-y-3">
-            <DashboardQuickActionCard
+            <QuickActionButton
               icon={Clock}
-              label="Check In/Out"
-              description="Mark your attendance"
-              color={colors.primary[500]}
+              label="Mark Attendance"
+              description="Check in/out"
               onClick={() => (window.location.href = "/attendance")}
+              color="indigo"
             />
-            <DashboardQuickActionCard
+            <QuickActionButton
               icon={Calendar}
               label="Apply Leave"
-              description="Submit leave request"
-              color={colors.success[500]}
+              description="Request time off"
               onClick={() => (window.location.href = "/leaves")}
+              color="green"
             />
-            <DashboardQuickActionCard
+            <QuickActionButton
               icon={FileText}
               label={isAdmin ? "Manage Payroll" : "View Payslip"}
-              description={isAdmin ? "Process payroll" : "Download payslip"}
-              color={colors.warning[500]}
+              description={isAdmin ? "Process payroll" : "Download slip"}
               onClick={() => (window.location.href = "/payroll")}
+              color="purple"
             />
-            <DashboardQuickActionCard
-              icon={BookOpen}
+            <QuickActionButton
+              icon={Award}
               label="Training"
               description="Browse courses"
-              color={colors.error[500]}
               onClick={() => (window.location.href = "/training")}
-            />
-          </div>
-        </div>
-
-        {/* Compliance Status */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Compliance Status
-            </h3>
-            <button
-              className="text-sm text-gray-600 hover:text-gray-900 font-medium"
-              onClick={() => (window.location.href = "/compliance")}
-            >
-              View All →
-            </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ComplianceStatCard
-              icon={CheckCircle}
-              iconBg="bg-green-100"
-              iconColor="text-green-600"
-              label="Policies"
-              value={complianceStats?.policies?.completed || 0}
-              description="Completed"
-            />
-            <ComplianceStatCard
-              icon={Clock}
-              iconBg="bg-yellow-100"
-              iconColor="text-yellow-600"
-              label="Pending"
-              value={
-                complianceStats?.policies?.pending ||
-                complianceStats?.pendingAcknowledgments ||
-                0
-              }
-              description="Requires action"
-            />
-            <ComplianceStatCard
-              icon={FileText}
-              iconBg="bg-blue-100"
-              iconColor="text-blue-600"
-              label="Documents"
-              value={complianceStats?.documents?.active || 0}
-              description="Active"
-            />
-            <ComplianceStatCard
-              icon={AlertTriangle}
-              iconBg="bg-red-100"
-              iconColor="text-red-600"
-              label="Expiring"
-              value={complianceStats?.documents?.expiringSoon || 0}
-              description="Next 30 days"
+              color="yellow"
             />
           </div>
         </div>
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Recent Activity
-          </h3>
-          <button className="text-sm text-gray-600 hover:text-gray-900 font-medium">
-            View All →
-          </button>
+      {leaveData?.leaves?.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Recent Leave Applications
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">Latest requests</p>
+            </div>
+            <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
+              View All
+            </button>
+          </div>
+          <div className="space-y-3">
+            {leaveData.leaves.slice(0, 5).map((leave) => (
+              <div
+                key={leave._id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      leave.status === "Approved"
+                        ? "bg-green-100"
+                        : leave.status === "Rejected"
+                        ? "bg-red-100"
+                        : "bg-yellow-100"
+                    }`}
+                  >
+                    <Calendar
+                      className={`w-5 h-5 ${
+                        leave.status === "Approved"
+                          ? "text-green-600"
+                          : leave.status === "Rejected"
+                          ? "text-red-600"
+                          : "text-yellow-600"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      {leave.leaveType?.name || "Leave"}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      {new Date(leave.startDate).toLocaleDateString()} -{" "}
+                      {new Date(leave.endDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    leave.status === "Approved"
+                      ? "bg-green-100 text-green-700"
+                      : leave.status === "Rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+                  {leave.status}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="space-y-4">
-          <ActivityItem
-            icon={CheckCircle}
-            iconColor="text-green-500"
-            title="Attendance marked"
-            time="Today at 9:00 AM"
-            description="You checked in for the day"
-          />
-          {stats.pendingLeaves > 0 && (
-            <ActivityItem
-              icon={AlertCircle}
-              iconColor="text-yellow-500"
-              title={`${stats.pendingLeaves} pending leave ${
-                stats.pendingLeaves !== 1 ? "requests" : "request"
-              }`}
-              time="Needs approval"
-              description="Review and take action"
-            />
-          )}
-          <ActivityItem
-            icon={TrendingUp}
-            iconColor="text-blue-500"
-            title="Monthly report generated"
-            time="Yesterday at 3:45 PM"
-            description="Q4 performance analysis ready"
-          />
-          {payrollStats && payrollStats.summary.totalNet > 0 && (
-            <ActivityItem
-              icon={DollarSign}
-              iconColor="text-green-500"
-              title="Payroll processed"
-              time="This month"
-              description={`Total payout: ${formatCurrency(payrollStats.summary.totalNet)}`}
-            />
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-// Dashboard-specific QuickActionCard (renamed to avoid conflict)
-const DashboardQuickActionCard = ({
+// Stats Card Component
+const StatsCard = ({
   icon: Icon,
-  label,
-  description,
-  color,
-  onClick,
-  badge,
-}) => (
-  <button
-    onClick={onClick}
-    className="w-full p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all duration-200 text-left group"
-  >
-    <div className="flex items-center gap-3">
-      <div
-        className="p-2 rounded-lg group-hover:scale-105 transition-transform duration-200"
-        style={{ backgroundColor: color + "20" }}
-      >
-        <Icon className="h-5 w-5" style={{ color }} />
-      </div>
-      <div className="flex-1">
-        <h4 className="font-medium text-gray-900 group-hover:text-gray-700">
-          {label}
-        </h4>
-        <p className="text-sm text-gray-600">{description}</p>
-      </div>
-      {badge && (
-        <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
-          {badge}
-        </span>
-      )}
-    </div>
-  </button>
-);
-
-// Compliance Stat Card Component
-const ComplianceStatCard = ({
-  icon: Icon,
-  iconBg,
-  iconColor,
   label,
   value,
-  description,
-}) => (
-  <div className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-    <div className="flex items-center gap-3 mb-2">
-      <div className={`p-2 rounded-lg ${iconBg}`}>
-        <Icon className={`h-5 w-5 ${iconColor}`} />
+  change,
+  changeType,
+  gradient,
+}) => {
+  return (
+    <div className="relative overflow-hidden bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all group">
+      <div className="flex items-center justify-between mb-4">
+        <div
+          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}
+        >
+          <Icon className="w-6 h-6 text-white" />
+        </div>
+        {changeType === "positive" && (
+          <div className="flex items-center gap-1 text-green-600">
+            <ArrowUpRight className="w-4 h-4" />
+            <span className="text-xs font-semibold">{change}</span>
+          </div>
+        )}
+        {changeType === "negative" && (
+          <div className="flex items-center gap-1 text-red-600">
+            <ArrowDownRight className="w-4 h-4" />
+            <span className="text-xs font-semibold">{change}</span>
+          </div>
+        )}
       </div>
-      <span className="font-medium text-gray-900">{label}</span>
+      <div>
+        <p className="text-sm text-gray-600 mb-1">{label}</p>
+        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        {changeType === "neutral" && (
+          <p className="text-xs text-gray-500 mt-2">{change}</p>
+        )}
+      </div>
+      <div
+        className={`absolute -right-4 -bottom-4 w-24 h-24 bg-gradient-to-br ${gradient} opacity-5 rounded-full group-hover:scale-150 transition-transform duration-500`}
+      />
     </div>
-    <p className="text-2xl font-bold text-gray-900">{value}</p>
-    <p className="text-sm text-gray-600">{description}</p>
-  </div>
-);
+  );
+};
 
-// Activity Item Component
-const ActivityItem = ({ icon: Icon, iconColor, title, time, description }) => (
-  <div className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-    <div className={`p-2 rounded-lg ${iconColor} bg-opacity-10`}>
-      <Icon className="h-4 w-4" />
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-2">
-        <p className="font-medium text-gray-900 truncate">{title}</p>
-        <span className="text-xs text-gray-500 whitespace-nowrap">{time}</span>
+// Quick Action Button Component
+const QuickActionButton = ({
+  icon: Icon,
+  label,
+  description,
+  onClick,
+  color,
+}) => {
+  const colorClasses = {
+    indigo: "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
+    green: "bg-green-50 text-green-600 hover:bg-green-100",
+    purple: "bg-purple-50 text-purple-600 hover:bg-purple-100",
+    yellow: "bg-yellow-50 text-yellow-600 hover:bg-yellow-100",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+    >
+      <div
+        className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[color]} transition-colors`}
+      >
+        <Icon className="w-5 h-5" />
       </div>
-      {description && (
-        <p className="text-sm text-gray-600 mt-1">{description}</p>
-      )}
-    </div>
-  </div>
-);
+      <div className="flex-1 text-left">
+        <p className="font-medium text-gray-900 group-hover:text-indigo-600 transition-colors">
+          {label}
+        </p>
+        <p className="text-xs text-gray-500">{description}</p>
+      </div>
+      <ArrowUpRight className="w-4 h-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+    </button>
+  );
+};
 
 export default Dashboard;

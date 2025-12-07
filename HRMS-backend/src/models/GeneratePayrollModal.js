@@ -105,7 +105,7 @@ const GeneratePayrollModal = ({ isOpen, onClose, onPayrollGenerated }) => {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-3">
           {/* Configuration Section */}
           <div className="bg-gray-50 rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Payroll Configuration</h3>

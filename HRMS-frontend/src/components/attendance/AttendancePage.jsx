@@ -275,7 +275,7 @@ const AttendancePage = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-3">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -523,7 +523,7 @@ const AttendancePage = () => {
 
             {/* Filters */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+              <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-3 md:space-x-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Date
@@ -868,7 +868,7 @@ const AttendancePage = () => {
 
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-3 md:space-x-4">
               <div className="flex items-center space-x-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1033,7 +1033,7 @@ const AttendancePage = () => {
         <>
           {/* Filters */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-3 md:space-x-4">
               <div className="flex items-center space-x-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

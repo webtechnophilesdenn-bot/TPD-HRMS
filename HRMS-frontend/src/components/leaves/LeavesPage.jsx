@@ -663,7 +663,7 @@ const LeavesPage = () => {
           </div>
 
           {/* Modal Body */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-3">
             {/* Status Badge */}
             <div className="flex items-center justify-between">
               <span

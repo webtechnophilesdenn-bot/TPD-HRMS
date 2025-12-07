@@ -60,6 +60,7 @@ export const apiService = {
     }
   },
 
+
   // ==================== ONBOARDING APIs ====================
   createOnboarding: async (data) => {
     return await apiService.request("/onboarding", {
@@ -1331,15 +1332,42 @@ getLeaveCalendar: async (params = {}) => {
       body: JSON.stringify(updates),
     });
   },
-  getAnalytics: async (filters = {}) => {
-    const params = new URLSearchParams();
-    Object.keys(filters).forEach((key) => {
-      if (filters[key]) params.append(key, filters[key]);
-    });
-    return await request(`/payroll/analytics?${params.toString()}`);
-  },
+// In apiService.js - Update getAnalytics
+getAnalytics: async (filters) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] && filters[key] !== '') {
+      params.append(key, filters[key]);
+    }
+  });
+  return await apiService.request(`payroll/analytics?${params.toString()}`);
+},
 
-  // Add to your apiService.js
+
+  // Add to PAYROLL section in apiService.js
+
+// Salary Structure Management
+checkMissingSalaryStructures: async () => {
+  return await apiService.request('salary-structures/missing');
+},
+
+createMissingSalaryStructures: async (data) => {
+  return await apiService.request('salary-structures/create-missing', {
+    method: 'POST',
+    body: JSON.stringify(data || { effectiveFrom: new Date() })
+  });
+},
+
+validatePayrollEligibility: async (filters) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach(key => {
+    if (filters[key] !== undefined && filters[key] !== '') {
+      params.append(key, filters[key]);
+    }
+  });
+  return await apiService.request(`payroll/validate-eligibility?${params.toString()}`);
+},
+
 
   // ==================== LOAN MANAGEMENT ====================
   requestLoan: async (loanData) => {

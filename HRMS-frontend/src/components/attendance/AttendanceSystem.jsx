@@ -431,7 +431,7 @@ const AttendanceSystem = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-3 md:space-x-4">
           <div className="flex items-center space-x-4">
             <select
               value={filters.month}

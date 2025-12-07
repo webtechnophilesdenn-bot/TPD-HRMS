@@ -28,8 +28,55 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // NEW: Function to refresh user data
+  const refreshUser = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const response = await apiService.getMyProfile();
+      
+      if (response.success) {
+        const employeeData = response.data;
+        
+        // Update user state with fresh employee data
+        setUser(prevUser => ({
+          ...prevUser,
+          employee: {
+            ...prevUser?.employee,
+            name: `${employeeData.firstName} ${employeeData.lastName}`,
+            firstName: employeeData.firstName,
+            lastName: employeeData.lastName,
+            email: employeeData.personalEmail,
+            employeeId: employeeData.employeeId,
+            ...employeeData
+          }
+        }));
+        
+        // Also update localStorage profile
+        const currentProfile = apiService.getProfile();
+        if (currentProfile) {
+          localStorage.setItem('userProfile', JSON.stringify({
+            ...currentProfile,
+            employee: {
+              ...currentProfile.employee,
+              name: `${employeeData.firstName} ${employeeData.lastName}`,
+              firstName: employeeData.firstName,
+              lastName: employeeData.lastName,
+              email: employeeData.personalEmail,
+              employeeId: employeeData.employeeId,
+              ...employeeData
+            }
+          }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to refresh user data:", error);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser, loading }}>
       {children}
     </AuthContext.Provider>
   );
