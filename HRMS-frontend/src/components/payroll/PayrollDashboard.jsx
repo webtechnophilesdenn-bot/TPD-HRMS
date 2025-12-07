@@ -1,5 +1,5 @@
 // src/components/payroll/PayrollDashboard.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   DollarSign,
   Users,
@@ -16,17 +16,17 @@ import {
   Calendar,
   TrendingDown,
   FileText,
-  Shield
-} from 'lucide-react';
-import { apiService } from '../../services/apiService';
-import PayrollGenerationSystem from './PayrollGenerationSystem';
+  Shield,
+} from "lucide-react";
+import { apiService } from "../../services/apiService";
+import PayrollGenerationSystem from "./PayrollGenerationSystem";
 
 const PayrollDashboard = () => {
   const [payrolls, setPayrolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [departments, setDepartments] = useState([]);
-  const [userRole, setUserRole] = useState('');
+  const [userRole, setUserRole] = useState("");
   const [userDepartment, setUserDepartment] = useState(null);
   const [selectedPayrolls, setSelectedPayrolls] = useState([]);
   const [showGenerateModal, setShowGenerateModal] = useState(false);
@@ -37,8 +37,8 @@ const PayrollDashboard = () => {
   const [filters, setFilters] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,
-    department: '',
-    status: ''
+    department: "",
+    status: "",
   });
 
   // Fetch user context
@@ -47,68 +47,114 @@ const PayrollDashboard = () => {
       try {
         const response = await apiService.getCurrentUser();
         const user = response.data;
-        
+
         setUserRole(user.role);
         setUserDepartment(user.department);
 
         // Fetch departments
-        if (user.role === 'admin') {
+        if (user.role === "admin") {
           const deptResponse = await apiService.getDepartments();
           setDepartments(deptResponse.data || []);
-        } else if (user.role === 'hr' && user.permissions?.departments?.length > 0) {
+        } else if (
+          user.role === "hr" &&
+          user.permissions?.departments?.length > 0
+        ) {
           const deptResponse = await apiService.getDepartments();
-          const accessibleDepts = deptResponse.data.filter(dept => 
+          const accessibleDepts = deptResponse.data.filter((dept) =>
             user.permissions.departments.includes(dept._id)
           );
           setDepartments(accessibleDepts);
-        } else if (user.role === 'manager' && user.department) {
+        } else if (user.role === "manager" && user.department) {
           const deptResponse = await apiService.getDepartments();
-          const managerDept = deptResponse.data.find(dept => dept._id === user.department);
+          const managerDept = deptResponse.data.find(
+            (dept) => dept._id === user.department
+          );
           if (managerDept) {
             setDepartments([managerDept]);
-            setFilters(prev => ({ ...prev, department: user.department }));
+            setFilters((prev) => ({ ...prev, department: user.department }));
           }
         }
       } catch (error) {
-        console.error('Error fetching user context:', error);
+        console.error("Error fetching user context:", error);
       }
     };
 
     fetchUserContext();
   }, []);
 
-// In PayrollDashboard.jsx - Update fetchPayrolls
-// PayrollDashboard.jsx - Update fetchPayrolls function
-const fetchPayrolls = useCallback(async () => {
-  try {
-    setLoading(true);
-    const response = await apiService.getAllPayrolls(filters);
-    
-    console.log('Full Response:', response);
-    
-    // Access payrolls correctly
-    const payrollData = response.data?.payrolls || response.payrolls || response.data?.data || [];
-    setPayrolls(payrollData);
+  // In PayrollDashboard.jsx - Update fetchPayrolls
+  // PayrollDashboard.jsx - Update fetchPayrolls function
+  const fetchPayrolls = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getAllPayrolls(filters);
 
-    // ✅ FIX: Calculate analytics from payroll data instead of separate API call
-    if (response.summary) {
-      // Use summary from getAllPayrolls response
-      setAnalytics({ summary: response.summary });
-    } else if (payrollData.length > 0) {
-      // Calculate summary from payroll data
-      const calculatedSummary = {
-        totalGross: payrollData.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
-        totalGrossEarnings: payrollData.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
-        totalNet: payrollData.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
-        totalNetSalary: payrollData.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
-        totalDeductions: payrollData.reduce((sum, p) => sum + (p.summary?.totalDeductions || 0), 0),
-        employeeCount: payrollData.length
-      };
-      
-      setAnalytics({ summary: calculatedSummary });
-      console.log('Calculated Analytics:', calculatedSummary);
-    } else {
-      // No payrolls found
+      console.log("Full Response:", response);
+
+      // Access payrolls correctly
+      const payrollData =
+        response.data?.payrolls ||
+        response.payrolls ||
+        response.data?.data ||
+        [];
+      setPayrolls(payrollData);
+
+      // ✅ FIX: Calculate analytics from payroll data instead of separate API call
+      if (response.summary) {
+        // Use summary from getAllPayrolls response
+        setAnalytics({ summary: response.summary });
+      } else if (payrollData.length > 0) {
+        // Calculate summary from payroll data
+        const calculatedSummary = {
+          totalGross: payrollData.reduce(
+            (sum, p) => sum + (p.summary?.grossEarnings || 0),
+            0
+          ),
+          totalGrossEarnings: payrollData.reduce(
+            (sum, p) => sum + (p.summary?.grossEarnings || 0),
+            0
+          ),
+          totalNet: payrollData.reduce(
+            (sum, p) => sum + (p.summary?.netSalary || 0),
+            0
+          ),
+          totalNetSalary: payrollData.reduce(
+            (sum, p) => sum + (p.summary?.netSalary || 0),
+            0
+          ),
+          totalDeductions: payrollData.reduce(
+            (sum, p) => sum + (p.summary?.totalDeductions || 0),
+            0
+          ),
+          employeeCount: payrollData.length,
+        };
+
+        setAnalytics({ summary: calculatedSummary });
+        console.log("Calculated Analytics:", calculatedSummary);
+      } else {
+        // No payrolls found
+        setAnalytics({
+          summary: {
+            totalGross: 0,
+            totalGrossEarnings: 0,
+            totalNet: 0,
+            totalNetSalary: 0,
+            totalDeductions: 0,
+            employeeCount: 0,
+          },
+        });
+      }
+
+      // ❌ REMOVE THIS - Don't call analytics endpoint separately
+      // const analyticsResponse = await apiService.getAnalytics({
+      //   year: filters.year,
+      //   month: filters.month,
+      //   department: filters.department
+      // });
+      // setAnalytics(analyticsResponse.data || null);
+    } catch (error) {
+      console.error("Error fetching payrolls:", error);
+      setPayrolls([]);
       setAnalytics({
         summary: {
           totalGross: 0,
@@ -116,38 +162,13 @@ const fetchPayrolls = useCallback(async () => {
           totalNet: 0,
           totalNetSalary: 0,
           totalDeductions: 0,
-          employeeCount: 0
-        }
+          employeeCount: 0,
+        },
       });
+    } finally {
+      setLoading(false);
     }
-
-    // ❌ REMOVE THIS - Don't call analytics endpoint separately
-    // const analyticsResponse = await apiService.getAnalytics({
-    //   year: filters.year,
-    //   month: filters.month,
-    //   department: filters.department
-    // });
-    // setAnalytics(analyticsResponse.data || null);
-    
-  } catch (error) {
-    console.error('Error fetching payrolls:', error);
-    setPayrolls([]);
-    setAnalytics({
-      summary: {
-        totalGross: 0,
-        totalGrossEarnings: 0,
-        totalNet: 0,
-        totalNetSalary: 0,
-        totalDeductions: 0,
-        employeeCount: 0
-      }
-    });
-  } finally {
-    setLoading(false);
-  }
-}, [filters]);
-
-
+  }, [filters]);
 
   useEffect(() => {
     fetchPayrolls();
@@ -164,7 +185,7 @@ const fetchPayrolls = useCallback(async () => {
       setShowGenerateModal(false);
       setTimeout(() => setGenerationResult(null), 5000);
     } catch (error) {
-      console.error('Error generating payroll:', error);
+      console.error("Error generating payroll:", error);
       alert(`Failed to generate payroll: ${error.message}`);
     }
   };
@@ -178,61 +199,61 @@ const fetchPayrolls = useCallback(async () => {
     try {
       await apiService.downloadPayslip(payslipId);
     } catch (error) {
-      console.error('Error downloading payslip:', error);
+      console.error("Error downloading payslip:", error);
       alert(`Failed to download payslip: ${error.message}`);
     }
   };
 
   const handleBulkApprove = async () => {
     if (selectedPayrolls.length === 0) {
-      alert('Please select payrolls to approve');
+      alert("Please select payrolls to approve");
       return;
     }
 
     try {
       await apiService.bulkUpdatePayrollStatus({
         payrollIds: selectedPayrolls,
-        status: 'Approved',
-        remarks: 'Bulk approval'
+        status: "Approved",
+        remarks: "Bulk approval",
       });
-      alert('Payrolls approved successfully');
+      alert("Payrolls approved successfully");
       fetchPayrolls();
       setSelectedPayrolls([]);
     } catch (error) {
-      console.error('Error approving payrolls:', error);
+      console.error("Error approving payrolls:", error);
       alert(`Failed to approve payrolls: ${error.message}`);
     }
   };
 
   const handleBulkPay = async () => {
     if (selectedPayrolls.length === 0) {
-      alert('Please select payrolls to mark as paid');
+      alert("Please select payrolls to mark as paid");
       return;
     }
 
     try {
       await apiService.bulkUpdatePayrollStatus({
         payrollIds: selectedPayrolls,
-        status: 'Paid',
+        status: "Paid",
         paymentDate: new Date().toISOString(),
-        paymentMode: 'Bank Transfer'
+        paymentMode: "Bank Transfer",
       });
-      alert('Payrolls marked as paid successfully');
+      alert("Payrolls marked as paid successfully");
       fetchPayrolls();
       setSelectedPayrolls([]);
     } catch (error) {
-      console.error('Error marking payrolls as paid:', error);
+      console.error("Error marking payrolls as paid:", error);
       alert(`Failed to mark payrolls as paid: ${error.message}`);
     }
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedPayrolls(payrolls.map(p => p._id || p.id));
+      setSelectedPayrolls(payrolls.map((p) => p._id || p.id));
     } else {
       setSelectedPayrolls([]);
     }
@@ -242,44 +263,46 @@ const fetchPayrolls = useCallback(async () => {
     if (checked) {
       setSelectedPayrolls([...selectedPayrolls, payrollId]);
     } else {
-      setSelectedPayrolls(selectedPayrolls.filter(id => id !== payrollId));
+      setSelectedPayrolls(selectedPayrolls.filter((id) => id !== payrollId));
     }
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
     }).format(amount || 0);
   };
 
   const getStatusColor = (status) => {
     const colors = {
-      Generated: 'bg-yellow-100 text-yellow-800',
-      'Pending Approval': 'bg-orange-100 text-orange-800',
-      Approved: 'bg-blue-100 text-blue-800',
-      Paid: 'bg-green-100 text-green-800',
-      Rejected: 'bg-red-100 text-red-800',
-      Draft: 'bg-gray-100 text-gray-800'
+      Generated: "bg-yellow-100 text-yellow-800",
+      "Pending Approval": "bg-orange-100 text-orange-800",
+      Approved: "bg-blue-100 text-blue-800",
+      Paid: "bg-green-100 text-green-800",
+      Rejected: "bg-red-100 text-red-800",
+      Draft: "bg-gray-100 text-gray-800",
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  const canGeneratePayroll = ['admin', 'hr'].includes(userRole);
-  const canApprove = ['admin', 'hr', 'finance'].includes(userRole);
-  const canProcessPayment = ['admin', 'finance'].includes(userRole);
+  const canGeneratePayroll = ["admin", "hr"].includes(userRole);
+  const canApprove = ["admin", "hr", "finance"].includes(userRole);
+  const canProcessPayment = ["admin", "finance"].includes(userRole);
 
   return (
     <div className="space-y-3 p-6 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Payroll Dashboard</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Payroll Dashboard
+          </h1>
           <p className="text-gray-500 text-sm mt-1">
             Manage employee payrolls and generate monthly salary
-            {userRole === 'manager' && ' - Department View'}
-            {userRole === 'employee' && ' - My Payslips'}
+            {userRole === "manager" && " - Department View"}
+            {userRole === "employee" && " - My Payslips"}
           </p>
         </div>
 
@@ -333,9 +356,15 @@ const fetchPayrolls = useCallback(async () => {
             <DollarSign className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase text-gray-500 font-medium">Total Gross Payout</p>
+            <p className="text-xs uppercase text-gray-500 font-medium">
+              Total Gross Payout
+            </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
-              {formatCurrency(analytics?.summary?.totalGross || analytics?.summary?.totalGrossEarnings || 0)}
+              {formatCurrency(
+                analytics?.summary?.totalGross ||
+                  analytics?.summary?.totalGrossEarnings ||
+                  0
+              )}
             </p>
           </div>
         </div>
@@ -345,9 +374,15 @@ const fetchPayrolls = useCallback(async () => {
             <TrendingUp className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase text-gray-500 font-medium">Total Net Payout</p>
+            <p className="text-xs uppercase text-gray-500 font-medium">
+              Total Net Payout
+            </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
-              {formatCurrency(analytics?.summary?.totalNet || analytics?.summary?.totalNetSalary || 0)}
+              {formatCurrency(
+                analytics?.summary?.totalNet ||
+                  analytics?.summary?.totalNetSalary ||
+                  0
+              )}
             </p>
           </div>
         </div>
@@ -357,7 +392,9 @@ const fetchPayrolls = useCallback(async () => {
             <TrendingDown className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase text-gray-500 font-medium">Total Deductions</p>
+            <p className="text-xs uppercase text-gray-500 font-medium">
+              Total Deductions
+            </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
               {formatCurrency(analytics?.summary?.totalDeductions || 0)}
             </p>
@@ -369,7 +406,9 @@ const fetchPayrolls = useCallback(async () => {
             <Users className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-xs uppercase text-gray-500 font-medium">Total Employees</p>
+            <p className="text-xs uppercase text-gray-500 font-medium">
+              Total Employees
+            </p>
             <p className="text-xl font-semibold text-gray-900 mt-1">
               {analytics?.summary?.employeeCount || payrolls.length || 0}
             </p>
@@ -378,58 +417,63 @@ const fetchPayrolls = useCallback(async () => {
       </div>
 
       {/* Department-wise Breakdown */}
-      {['admin', 'hr', 'manager'].includes(userRole) && analytics?.departmentBreakdown?.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Building2 className="h-5 w-5 mr-2 text-indigo-600" />
-            Department-wise Breakdown
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {analytics.departmentBreakdown.map(dept => (
-              <div
-                key={dept._id.departmentId}
-                className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{dept._id.departmentName}</h3>
-                    <p className="text-xs text-gray-500">{dept._id.departmentCode}</p>
+      {["admin", "hr", "manager"].includes(userRole) &&
+        analytics?.departmentBreakdown?.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <Building2 className="h-5 w-5 mr-2 text-indigo-600" />
+              Department-wise Breakdown
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {analytics.departmentBreakdown.map((dept) => (
+                <div
+                  key={dept._id.departmentId}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">
+                        {dept._id.departmentName}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {dept._id.departmentCode}
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                      {dept.employeeCount} Emp
+                    </span>
                   </div>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                    {dept.employeeCount} Emp
-                  </span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Gross Payout:</span>
+                      <span className="font-semibold text-gray-900">
+                        {formatCurrency(dept.totalGross)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Net Payout:</span>
+                      <span className="font-semibold text-green-600">
+                        {formatCurrency(dept.totalNet)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Deductions:</span>
+                      <span className="font-semibold text-red-600">
+                        {formatCurrency(dept.totalDeductions)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm pt-2 border-t">
+                      <span className="text-gray-600">Avg Salary:</span>
+                      <span className="font-semibold text-indigo-600">
+                        {formatCurrency(dept.avgSalary)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Gross Payout:</span>
-                    <span className="font-semibold text-gray-900">
-                      {formatCurrency(dept.totalGross)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Net Payout:</span>
-                    <span className="font-semibold text-green-600">
-                      {formatCurrency(dept.totalNet)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Deductions:</span>
-                    <span className="font-semibold text-red-600">
-                      {formatCurrency(dept.totalDeductions)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm pt-2 border-t">
-                    <span className="text-gray-600">Avg Salary:</span>
-                    <span className="font-semibold text-indigo-600">
-                      {formatCurrency(dept.avgSalary)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border p-4">
@@ -439,12 +483,14 @@ const fetchPayrolls = useCallback(async () => {
             <span className="font-medium text-sm">Filters</span>
           </div>
           <button
-            onClick={() => setFilters({
-              year: new Date().getFullYear(),
-              month: new Date().getMonth() + 1,
-              department: userRole === 'manager' ? userDepartment : '',
-              status: ''
-            })}
+            onClick={() =>
+              setFilters({
+                year: new Date().getFullYear(),
+                month: new Date().getMonth() + 1,
+                department: userRole === "manager" ? userDepartment : "",
+                status: "",
+              })
+            }
             className="text-xs text-indigo-600 hover:text-indigo-800"
           >
             Clear Filters
@@ -453,11 +499,13 @@ const fetchPayrolls = useCallback(async () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Year</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Year
+            </label>
             <input
               type="number"
               value={filters.year}
-              onChange={(e) => handleFilterChange('year', e.target.value)}
+              onChange={(e) => handleFilterChange("year", e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               min="2020"
               max="2030"
@@ -465,30 +513,36 @@ const fetchPayrolls = useCallback(async () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Month</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Month
+            </label>
             <select
               value={filters.month}
-              onChange={(e) => handleFilterChange('month', Number(e.target.value))}
+              onChange={(e) =>
+                handleFilterChange("month", Number(e.target.value))
+              }
               className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               {Array.from({ length: 12 }).map((_, i) => (
                 <option key={i + 1} value={i + 1}>
-                  {new Date(0, i).toLocaleString('en', { month: 'long' })}
+                  {new Date(0, i).toLocaleString("en", { month: "long" })}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Department</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Department
+            </label>
             <select
               value={filters.department}
-              onChange={(e) => handleFilterChange('department', e.target.value)}
-              disabled={userRole === 'manager'}
+              onChange={(e) => handleFilterChange("department", e.target.value)}
+              disabled={userRole === "manager"}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
             >
               <option value="">All Departments</option>
-              {departments.map(dept => (
+              {departments.map((dept) => (
                 <option key={dept._id} value={dept._id}>
                   {dept.name}
                 </option>
@@ -497,10 +551,12 @@ const fetchPayrolls = useCallback(async () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              Status
+            </label>
             <select
               value={filters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
+              onChange={(e) => handleFilterChange("status", e.target.value)}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="">All Status</option>
@@ -517,9 +573,13 @@ const fetchPayrolls = useCallback(async () => {
       {/* Payroll Table */}
       <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Payroll Records</h2>
+          <h2 className="text-sm font-semibold text-gray-800">
+            Payroll Records
+          </h2>
           <div className="flex items-center gap-4">
-            <span className="text-xs text-gray-500">Showing {payrolls.length} records</span>
+            <span className="text-xs text-gray-500">
+              Showing {payrolls.length} records
+            </span>
             <button
               onClick={fetchPayrolls}
               className="inline-flex items-center text-xs text-indigo-600 hover:text-indigo-800"
@@ -562,42 +622,74 @@ const fetchPayrolls = useCallback(async () => {
                       <input
                         type="checkbox"
                         onChange={handleSelectAll}
-                        checked={selectedPayrolls.length === payrolls.length && payrolls.length > 0}
+                        checked={
+                          selectedPayrolls.length === payrolls.length &&
+                          payrolls.length > 0
+                        }
                         className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                       />
                     </th>
                   )}
-                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">Employee</th>
-                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">Department</th>
-                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">Period</th>
-                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">Gross</th>
-                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">Deductions</th>
-                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">Net Salary</th>
-                  <th className="px-4 py-3 border-b text-center font-medium text-gray-500">Status</th>
-                  <th className="px-4 py-3 border-b text-center font-medium text-gray-500">Actions</th>
+                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">
+                    Employee
+                  </th>
+                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">
+                    Department
+                  </th>
+                  <th className="px-4 py-3 border-b text-left font-medium text-gray-500">
+                    Period
+                  </th>
+                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">
+                    Gross
+                  </th>
+                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">
+                    Deductions
+                  </th>
+                  <th className="px-4 py-3 border-b text-right font-medium text-gray-500">
+                    Net Salary
+                  </th>
+                  <th className="px-4 py-3 border-b text-center font-medium text-gray-500">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 border-b text-center font-medium text-gray-500">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {payrolls.map(payroll => (
-                  <tr key={payroll._id || payroll.id} className="hover:bg-gray-50 border-b transition-colors">
+                {payrolls.map((payroll) => (
+                  <tr
+                    key={payroll._id || payroll.id}
+                    className="hover:bg-gray-50 border-b transition-colors"
+                  >
                     {canApprove && (
                       <td className="px-4 py-3">
                         <input
                           type="checkbox"
-                          checked={selectedPayrolls.includes(payroll._id || payroll.id)}
-                          onChange={(e) => handleSelectPayroll(payroll._id || payroll.id, e.target.checked)}
+                          checked={selectedPayrolls.includes(
+                            payroll._id || payroll.id
+                          )}
+                          onChange={(e) =>
+                            handleSelectPayroll(
+                              payroll._id || payroll.id,
+                              e.target.checked
+                            )
+                          }
                           className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                         />
                       </td>
                     )}
                     <td className="px-4 py-3">
                       <div className="font-medium text-gray-900">
-                        {payroll.employee?.firstName} {payroll.employee?.lastName}
+                        {payroll.employee?.firstName}{" "}
+                        {payroll.employee?.lastName}
                       </div>
-                      <div className="text-xs text-gray-500">{payroll.employee?.employeeId}</div>
+                      <div className="text-xs text-gray-500">
+                        {payroll.employee?.employeeId}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {payroll.employee?.department?.name || 'N/A'}
+                      {payroll.employee?.department?.name || "N/A"}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-700">
                       <div className="flex items-center">
@@ -605,20 +697,37 @@ const fetchPayrolls = useCallback(async () => {
                         {new Date(
                           payroll.period?.year || payroll.year,
                           (payroll.period?.month || payroll.month) - 1
-                        ).toLocaleString('en', { month: 'short', year: 'numeric' })}
+                        ).toLocaleString("en", {
+                          month: "short",
+                          year: "numeric",
+                        })}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-gray-900 font-medium">
-                      {formatCurrency(payroll.summary?.grossEarnings || payroll.grossSalary || 0)}
+                      {formatCurrency(
+                        payroll.summary?.grossEarnings ||
+                          payroll.grossSalary ||
+                          0
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-red-600 font-medium">
-                      {formatCurrency(payroll.summary?.totalDeductions || payroll.totalDeductions || 0)}
+                      {formatCurrency(
+                        payroll.summary?.totalDeductions ||
+                          payroll.totalDeductions ||
+                          0
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right text-sm text-green-600 font-semibold">
-                      {formatCurrency(payroll.summary?.netSalary || payroll.netSalary || 0)}
+                      {formatCurrency(
+                        payroll.summary?.netSalary || payroll.netSalary || 0
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(payroll.status)}`}>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          payroll.status
+                        )}`}
+                      >
                         {payroll.status}
                       </span>
                     </td>
@@ -633,7 +742,9 @@ const fetchPayrolls = useCallback(async () => {
                           View
                         </button>
                         <button
-                          onClick={() => handleDownloadPayslip(payroll._id || payroll.id)}
+                          onClick={() =>
+                            handleDownloadPayslip(payroll._id || payroll.id)
+                          }
                           className="inline-flex items-center px-2 py-1 text-xs text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
                           title="Download Payslip PDF"
                         >
@@ -650,10 +761,208 @@ const fetchPayrolls = useCallback(async () => {
         )}
       </div>
 
-      {/* Payslip Modal - (Keep your existing modal code here) */}
+           {/* Payslip Modal */}
       {showPayslipModal && selectedPayroll && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          {/* Your existing payslip modal content */}
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Payslip Details</h3>
+                <p className="text-gray-600 text-sm mt-1">
+                  {new Date(selectedPayroll.period?.year || selectedPayroll.year, 
+                           (selectedPayroll.period?.month || selectedPayroll.month) - 1)
+                    .toLocaleString('en', { month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowPayslipModal(false);
+                  setSelectedPayroll(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              {/* Employee Details */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Employee Details</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Employee Name</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedPayroll.employee?.firstName} {selectedPayroll.employee?.lastName}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Employee ID</p>
+                    <p className="font-medium text-gray-900">{selectedPayroll.employee?.employeeId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Department</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedPayroll.employee?.department?.name || 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Designation</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedPayroll.employee?.designation?.title || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Salary Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Earnings */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Earnings</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Basic Salary</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.basic || selectedPayroll.summary?.basicSalary || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">HRA</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.hra || selectedPayroll.summary?.hra || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Special Allowance</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.earnings?.specialAllowance || selectedPayroll.summary?.specialAllowance || 0)}
+                      </span>
+                    </div>
+                    {selectedPayroll.earnings?.overtime > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Overtime</span>
+                        <span className="font-medium text-green-600">
+                          {formatCurrency(selectedPayroll.earnings.overtime)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="pt-2 mt-2 border-t">
+                      <div className="flex justify-between font-bold">
+                        <span>Total Earnings</span>
+                        <span className="text-green-600">
+                          {formatCurrency(selectedPayroll.summary?.grossEarnings || selectedPayroll.grossSalary || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deductions */}
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Deductions</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">PF (Employee)</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.pfEmployee || selectedPayroll.summary?.pf || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">ESI (Employee)</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.esiEmployee || selectedPayroll.summary?.esi || 0)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Professional Tax</span>
+                      <span className="font-medium">
+                        {formatCurrency(selectedPayroll.deductions?.professionalTax || selectedPayroll.summary?.pt || 0)}
+                      </span>
+                    </div>
+                    {selectedPayroll.deductions?.tds > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">TDS</span>
+                        <span className="font-medium">
+                          {formatCurrency(selectedPayroll.deductions.tds)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="pt-2 mt-2 border-t">
+                      <div className="flex justify-between font-bold">
+                        <span>Total Deductions</span>
+                        <span className="text-red-600">
+                          {formatCurrency(selectedPayroll.summary?.totalDeductions || selectedPayroll.totalDeductions || 0)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Attendance Summary */}
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Attendance Summary</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500">Present Days</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {selectedPayroll.attendance?.presentDays || selectedPayroll.summary?.presentDays || 0}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500">Paid Days</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {selectedPayroll.attendance?.paidDays || selectedPayroll.summary?.paidDays || 0}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500">LOP Days</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {selectedPayroll.attendance?.lossOfPayDays || selectedPayroll.summary?.lopDays || 0}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Salary */}
+              <div className="bg-indigo-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-lg font-semibold text-gray-900">Net Salary Payable</p>
+                    <p className="text-sm text-gray-600">After all deductions</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-indigo-600">
+                      {formatCurrency(selectedPayroll.summary?.netSalary || selectedPayroll.netSalary || 0)}
+                    </p>
+                    <p className="text-xs text-gray-600">Payable amount this month</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Status */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedPayroll.status)}`}>
+                    {selectedPayroll.status}
+                  </span>
+                  {selectedPayroll.paymentDate && (
+                    <span className="text-sm text-gray-600">
+                      Paid on: {new Date(selectedPayroll.paymentDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => handleDownloadPayslip(selectedPayroll._id || selectedPayroll.id)}
+                  className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -662,7 +971,9 @@ const fetchPayrolls = useCallback(async () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-semibold text-gray-900">Generate Payroll</h3>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Generate Payroll
+              </h3>
               <button
                 onClick={() => setShowGenerateModal(false)}
                 className="text-gray-400 hover:text-gray-600 p-1"
@@ -690,9 +1001,12 @@ const fetchPayrolls = useCallback(async () => {
             <div className="flex-1">
               <h4 className="font-medium text-green-900">Payroll Generated!</h4>
               <p className="text-sm text-green-800 mt-1">
-                Generated: {generationResult.summary?.generated} employees<br />
-                Failed: {generationResult.summary?.failed} employees<br />
-                Total Payout: {formatCurrency(generationResult.summary?.totalNetPayout || 0)}
+                Generated: {generationResult.summary?.generated} employees
+                <br />
+                Failed: {generationResult.summary?.failed} employees
+                <br />
+                Total Payout:{" "}
+                {formatCurrency(generationResult.summary?.totalNetPayout || 0)}
               </p>
             </div>
             <button

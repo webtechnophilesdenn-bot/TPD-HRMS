@@ -1344,6 +1344,7 @@ getAnalytics: async (filters) => {
 },
 
 
+
   // Add to PAYROLL section in apiService.js
 
 // Salary Structure Management
@@ -2136,9 +2137,49 @@ getAssetRequests: async (filters = {}) => {
     return await apiService.request(`/reports/employee?${params.toString()}`);
   },
 
-  getDepartmentReport: async () => {
-    return await apiService.request("/reports/department");
-  },
+ // REPORTS
+getDepartmentReport: async () => {
+  return await apiService.request('/reports/department'); // Add leading slash
+},
+
+
+// In apiService.js - Find the EMPLOYEE MANAGEMENT or DEPARTMENT section and add:
+
+// ==================== DEPARTMENT MANAGEMENT ====================
+
+// Get all departments
+getAllDepartments: async () => {
+  return await apiService.request('/departments');
+},
+
+// Get department by ID
+getDepartment: async (id) => {
+  return await apiService.request(`/departments/${id}`);
+},
+
+// Create department (Admin/HR only)
+createDepartment: async (departmentData) => {
+  return await apiService.request('/departments', {
+    method: 'POST',
+    body: JSON.stringify(departmentData),
+  });
+},
+
+// Update department (Admin/HR only)
+updateDepartment: async (id, updates) => {
+  return await apiService.request(`/departments/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  });
+},
+
+// Delete department (Admin only)
+deleteDepartment: async (id) => {
+  return await apiService.request(`/departments/${id}`, {
+    method: 'DELETE',
+  });
+},
+
 
   getDashboardReport: async () => {
     return await apiService.request("/reports/dashboard");

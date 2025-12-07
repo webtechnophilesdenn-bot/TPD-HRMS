@@ -39,6 +39,17 @@ const EventsPage = () => {
     }
   };
 
+
+  const handleRSVP = async (eventId, status) => {
+  try {
+    await apiService.rsvpToEvent(eventId, status);
+    showSuccess(`RSVP updated to: ${status}`);
+    loadEvents(); // Refresh events
+  } catch (error) {
+    showError('Failed to update RSVP');
+  }
+};
+
   const loadEvents = async () => {
     try {
       const response = await apiService.getAllEvents({});
@@ -363,6 +374,7 @@ const EventsPage = () => {
         <EventDetailsModal
           event={selectedEvent}
           onClose={() => setShowDetailsModal(false)}
+          onRSVP={handleRSVP}
           onEdit={() => {
             setShowDetailsModal(false);
             setShowEventModal(true);

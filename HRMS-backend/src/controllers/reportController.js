@@ -10,9 +10,8 @@ const { sendResponse } = require('../utils/responseHandler');
 exports.getAttendanceReport = async (req, res, next) => {
   try {
     const { month, year, department, employeeId, status } = req.query;
-
     const filter = {};
-    
+
     // Date filtering
     if (month && year) {
       const startDate = new Date(year, month - 1, 1);
@@ -34,7 +33,7 @@ exports.getAttendanceReport = async (req, res, next) => {
     // Filter by department if provided
     let filteredAttendances = attendances;
     if (department) {
-      filteredAttendances = attendances.filter(att => 
+      filteredAttendances = attendances.filter(att =>
         att.employee?.department?.toString() === department
       );
     }
@@ -52,7 +51,7 @@ exports.getAttendanceReport = async (req, res, next) => {
       absent,
       late,
       halfDay,
-      presentPercentage: totalRecords > 0 ? ((present / totalRecords) * 100).toFixed(2) : 0
+      presentPercentage: totalRecords > 0 ? ((present / totalRecords) * 100).toFixed(2) : '0.00'
     };
 
     sendResponse(res, 200, true, 'Attendance report generated successfully', {
@@ -69,9 +68,8 @@ exports.getAttendanceReport = async (req, res, next) => {
 exports.getLeaveReport = async (req, res, next) => {
   try {
     const { year, department, employeeId, leaveType, status } = req.query;
-
     const filter = {};
-    
+
     if (year) {
       const startDate = new Date(year, 0, 1);
       const endDate = new Date(year, 11, 31);
@@ -87,15 +85,15 @@ exports.getLeaveReport = async (req, res, next) => {
 
     const leaves = await Leave.find(filter)
       .populate('employee', 'firstName lastName employeeId department designation profilePicture')
-      .populate('managerApproval.approvedBy', 'firstName lastName employeeId') // ✅ CHANGED
-      .populate('hrApproval.approvedBy', 'firstName lastName employeeId')       // ✅ CHANGED
-      .populate('approvers.employee', 'firstName lastName employeeId')         // ✅ ADDED
+      .populate('managerApproval.approvedBy', 'firstName lastName employeeId')
+      .populate('hrApproval.approvedBy', 'firstName lastName employeeId')
+      .populate('approvers.employee', 'firstName lastName employeeId')
       .sort({ startDate: -1 });
 
     // Filter by department if provided
     let filteredLeaves = leaves;
     if (department) {
-      filteredLeaves = leaves.filter(leave => 
+      filteredLeaves = leaves.filter(leave =>
         leave.employee?.department?.toString() === department
       );
     }
@@ -113,7 +111,7 @@ exports.getLeaveReport = async (req, res, next) => {
       pending,
       rejected,
       totalDays,
-      approvalRate: totalLeaves > 0 ? ((approved / totalLeaves) * 100).toFixed(2) : 0
+      approvalRate: totalLeaves > 0 ? ((approved / totalLeaves) * 100).toFixed(2) : '0.00'
     };
 
     sendResponse(res, 200, true, 'Leave report generated successfully', {
@@ -126,14 +124,12 @@ exports.getLeaveReport = async (req, res, next) => {
   }
 };
 
-
 // ==================== PAYROLL REPORT ====================
 exports.getPayrollReport = async (req, res, next) => {
   try {
     const { month, year, department, employeeId, status } = req.query;
-
     const filter = {};
-    
+
     if (month && year) {
       filter.month = parseInt(month);
       filter.year = parseInt(year);
@@ -152,7 +148,7 @@ exports.getPayrollReport = async (req, res, next) => {
     // Filter by department if provided
     let filteredPayrolls = payrolls;
     if (department) {
-      filteredPayrolls = payrolls.filter(payroll => 
+      filteredPayrolls = payrolls.filter(payroll =>
         payroll.employee?.department?.toString() === department
       );
     }
@@ -162,7 +158,6 @@ exports.getPayrollReport = async (req, res, next) => {
     const totalGrossSalary = filteredPayrolls.reduce((sum, p) => sum + (p.grossSalary || 0), 0);
     const totalDeductions = filteredPayrolls.reduce((sum, p) => sum + (p.totalDeductions || 0), 0);
     const totalNetSalary = filteredPayrolls.reduce((sum, p) => sum + (p.netSalary || 0), 0);
-    
     const processed = filteredPayrolls.filter(p => p.status === 'Processed').length;
     const paid = filteredPayrolls.filter(p => p.status === 'Paid').length;
     const pending = filteredPayrolls.filter(p => p.status === 'Pending').length;
@@ -191,9 +186,8 @@ exports.getPayrollReport = async (req, res, next) => {
 exports.getEmployeeReport = async (req, res, next) => {
   try {
     const { department, designation, status, employmentType } = req.query;
-
     const filter = {};
-    
+
     if (department) filter.department = department;
     if (designation) filter.designation = designation;
     if (status) filter.status = status;
@@ -211,7 +205,6 @@ exports.getEmployeeReport = async (req, res, next) => {
     const onLeave = employees.filter(e => e.status === 'On Leave').length;
     const resigned = employees.filter(e => e.status === 'Resigned').length;
     const terminated = employees.filter(e => e.status === 'Terminated').length;
-
     const fullTime = employees.filter(e => e.employmentType === 'Full-Time').length;
     const partTime = employees.filter(e => e.employmentType === 'Part-Time').length;
     const contract = employees.filter(e => e.employmentType === 'Contract').length;
@@ -245,10 +238,10 @@ exports.getEmployeeReport = async (req, res, next) => {
 exports.getDepartmentReport = async (req, res, next) => {
   try {
     const departments = await Department.find({ isActive: true });
-    
+
     const departmentStats = await Promise.all(
       departments.map(async (dept) => {
-        const employeeCount = await Employee.countDocuments({ 
+        const employeeCount = await Employee.countDocuments({
           department: dept._id,
           status: 'Active'
         });
@@ -258,6 +251,11 @@ exports.getDepartmentReport = async (req, res, next) => {
           { $group: { _id: null, avgSalary: { $avg: '$ctc' } } }
         ]);
 
+        // ✅ FIX: Add null safety check before calling toFixed
+        const averageSalary = avgSalary.length > 0 && avgSalary[0].avgSalary !== null 
+          ? avgSalary[0].avgSalary.toFixed(2) 
+          : '0.00';
+
         return {
           department: {
             _id: dept._id,
@@ -266,7 +264,7 @@ exports.getDepartmentReport = async (req, res, next) => {
             description: dept.description
           },
           employeeCount,
-          averageSalary: avgSalary.length > 0 ? avgSalary[0].avgSalary.toFixed(2) : 0
+          averageSalary
         };
       })
     );
@@ -287,11 +285,11 @@ exports.getDashboardReport = async (req, res, next) => {
 
     // Employee stats
     const totalEmployees = await Employee.countDocuments({ status: 'Active' });
-    
+
     // Attendance stats for current month
     const startDate = new Date(currentYear, currentMonth - 1, 1);
     const endDate = new Date(currentYear, currentMonth, 0);
-    
+
     const attendanceStats = await Attendance.aggregate([
       { $match: { date: { $gte: startDate, $lte: endDate } } },
       { $group: {
@@ -302,13 +300,13 @@ exports.getDashboardReport = async (req, res, next) => {
 
     // Leave stats for current month
     const leaveStats = await Leave.aggregate([
-      { 
-        $match: { 
+      {
+        $match: {
           $or: [
             { startDate: { $gte: startDate, $lte: endDate } },
             { endDate: { $gte: startDate, $lte: endDate } }
           ]
-        } 
+        }
       },
       { $group: {
         _id: '$status',
