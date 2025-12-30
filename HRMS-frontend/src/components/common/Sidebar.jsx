@@ -22,6 +22,10 @@ import {
   ChevronsRight,
   FileSignature,
   Video,
+  Receipt,
+  Cake,
+  CalendarDays,
+  CheckCircle, // ✅ NEW - For Expense Approval
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { apiService } from "../../services/apiService";
@@ -32,6 +36,9 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
   const [expandedSections, setExpandedSections] = useState({
     hrManagement: true,
     employeeServices: true,
+    financial: true, // ✅ NEW - Financial section
+    communication: true,
+    administration: true,
   });
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
@@ -160,7 +167,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       items: [
         {
           id: "employees",
-          label: isAdminOrHR ? "Employees" : "My Info", // Dynamic label based on role
+          label: isAdminOrHR ? "Employees" : "My Info",
           icon: Users,
         },
         {
@@ -174,11 +181,6 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
           icon: Calendar,
         },
         {
-          id: "payroll",
-          label: "Payroll",
-          icon: DollarSign,
-        },
-        {
           id: "recruitment",
           label: "Recruitment",
           icon: UserPlus,
@@ -186,7 +188,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
         {
           id: "events",
           label: "Events Calendar",
-          icon: Calendar,
+          icon: CalendarDays,
         },
         {
           id: "meetings",
@@ -209,6 +211,34 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
           : []),
       ],
     },
+    // ==================== ✅ NEW: FINANCIAL SECTION ====================
+    {
+      section: "FINANCIAL",
+      key: "financial",
+      items: [
+        {
+          id: "payroll",
+          label: "Payroll",
+          icon: DollarSign,
+        },
+        {
+          id: "expenses",
+          label: "My Expenses",
+          icon: Receipt,
+        },
+        // ✅ Expense Approval - Only for HR/Admin
+        ...(isAdminOrHR
+          ? [
+              {
+                id: "expense-approval",
+                label: "Expense Approval",
+                icon: CheckCircle,
+              },
+            ]
+          : []),
+      ],
+    },
+    // ==================== END FINANCIAL SECTION ====================
     {
       section: "EMPLOYEE SERVICES",
       key: "employeeServices",
@@ -231,7 +261,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
       ],
     },
     {
-      section: "Communication",
+      section: "COMMUNICATION",
       key: "communication",
       items: [
         {
@@ -239,10 +269,15 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
           label: "Announcements",
           icon: Megaphone,
         },
+        {
+          id: "birthdays",
+          label: "Birthdays",
+          icon: Cake,
+        },
       ],
     },
     {
-      section: "Administration",
+      section: "ADMINISTRATION",
       key: "administration",
       items: [
         {
@@ -337,9 +372,7 @@ const Sidebar = ({ isOpen, onClose, activeMenu, setActiveMenu }) => {
                       onClose();
                     }}
                     className={`w-full flex items-center ${
-                      isCollapsed
-                        ? "justify-center px-2"
-                        : "space-x-3 px-3"
+                      isCollapsed ? "justify-center px-2" : "space-x-3 px-3"
                     } py-2.5 rounded-lg text-sm font-medium transition-all ${
                       activeMenu === group.id
                         ? "bg-blue-50 text-blue-600"

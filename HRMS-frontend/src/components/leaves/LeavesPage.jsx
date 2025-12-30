@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+// eslint-disable-next-line no-unused-vars
 import {
   Plus,
   Calendar,
@@ -18,6 +19,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
+
 import { useAuth } from "../../context/AuthContext";
 import { useNotification } from "../../context/NotificationContext";
 import { apiService } from "../../services/apiService";
@@ -49,6 +51,10 @@ const LeavesPage = () => {
 
   // ✅ UPDATED: Active tab with new options
   const [activeTab, setActiveTab] = useState("my-leaves");
+
+  const [wfhRequests, setWFHRequests] = useState([]);
+  const [pendingWFHRequests, setPendingWFHRequests] = useState([]);
+  const [showWFHModal, setShowWFHModal] = useState(false);
 
   const [filters, setFilters] = useState({
     year: new Date().getFullYear(),
@@ -230,8 +236,7 @@ const LeavesPage = () => {
         error
       );
       showError(
-        error.message ||
-          `Failed to ${approvalForm.status.toLowerCase()} leave`
+        error.message || `Failed to ${approvalForm.status.toLowerCase()} leave`
       );
     }
   };
@@ -270,6 +275,86 @@ const LeavesPage = () => {
       comments: "",
     });
   };
+
+  // Add WFH form state
+  const [wfhForm, setWFHForm] = useState({
+    startDate: "",
+    endDate: "",
+    isHalfDay: false,
+    halfDayType: "First Half",
+    reason: "",
+  });
+
+  // Add WFH loading functions
+  const loadWFHRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getMyWFHRequests(filters);
+      setWFHRequests(response.data?.wfhRequests || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to load WFH requests", error);
+      showError("Failed to load WFH requests");
+      setLoading(false);
+    }
+  };
+
+  const loadPendingWFHRequests = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.getPendingWFHRequests(filters);
+      setPendingWFHRequests(response.data?.wfhRequests || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Failed to load pending WFH requests", error);
+      showError("Failed to load pending WFH requests");
+      setLoading(false);
+    }
+  };
+
+  // Add WFH submit handler
+  const handleApplyWFH = async (e) => {
+    e.preventDefault();
+    try {
+      await apiService.applyWorkFromHome(wfhForm);
+      showSuccess("WFH request submitted successfully!");
+      setShowWFHModal(false);
+      resetWFHForm();
+      loadWFHRequests();
+    } catch (error) {
+      showError(error.message || "Failed to submit WFH request");
+    }
+  };
+
+  const resetWFHForm = () => {
+    setWFHForm({
+      startDate: "",
+      endDate: "",
+      isHalfDay: false,
+      halfDayType: "First Half",
+      reason: "",
+    });
+  };
+
+  // Update the useEffect to include WFH tabs
+  useEffect(() => {
+    if (activeTab === "my-leaves") {
+      loadLeaves();
+      loadLeaveBalance();
+    } else if (activeTab === "wfh-requests") {
+      loadWFHRequests();
+    } else if (activeTab === "pending-wfh" && isAdminOrHR) {
+      loadPendingWFHRequests();
+    } else if (activeTab === "pending-approvals" && isAdminOrHR) {
+      loadPendingLeaves();
+    }
+  }, [
+    filters.year,
+    filters.status,
+    filters.leaveType,
+    filters.page,
+    activeTab,
+  ]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -310,9 +395,7 @@ const LeavesPage = () => {
         <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Modal Header */}
           <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">
-              Apply for Leave
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900">Apply for Leave</h2>
             <button
               onClick={() => {
                 setShowApplyModal(false);
@@ -648,9 +731,7 @@ const LeavesPage = () => {
         <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
           {/* Modal Header */}
           <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">
-              Leave Details
-            </h2>
+            <h2 className="text-xl font-bold text-gray-900">Leave Details</h2>
             <button
               onClick={() => {
                 setShowDetailsModal(false);
@@ -727,7 +808,9 @@ const LeavesPage = () => {
             {selectedLeave.emergencyContact && (
               <div>
                 <p className="text-sm text-gray-600 mb-1">Emergency Contact</p>
-                <p className="text-gray-900">{selectedLeave.emergencyContact}</p>
+                <p className="text-gray-900">
+                  {selectedLeave.emergencyContact}
+                </p>
               </div>
             )}
 
@@ -1240,7 +1323,10 @@ const LeavesPage = () => {
                           <button
                             onClick={() => {
                               setSelectedLeave(leave);
-                              setApprovalForm({ status: "Approved", comments: "" });
+                              setApprovalForm({
+                                status: "Approved",
+                                comments: "",
+                              });
                               setShowApprovalModal(true);
                             }}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
@@ -1251,7 +1337,10 @@ const LeavesPage = () => {
                           <button
                             onClick={() => {
                               setSelectedLeave(leave);
-                              setApprovalForm({ status: "Rejected", comments: "" });
+                              setApprovalForm({
+                                status: "Rejected",
+                                comments: "",
+                              });
                               setShowApprovalModal(true);
                             }}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
@@ -1394,8 +1483,7 @@ const LeavesPage = () => {
                     <td className="px-6 py-4">
                       <div>
                         <div className="font-medium text-gray-900">
-                          {leave.employee?.firstName}{" "}
-                          {leave.employee?.lastName}
+                          {leave.employee?.firstName} {leave.employee?.lastName}
                         </div>
                         <div className="text-sm text-gray-500">
                           {leave.employee?.employeeId}
@@ -1489,8 +1577,7 @@ const LeavesPage = () => {
                 {employeesOnLeaveToday.length}
               </div>
               <div className="text-purple-100">
-                employee{employeesOnLeaveToday.length !== 1 ? "s" : ""} on
-                leave
+                employee{employeesOnLeaveToday.length !== 1 ? "s" : ""} on leave
               </div>
             </div>
           </div>
@@ -1695,9 +1782,13 @@ const LeavesPage = () => {
 
       {/* Tab Content */}
       {activeTab === "my-leaves" && renderMyLeaves()}
-      {activeTab === "pending-approvals" && isAdminOrHR && renderPendingApprovals()}
+      {activeTab === "pending-approvals" &&
+        isAdminOrHR &&
+        renderPendingApprovals()}
       {activeTab === "approved-leaves" && isAdminOrHR && renderApprovedLeaves()}
-      {activeTab === "on-leave-today" && isAdminOrHR && renderEmployeesOnLeaveToday()}
+      {activeTab === "on-leave-today" &&
+        isAdminOrHR &&
+        renderEmployeesOnLeaveToday()}
       {activeTab === "manage-balance" && isAdminOrHROnly && (
         <AdminLeaveBalanceManager />
       )}

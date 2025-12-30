@@ -332,10 +332,10 @@ const updateEmployee = async (req, res, next) => {
         return sendResponse(res, 400, false, "Invalid reporting manager ID");
       }
 
-     employee = await Employee.findByIdAndUpdate(employeeId, updates, {
-  new: true,
-  runValidators: true,
-}).populate('department designation reportingManager');
+      employee = await Employee.findByIdAndUpdate(employeeId, updates, {
+        new: true,
+        runValidators: true,
+      }).populate("department designation reportingManager");
     } else {
       return sendResponse(res, 403, false, "Access denied");
     }
@@ -588,6 +588,148 @@ const getReportingManagers = async (req, res, next) => {
     next(error);
   }
 };
+const sendBirthdayWish = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { message, wisherId, wisherName } = req.body;
+
+    // Validate message
+    if (!message || !message.trim()) {
+      return sendResponse(res, 400, false, "Birthday message is required");
+    }
+
+    if (message.trim().length > 500) {
+      return sendResponse(
+        res,
+        400,
+        false,
+        "Message cannot exceed 500 characters"
+      );
+    }
+
+    // Find the employee to wish
+    const employee = await Employee.findById(id);
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    // Prevent self-wishing
+    const currentEmployee = await Employee.findOne({ userId: req.user._id });
+    if (employee._id.toString() === currentEmployee._id.toString()) {
+      return sendResponse(
+        res,
+        400,
+        false,
+        "You cannot send a birthday wish to yourself"
+      );
+    }
+
+    // Check if already wished today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const alreadyWished = employee.birthdayWishes?.some((wish) => {
+      const wishDate = new Date(wish.wishedAt);
+      wishDate.setHours(0, 0, 0, 0);
+      return (
+        wish.wisherId?.toString() === currentEmployee._id.toString() &&
+        wishDate.getTime() === today.getTime()
+      );
+    });
+
+    if (alreadyWished) {
+      return sendResponse(
+        res,
+        400,
+        false,
+        "You have already sent a birthday wish to this employee today"
+      );
+    }
+
+    // Initialize birthdayWishes array if it doesn't exist
+    if (!employee.birthdayWishes) {
+      employee.birthdayWishes = [];
+    }
+
+    // Add new wish
+    employee.birthdayWishes.push({
+      wisherId: currentEmployee._id,
+      wisherName:
+        wisherName ||
+        `${currentEmployee.firstName} ${currentEmployee.lastName}`,
+      message: message.trim(),
+      wishedAt: new Date(),
+    });
+
+    await employee.save();
+
+    console.log(
+      `✅ Birthday wish sent to ${employee.firstName} ${employee.lastName} by ${currentEmployee.firstName} ${currentEmployee.lastName}`
+    );
+
+    sendResponse(res, 200, true, "Birthday wish sent successfully! 🎉", {
+      totalWishes: employee.birthdayWishes.length,
+      employee: {
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error sending birthday wish:", error);
+    next(error);
+  }
+};
+
+// ==================== GET BIRTHDAY WISHES ====================
+const getBirthdayWishes = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const employee = await Employee.findById(id)
+      .select("firstName lastName birthdayWishes dateOfBirth")
+      .populate({
+        path: "birthdayWishes.wisherId",
+        select: "firstName lastName employeeId profilePicture",
+      });
+
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    // Sort wishes by most recent first
+    const wishes = (employee.birthdayWishes || [])
+      .sort((a, b) => new Date(b.wishedAt) - new Date(a.wishedAt))
+      .map((wish) => ({
+        _id: wish._id,
+        wisherName: wish.wisherName,
+        message: wish.message,
+        wishedAt: wish.wishedAt,
+        wisher: wish.wisherId
+          ? {
+              _id: wish.wisherId._id,
+              firstName: wish.wisherId.firstName,
+              lastName: wish.wisherId.lastName,
+              employeeId: wish.wisherId.employeeId,
+              profilePicture: wish.wisherId.profilePicture,
+            }
+          : null,
+      }));
+
+    sendResponse(res, 200, true, "Birthday wishes fetched successfully", {
+      employee: {
+        _id: employee._id,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        dateOfBirth: employee.dateOfBirth,
+      },
+      wishes,
+      totalWishes: wishes.length,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching birthday wishes:", error);
+    next(error);
+  }
+};
 
 // ==================== EXPORT ALL FUNCTIONS ====================
 module.exports = {
@@ -602,5 +744,7 @@ module.exports = {
   uploadDocument,
   getOrgChart,
   getMyTeam,
-  getReportingManagers, // ADD THIS
+  getReportingManagers,
+  sendBirthdayWish,
+  getBirthdayWishes,
 };

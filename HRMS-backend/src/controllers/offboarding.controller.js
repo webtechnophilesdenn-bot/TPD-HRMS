@@ -121,35 +121,36 @@ exports.getAllOffboardings = async (req, res, next) => {
 // Get My Offboarding - FIXED
 exports.getMyOffboarding = async (req, res, next) => {
   try {
-    console.log("🔍 Getting offboarding for user:", req.user._id);
+    console.log('Getting offboarding for user:', req.user.id);
     
-    // FIX: Use req.user._id instead of req.user.id
-    const employee = await Employee.findOne({ userId: req.user._id });
+    // Find employee by userId
+    const employee = await Employee.findOne({ userId: req.user.id });
     
     if (!employee) {
-      console.log("❌ Employee not found for user:", req.user._id);
+      console.log('Employee not found for user:', req.user.id);
       return sendResponse(res, 404, false, 'Employee not found');
     }
-
-    console.log("✅ Employee found:", employee.employeeId);
-
+    
+    console.log('Employee found:', employee._id);
+    
     // FIX: Use employee._id instead of employee.id
     const offboarding = await Offboarding.findOne({ employee: employee._id })
       .populate('employee', 'firstName lastName employeeId email department designation')
       .populate('approvedBy', 'firstName lastName');
-
+    
     if (!offboarding) {
-      console.log("⚠️ Offboarding not found for employee:", employee._id);
+      console.log('Offboarding not found for employee:', employee._id);
       return sendResponse(res, 404, false, 'Offboarding not found');
     }
-
-    console.log("✅ Offboarding found:", offboarding._id);
+    
+    console.log('Offboarding found:', offboarding._id);
     sendResponse(res, 200, true, 'Offboarding fetched successfully', offboarding);
   } catch (error) {
-    console.error('❌ Get my offboarding error:', error);
+    console.error('Get my offboarding error:', error);
     next(error);
   }
 };
+
 
 // Mark Asset Returned
 exports.markAssetReturned = async (req, res, next) => {
@@ -213,52 +214,64 @@ exports.updateClearance = async (req, res, next) => {
   try {
     const { id, clearanceIndex } = req.params;
     const { cleared, remarks } = req.body;
-
-    // FIX: Use req.user._id
-    const employee = await Employee.findOne({ userId: req.user._id });
-
+    
+    // FIX: Use req.user.id correctly
+    const employee = await Employee.findOne({ userId: req.user.id });
+    
     const offboarding = await Offboarding.findById(id);
+    
     if (!offboarding) {
       return sendResponse(res, 404, false, 'Offboarding not found');
     }
-
+    
     if (clearanceIndex >= offboarding.clearances.length) {
       return sendResponse(res, 404, false, 'Clearance not found');
     }
-
+    
     const clearance = offboarding.clearances[clearanceIndex];
     clearance.cleared = cleared;
     // FIX: Use employee._id
     clearance.clearedBy = employee._id;
     clearance.clearedAt = new Date();
     clearance.remarks = remarks;
-
-    // Recalculate progress
-    let totalSteps = 0;
-    let completedSteps = 0;
-
-    offboarding.assets.forEach(asset => {
-      totalSteps++;
-      if (asset.returned) completedSteps++;
-    });
-
-    offboarding.clearances.forEach(c => {
-      totalSteps++;
-      if (c.cleared) completedSteps++;
-    });
-
-    totalSteps++;
-    if (offboarding.exitInterview?.completed) completedSteps++;
-
-    offboarding.progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
-
-    await offboarding.save();
-    sendResponse(res, 200, true, 'Clearance updated successfully', offboarding);
+    
+    // ... rest of the function
   } catch (error) {
     console.error('Update clearance error:', error);
     next(error);
   }
 };
+
+// Conduct Exit Interview
+exports.conductExitInterview = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const interviewData = req.body;
+    
+    // FIX: Use req.user.id correctly
+    const employee = await Employee.findOne({ userId: req.user.id });
+    
+    const offboarding = await Offboarding.findById(id);
+    
+    if (!offboarding) {
+      return sendResponse(res, 404, false, 'Offboarding not found');
+    }
+    
+    offboarding.exitInterview = {
+      ...interviewData,
+      // FIX: Use employee._id
+      conductedBy: employee._id,
+      completed: true,
+      completedAt: new Date(),
+    };
+    
+    // ... rest of the function
+  } catch (error) {
+    console.error('Conduct exit interview error:', error);
+    next(error);
+  }
+};
+
 
 // Conduct Exit Interview
 exports.conductExitInterview = async (req, res, next) => {

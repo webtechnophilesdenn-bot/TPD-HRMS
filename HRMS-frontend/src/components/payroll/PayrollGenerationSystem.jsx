@@ -1,4 +1,4 @@
-// src/components/payroll/PayrollGenerationSystem.jsx
+// src/components/payroll/PayrollGenerationSystem.jsx - COMPLETE ENHANCED VERSION
 import React, { useState, useEffect } from 'react';
 import {
   Download,
@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Shield
 } from 'lucide-react';
+import payrollAPI from '../../services/payrollAPI';
 import { apiService } from '../../services/apiService';
 
 const PayrollGenerationSystem = ({ onClose }) => {
@@ -33,7 +34,6 @@ const PayrollGenerationSystem = ({ onClose }) => {
     sendNotifications: true,
     processOvertime: true
   });
-
   const [departments, setDepartments] = useState([]);
   const [employeePreview, setEmployeePreview] = useState([]);
   const [previewSummary, setPreviewSummary] = useState(null);
@@ -66,38 +66,43 @@ const PayrollGenerationSystem = ({ onClose }) => {
     }
   };
 
-  // NEW: Check and create salary structures
+  // Check and create missing salary structures
   const checkAndCreateSalaryStructures = async () => {
     try {
       setCheckingStructures(true);
       
       // Step 1: Check for missing salary structures
-      const checkResponse = await apiService.checkMissingSalaryStructures();
+      const checkResponse = await payrollAPI.checkMissingSalaryStructures();
       
       if (checkResponse.data.count > 0) {
         const confirm = window.confirm(
           `${checkResponse.data.count} employees don't have salary structures.\n\n` +
-          `Do you want to create default salary structures for them?\n\n` +
-          `Note: Employees must have basicSalary set in their profile.`
+          `Do you want to create salary structures for them?\n\n` +
+          `Note: Structures will be created using designation-based defaults or employee CTC.`
         );
-        
+
         if (confirm) {
           // Step 2: Create missing salary structures
-          const createResponse = await apiService.createMissingSalaryStructures({
-            effectiveFrom: new Date()
+          const createResponse = await payrollAPI.createMissingSalaryStructures({
+            effectiveFrom: new Date(),
+            useDesignationDefaults: true
           });
+
+          const summary = createResponse.data.summary;
           
           alert(
             `Salary Structures Created!\n\n` +
-            `Created: ${createResponse.data.summary.created}\n` +
-            `Failed: ${createResponse.data.summary.failed}\n\n` +
-            `You can now generate payroll.`
+            `✓ Created: ${summary.created}\n` +
+            `✗ Failed: ${summary.failed}\n\n` +
+            (summary.failed > 0 
+              ? `Check console for failed employees.`
+              : `You can now generate payroll.`)
           );
-          
-          if (createResponse.data.failed.length > 0) {
+
+          if (createResponse.data.failed?.length > 0) {
             console.log('Failed employees:', createResponse.data.failed);
           }
-          
+
           // Reload preview after creating structures
           await loadEmployeePreview();
         }
@@ -115,19 +120,23 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const loadEmployeePreview = async () => {
     setLoadingPreview(true);
     try {
-      const summaryResponse = await apiService.getPayrollGenerationSummary({
+      // Get generation summary first
+      const summaryResponse = await payrollAPI.getPayrollGenerationSummary({
         month: config.month,
         year: config.year,
         department: config.department
       });
-      
+
       setGenerationSummary(summaryResponse.data);
-      
+
       if (summaryResponse.data.existingPayrolls > 0) {
         setShowWarning(true);
       }
 
-      const response = await apiService.getEligibleEmployees({
+      // Get eligible employees
+      const response = await payrollAPI.getEligibleEmployees({
+        month: config.month,
+        year: config.year,
         department: config.department,
         includeInactive: config.includeInactive
       });
@@ -146,10 +155,11 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const loadPayrollHistory = async () => {
     setHistoryLoading(true);
     try {
-      const response = await apiService.getAllPayrolls({
+      const response = await payrollAPI.getAllPayrolls({
         month: config.month,
         year: config.year,
-        department: config.department
+        department: config.department,
+        limit: 100
       });
       setPayrollHistory(response.data?.payrolls || response.data?.data || []);
     } catch (error) {
@@ -177,7 +187,7 @@ const PayrollGenerationSystem = ({ onClose }) => {
         message: 'Validating employee eligibility...'
       }));
 
-      const validationResponse = await apiService.validatePayrollEligibility({
+      const validationResponse = await payrollAPI.validatePayrollEligibility({
         month: config.month,
         year: config.year,
         department: config.department,
@@ -186,13 +196,13 @@ const PayrollGenerationSystem = ({ onClose }) => {
 
       if (validationResponse.data.summary.ineligible > 0) {
         const ineligibleDetails = validationResponse.data.ineligible
-          .map(emp => `${emp.name} (${emp.employeeId}): ${emp.issues.join(', ')}`)
+          .map(emp => `• ${emp.name} (${emp.employeeId}): ${emp.issues.join(', ')}`)
           .join('\n');
 
         const proceed = window.confirm(
-          `WARNING: ${validationResponse.data.summary.ineligible} employees are ineligible for payroll.\n\n` +
+          `⚠ WARNING: ${validationResponse.data.summary.ineligible} employees are ineligible\n\n` +
           `Issues found:\n${ineligibleDetails}\n\n` +
-          `Do you want to continue and generate payroll only for eligible employees?`
+          `Continue and generate payroll only for ${validationResponse.data.summary.eligible} eligible employees?`
         );
 
         if (!proceed) {
@@ -202,13 +212,12 @@ const PayrollGenerationSystem = ({ onClose }) => {
         }
       }
 
-      // STEP 2: Simulate stages
+      // STEP 2: Fetch data simulation
       await new Promise(resolve => setTimeout(resolve, 1000));
-
       setGenerationProgress(prev => ({
         ...prev,
         stage: 'fetching',
-        message: 'Fetching attendance and leave records...'
+        message: 'Fetching attendance, leave, and loan records...'
       }));
 
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -217,14 +226,16 @@ const PayrollGenerationSystem = ({ onClose }) => {
       setGenerationProgress(prev => ({
         ...prev,
         stage: 'calculating',
-        message: 'Calculating salaries and generating payroll...'
+        message: 'Calculating salaries and generating payslips...'
       }));
 
-      const response = await apiService.generatePayroll({
+      const response = await payrollAPI.generatePayroll({
         month: config.month,
         year: config.year,
         department: config.department,
-        includeInactive: config.includeInactive
+        includeInactive: config.includeInactive,
+        sendNotifications: config.sendNotifications,
+        processOvertime: config.processOvertime
       });
 
       // STEP 4: Handle response
@@ -239,8 +250,8 @@ const PayrollGenerationSystem = ({ onClose }) => {
 
       setGenerationProgress({
         stage: 'completed',
-        current: response.data.summary?.generated || 0,
-        total: response.data.summary?.totalEmployees || employeePreview.length,
+        current: response.data.summary?.success || 0,
+        total: response.data.summary?.total || employeePreview.length,
         message: 'Payroll generated successfully!',
         errors: errorMessages,
         summary: response.data.summary
@@ -253,10 +264,18 @@ const PayrollGenerationSystem = ({ onClose }) => {
         setShowPreview(false);
         setShowWarning(false);
         
-        alert(
-          `✓ Payroll generated for ${response.data.summary?.generated || 0} employees!` +
-          (errorMessages.length > 0 ? `\n\n⚠ ${errorMessages.length} errors occurred.` : '')
-        );
+        const successMsg = 
+          `✓ Payroll Generated Successfully!\n\n` +
+          `✓ Generated: ${response.data.summary?.success || 0} payslips\n` +
+          `✗ Failed: ${response.data.summary?.failed || 0}\n` +
+          `💰 Total Payout: ${formatCurrency(response.data.summary?.totalNetPaid || 0)}` +
+          (errorMessages.length > 0 ? `\n\n⚠ ${errorMessages.length} errors occurred. Check console.` : '');
+        
+        alert(successMsg);
+        
+        if (errorMessages.length > 0) {
+          console.log('Generation errors:', errorMessages);
+        }
         
         if (onClose) onClose();
       }, 3000);
@@ -264,15 +283,15 @@ const PayrollGenerationSystem = ({ onClose }) => {
     } catch (error) {
       console.error('Error generating payroll:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to generate payroll';
-
+      
       setGenerationProgress({
         stage: 'error',
         message: errorMessage,
         errors: [errorMessage]
       });
 
-      alert(`Error: ${errorMessage}`);
-
+      alert(`❌ Error: ${errorMessage}`);
+      
       setTimeout(() => {
         setGenerating(false);
         setGenerationProgress(null);
@@ -291,447 +310,501 @@ const PayrollGenerationSystem = ({ onClose }) => {
   const getStageIcon = (stage) => {
     switch (stage) {
       case 'initializing':
-        return <Clock className="h-8 w-8 text-blue-600 animate-pulse" />;
+        return <Settings className="w-6 h-6 text-blue-600 animate-spin" />;
       case 'validating':
-        return <CheckCircle className="h-8 w-8 text-yellow-600 animate-pulse" />;
+        return <Shield className="w-6 h-6 text-yellow-600 animate-pulse" />;
       case 'fetching':
-        return <RefreshCw className="h-8 w-8 text-indigo-600 animate-spin" />;
+        return <Download className="w-6 h-6 text-indigo-600 animate-bounce" />;
       case 'calculating':
-        return <DollarSign className="h-8 w-8 text-green-600 animate-pulse" />;
+        return <DollarSign className="w-6 h-6 text-green-600 animate-pulse" />;
       case 'completed':
-        return <CheckCircle className="h-8 w-8 text-green-600" />;
+        return <CheckCircle className="w-6 h-6 text-green-600" />;
       case 'error':
-        return <XCircle className="h-8 w-8 text-red-600" />;
+        return <XCircle className="w-6 h-6 text-red-600" />;
       default:
-        return <Clock className="h-8 w-8 text-gray-600" />;
+        return <Clock className="w-6 h-6 text-gray-600" />;
     }
   };
 
   return (
-    <div className="space-y-3">
-      {/* View Toggle */}
-      <div className="flex space-x-2 border-b border-gray-200">
-        <button
-          onClick={() => setActiveView('generate')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeView === 'generate'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <PlayCircle className="h-4 w-4 inline mr-2" />
-          Generate
-        </button>
-        <button
-          onClick={() => setActiveView('history')}
-          className={`px-4 py-2 font-medium border-b-2 transition-colors ${
-            activeView === 'history'
-              ? 'border-indigo-600 text-indigo-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <FileText className="h-4 w-4 inline mr-2" />
-          History
-        </button>
-      </div>
-
-      {/* Generate View */}
-      {activeView === 'generate' && (
-        <div className="space-y-3">
-          {/* Configuration Card */}
-          <div className="bg-gray-50 rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center">
-              <Settings className="h-5 w-5 mr-2 text-indigo-600" />
-              Payroll Configuration
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                <select
-                  value={config.month}
-                  onChange={(e) => setConfig({ ...config, month: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {months.map((month, index) => (
-                    <option key={index} value={index + 1}>
-                      {month}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                <select
-                  value={config.year}
-                  onChange={(e) => setConfig({ ...config, year: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {[2025, 2024, 2023, 2022].map(year => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
-                <select
-                  value={config.department}
-                  onChange={(e) => setConfig({ ...config, department: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="">All Departments</option>
-                  {departments.map(dept => (
-                    <option key={dept._id} value={dept._id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Payroll Generation System</h2>
+              <p className="text-gray-600 mt-1">Generate monthly salary for employees</p>
             </div>
-
-            {/* Actions */}
-            <div className="flex space-x-3">
-              <button
-                onClick={checkAndCreateSalaryStructures}
-                disabled={checkingStructures}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {checkingStructures ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Shield className="h-4 w-4 mr-2" />
-                )}
-                Check Salary Structures
-              </button>
-
-              <button
-                onClick={loadEmployeePreview}
-                disabled={loadingPreview}
-                className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium flex items-center disabled:opacity-50"
-              >
-                {loadingPreview ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Eye className="h-4 w-4 mr-2" />
-                )}
-                Preview Employees
-              </button>
-
-              <button
-                onClick={handleGeneratePayroll}
-                disabled={generating || employeePreview.length === 0}
-                className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <PlayCircle className="h-4 w-4 mr-2" />
-                Generate Payroll
-              </button>
-            </div>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-6 h-6" />
+            </button>
           </div>
 
-          {/* Warning Message */}
-          {showWarning && generationSummary && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start space-x-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <h4 className="font-medium text-yellow-900 mb-1">Warning</h4>
-                <p className="text-sm text-yellow-800">{generationSummary.message}</p>
-                {generationSummary.existingEmployees && generationSummary.existingEmployees.length > 0 && (
-                  <div className="mt-2 text-sm text-yellow-700">
-                    <strong>Existing payrolls for:</strong>
-                    <ul className="list-disc list-inside mt-1">
-                      {generationSummary.existingEmployees.slice(0, 5).map((emp, idx) => (
-                        <li key={idx}>
-                          {emp.name} ({emp.employeeId}) - {emp.status}
-                        </li>
+          {/* View Tabs */}
+          <div className="flex gap-2 mb-6 border-b border-gray-200">
+            <button
+              onClick={() => setActiveView('generate')}
+              className={`px-4 py-2 font-medium transition ${
+                activeView === 'generate'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <PlayCircle className="w-4 h-4 inline mr-2" />
+              Generate Payroll
+            </button>
+            <button
+              onClick={() => setActiveView('history')}
+              className={`px-4 py-2 font-medium transition ${
+                activeView === 'history'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Clock className="w-4 h-4 inline mr-2" />
+              History
+            </button>
+          </div>
+
+          {/* Generate View */}
+          {activeView === 'generate' && (
+            <div className="space-y-6">
+              {/* Configuration */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  <Settings className="w-5 h-5 inline mr-2" />
+                  Payroll Configuration
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Month <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={config.month}
+                      onChange={(e) => setConfig({ ...config, month: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {months.map((month, index) => (
+                        <option key={index} value={index + 1}>
+                          {month}
+                        </option>
                       ))}
-                      {generationSummary.existingEmployees.length > 5 && (
-                        <li>...and {generationSummary.existingEmployees.length - 5} more</li>
-                      )}
-                    </ul>
+                    </select>
                   </div>
-                )}
-              </div>
-              <button
-                onClick={() => setShowWarning(false)}
-                className="text-yellow-600 hover:text-yellow-800"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          )}
 
-          {/* Employee Preview */}
-          {showPreview && (
-            <div className="bg-white rounded-lg border border-gray-200">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <div>
-                  <h3 className="text-lg font-semibold flex items-center">
-                    <Users className="h-5 w-5 mr-2 text-indigo-600" />
-                    Employee Preview
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {employeePreview.length} employees • Estimated Payout: {formatCurrency(previewSummary?.totalEstimatedNet || 0)}
-                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Year <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={config.year}
+                      onChange={(e) => setConfig({ ...config, year: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {[...Array(3)].map((_, i) => {
+                        const year = new Date().getFullYear() - i;
+                        return (
+                          <option key={year} value={year}>
+                            {year}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Department
+                    </label>
+                    <select
+                      value={config.department}
+                      onChange={(e) => setConfig({ ...config, department: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="">All Departments</option>
+                      {departments.map((dept) => (
+                        <option key={dept._id} value={dept._id}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    setShowPreview(false);
-                    setShowWarning(false);
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+
+                {/* Options */}
+                <div className="mt-4 space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.includeInactive}
+                      onChange={(e) => setConfig({ ...config, includeInactive: e.target.checked })}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Include inactive employees</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.sendNotifications}
+                      onChange={(e) => setConfig({ ...config, sendNotifications: e.target.checked })}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Send payslip notifications</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={config.processOvertime}
+                      onChange={(e) => setConfig({ ...config, processOvertime: e.target.checked })}
+                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-gray-700">Process overtime payments</span>
+                  </label>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="mt-6 flex gap-3">
+                  <button
+                    onClick={loadEmployeePreview}
+                    disabled={loadingPreview}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loadingPreview ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Loading Preview...
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4" />
+                        Preview Employees
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={checkAndCreateSalaryStructures}
+                    disabled={checkingStructures}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {checkingStructures ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="w-4 h-4" />
+                        Check Structures
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {/* Summary Cards */}
-              {previewSummary && (
-                <div className="p-4 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Total Employees</p>
-                    <p className="text-xl font-bold text-gray-900">{previewSummary.totalEmployees}</p>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Estimated Gross</p>
-                    <p className="text-xl font-bold text-green-600">
-                      {formatCurrency(previewSummary.totalEstimatedGross)}
-                    </p>
-                  </div>
-                  <div className="bg-white p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 mb-1">Estimated Net Payout</p>
-                    <p className="text-xl font-bold text-indigo-600">
-                      {formatCurrency(previewSummary.totalEstimatedNet)}
-                    </p>
+              {/* Warning Message */}
+              {showWarning && generationSummary && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-yellow-900">Warning</h4>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        {generationSummary.message}
+                      </p>
+                      {generationSummary.existingEmployees && generationSummary.existingEmployees.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="text-sm text-yellow-700 cursor-pointer hover:underline">
+                            View existing payrolls ({generationSummary.existingEmployees.length})
+                          </summary>
+                          <ul className="mt-2 space-y-1 text-sm text-yellow-600">
+                            {generationSummary.existingEmployees.map((emp, idx) => (
+                              <li key={idx}>• {emp}</li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Designation</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Basic</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Gross</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Net</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {employeePreview.length === 0 ? (
-                      <tr>
-                        <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                          No employees found
-                        </td>
-                      </tr>
-                    ) : (
-                      employeePreview.map(emp => (
-                        <tr key={emp.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <div className="text-sm font-medium text-gray-900">
-                              {emp.firstName} {emp.lastName}
-                            </div>
-                            <div className="text-xs text-gray-500">{emp.employeeId}</div>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{emp.designation?.title || 'N/A'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900">{emp.department?.name || 'N/A'}</td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-900">
-                            {formatCurrency(emp.basicSalary)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-green-600">
-                            {formatCurrency(emp.estimatedGross)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-right font-medium text-indigo-600">
-                            {formatCurrency(emp.estimatedNet)}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full ${
-                                emp.hasSalaryStructure
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}
-                            >
-                              {emp.hasSalaryStructure ? '✓ Ready' : '✗ No Structure'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+              {/* Employee Preview */}
+              {showPreview && (
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        <Users className="w-5 h-5 inline mr-2" />
+                        Employee Preview
+                      </h3>
+                      <span className="text-sm text-gray-600">
+                        {employeePreview.length} employees • Estimated Payout: {formatCurrency(previewSummary?.totalEstimatedNet || 0)}
+                      </span>
+                    </div>
+                  </div>
 
-      {/* History View */}
-      {activeView === 'history' && (
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-lg font-semibold">Payroll History</h3>
-            <p className="text-sm text-gray-600 mt-1">View previously generated payrolls</p>
-          </div>
-
-          {historyLoading ? (
-            <div className="p-8 text-center">
-              <RefreshCw className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-2" />
-              <p className="text-gray-600">Loading payroll history...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Salary</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {payrollHistory.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
-                        No payroll records found
-                      </td>
-                    </tr>
-                  ) : (
-                    payrollHistory.map(payroll => (
-                      <tr key={payroll._id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          {months[payroll.month - 1]} {payroll.year}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="text-sm font-medium text-gray-900">
-                            {payroll.employee?.firstName} {payroll.employee?.lastName}
-                          </div>
-                          <div className="text-xs text-gray-500">{payroll.employee?.employeeId}</div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-900">
-                          {formatCurrency(payroll.summary?.grossEarnings)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right text-gray-500">
-                          {formatCurrency(payroll.summary?.totalDeductions)}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right font-medium text-gray-900">
-                          {formatCurrency(payroll.summary?.netSalary)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`px-2 py-1 text-xs rounded-full ${
-                              payroll.status === 'Paid'
-                                ? 'bg-green-100 text-green-800'
-                                : payroll.status === 'Generated'
-                                ? 'bg-blue-100 text-blue-800'
-                                : payroll.status === 'Approved'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {payroll.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => apiService.downloadPayslip(payroll._id)}
-                            className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center"
-                          >
-                            <Download className="h-4 w-4 mr-1" />
-                            Download
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                  {/* Summary Cards */}
+                  {previewSummary && (
+                    <div className="grid grid-cols-3 gap-4 p-6 bg-gray-50">
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <p className="text-sm text-gray-600">Total Employees</p>
+                        <p className="text-2xl font-bold text-gray-900 mt-1">{previewSummary.totalEmployees}</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <p className="text-sm text-gray-600">Estimated Gross</p>
+                        <p className="text-2xl font-bold text-green-600 mt-1">{formatCurrency(previewSummary.totalEstimatedGross)}</p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200">
+                        <p className="text-sm text-gray-600">Estimated Net Payout</p>
+                        <p className="text-2xl font-bold text-indigo-600 mt-1">{formatCurrency(previewSummary.totalEstimatedNet)}</p>
+                      </div>
+                    </div>
                   )}
-                </tbody>
-              </table>
+
+                  {/* Employee Table */}
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Designation</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Department</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Basic</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Gross</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Est. Net</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {employeePreview.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                              No employees found
+                            </td>
+                          </tr>
+                        ) : (
+                          employeePreview.map((emp) => (
+                            <tr key={emp._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {emp.firstName} {emp.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">{emp.employeeId}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {emp.designation?.title || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {emp.department?.name || 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                                {formatCurrency(emp.basicSalary)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-green-600">
+                                {formatCurrency(emp.estimatedGross)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-indigo-600">
+                                {formatCurrency(emp.estimatedNet)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {emp.hasSalaryStructure ? (
+                                  <span className="flex items-center text-green-600 text-sm">
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Ready
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center text-red-600 text-sm">
+                                    <XCircle className="w-4 h-4 mr-1" />
+                                    No Structure
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Generate Button */}
+                  <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                    <button
+                      onClick={handleGeneratePayroll}
+                      disabled={generating || employeePreview.length === 0}
+                      className="w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-medium"
+                    >
+                      <PlayCircle className="w-5 h-5" />
+                      Generate Payroll for {employeePreview.length} Employees
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* History View */}
+          {activeView === 'history' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  <Clock className="w-5 h-5 inline mr-2" />
+                  Payroll History
+                </h3>
+                <p className="text-sm text-gray-600">
+                  View previously generated payrolls
+                </p>
+              </div>
+
+              {historyLoading ? (
+                <div className="flex items-center justify-center h-64">
+                  <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin" />
+                  <p className="ml-3 text-gray-600">Loading payroll history...</p>
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Gross</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Deductions</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Net Salary</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {payrollHistory.length === 0 ? (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
+                              No payroll records found
+                            </td>
+                          </tr>
+                        ) : (
+                          payrollHistory.map((payroll) => (
+                            <tr key={payroll._id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {months[payroll.month - 1]} {payroll.year}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {payroll.employee?.firstName} {payroll.employee?.lastName}
+                                </div>
+                                <div className="text-sm text-gray-500">{payroll.employee?.employeeId}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                                {formatCurrency(payroll.summary?.grossEarnings)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-600">
+                                {formatCurrency(payroll.summary?.totalDeductions)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">
+                                {formatCurrency(payroll.summary?.netSalary)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                  payroll.status === 'Paid' ? 'bg-green-100 text-green-800' :
+                                  payroll.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {payroll.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button className="text-indigo-600 hover:text-indigo-900">
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+      </div>
 
       {/* Generation Progress Modal */}
       {generating && generationProgress && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-lg w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-2xl max-w-lg w-full mx-4 p-8">
             <div className="text-center">
-              <div className="flex justify-center mb-4">
+              {/* Icon */}
+              <div className="flex justify-center mb-6">
                 {getStageIcon(generationProgress.stage)}
               </div>
 
-              <h3 className="text-2xl font-semibold text-gray-900 mb-2">
-                {generationProgress.stage === 'completed'
-                  ? 'Completed!'
-                  : generationProgress.stage === 'error'
-                  ? 'Error'
-                  : 'Generating Payroll...'}
+              {/* Title & Message */}
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                {generationProgress.stage === 'completed' ? 'Payroll Generated!' :
+                 generationProgress.stage === 'error' ? 'Generation Failed' :
+                 'Generating Payroll...'}
               </h3>
-
               <p className="text-gray-600 mb-6">{generationProgress.message}</p>
 
+              {/* Progress Bar */}
               {generationProgress.stage !== 'completed' && generationProgress.stage !== 'error' && (
-                <div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
+                <div className="mb-6">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div
-                      className="bg-indigo-600 h-3 rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
                       style={{
                         width: `${(generationProgress.current / generationProgress.total) * 100}%`
                       }}
-                    ></div>
+                    />
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-gray-600 mt-2">
                     Processing {generationProgress.current} of {generationProgress.total} employees
                   </p>
                 </div>
               )}
 
+              {/* Summary Cards (on completion) */}
               {generationProgress.stage === 'completed' && generationProgress.summary && (
-                <div className="mt-6 bg-green-50 rounded-lg p-4">
-                  <div className="grid grid-cols-2 gap-4 text-left">
-                    <div>
-                      <p className="text-sm text-gray-600">Processed</p>
-                      <p className="text-lg font-bold text-green-700">
-                        {generationProgress.summary.generated}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">Total Payout</p>
-                      <p className="text-lg font-bold text-green-700">
-                        {formatCurrency(generationProgress.summary.totalNetPayout)}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-green-50 rounded-lg p-4">
+                    <p className="text-sm text-green-600 font-medium">Processed</p>
+                    <p className="text-2xl font-bold text-green-700 mt-1">
+                      {generationProgress.summary.success}
+                    </p>
                   </div>
-
-                  {generationProgress.errors && generationProgress.errors.length > 0 && (
-                    <div className="mt-3 text-left">
-                      <p className="text-sm font-medium text-red-600">
-                        Errors: {generationProgress.errors.length}
-                      </p>
-                      <ul className="text-xs text-red-600 mt-1 list-disc list-inside">
-                        {generationProgress.errors.map((err, idx) => (
-                          <li key={idx}>{typeof err === 'string' ? err : JSON.stringify(err)}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  <div className="bg-indigo-50 rounded-lg p-4">
+                    <p className="text-sm text-indigo-600 font-medium">Total Payout</p>
+                    <p className="text-lg font-bold text-indigo-700 mt-1">
+                      {formatCurrency(generationProgress.summary.totalNetPaid)}
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {generationProgress.stage === 'error' && (
-                <div className="mt-4 bg-red-50 rounded-lg p-4">
-                  <p className="text-sm text-red-800">{generationProgress.message}</p>
+              {/* Errors */}
+              {generationProgress.errors && generationProgress.errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 max-h-40 overflow-y-auto text-left">
+                  <p className="text-sm font-medium text-red-900 mb-2">
+                    Errors: {generationProgress.errors.length}
+                  </p>
+                  <ul className="text-xs text-red-700 space-y-1">
+                    {generationProgress.errors.map((error, idx) => (
+                      <li key={idx}>• {error}</li>
+                    ))}
+                  </ul>
                 </div>
+              )}
+
+              {/* Success Message */}
+              {generationProgress.stage === 'completed' && (
+                <p className="text-green-600 font-medium">{generationProgress.message}</p>
               )}
             </div>
           </div>

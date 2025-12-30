@@ -134,36 +134,37 @@ exports.getAllOnboardings = async (req, res, next) => {
 // Get My Onboarding - FIXED
 exports.getMyOnboarding = async (req, res, next) => {
   try {
-    console.log("🔍 Getting onboarding for user:", req.user._id);
+    console.log('Getting onboarding for user:', req.user.id);
     
-    // FIX: Use req.user._id instead of req.user.id
-    const employee = await Employee.findOne({ userId: req.user._id });
+    // Find employee by userId
+    const employee = await Employee.findOne({ userId: req.user.id });
     
     if (!employee) {
-      console.log("❌ Employee not found for user:", req.user._id);
-      return sendResponse(res, 404, false, "Employee not found");
+      console.log('Employee not found for user:', req.user.id);
+      return sendResponse(res, 404, false, 'Employee not found');
     }
-
-    console.log("✅ Employee found:", employee.employeeId);
-
+    
+    console.log('Employee found:', employee._id);
+    
     // FIX: Use employee._id instead of employee.id
     const onboarding = await Onboarding.findOne({ employee: employee._id })
-      .populate("buddy", "firstName lastName email phone")
-      .populate("manager", "firstName lastName email phone")
-      .populate("employee", "firstName lastName employeeId email department designation");
-
+      .populate('buddy', 'firstName lastName email phone')
+      .populate('manager', 'firstName lastName email phone')
+      .populate('employee', 'firstName lastName employeeId email department designation');
+    
     if (!onboarding) {
-      console.log("⚠️ Onboarding not found for employee:", employee._id);
-      return sendResponse(res, 404, false, "Onboarding not found");
+      console.log('Onboarding not found for employee:', employee._id);
+      return sendResponse(res, 404, false, 'Onboarding not found');
     }
-
-    console.log("✅ Onboarding found:", onboarding._id);
-    sendResponse(res, 200, true, "Onboarding fetched successfully", onboarding);
+    
+    console.log('Onboarding found:', onboarding._id);
+    sendResponse(res, 200, true, 'Onboarding fetched successfully', onboarding);
   } catch (error) {
-    console.error('❌ Get my onboarding error:', error);
+    console.error('Get my onboarding error:', error);
     next(error);
   }
 };
+
 
 // Update Onboarding Progress
 exports.updateOnboardingProgress = async (req, res, next) => {

@@ -1697,6 +1697,172 @@ validatePayrollEligibility: async (filters) => {
     });
   },
 
+
+
+// ==================== EXPENSE MANAGEMENT APIs ====================
+// Raise new expense
+raiseExpense: async (expenseData) => {
+  console.log("🔄 Raising expense:", expenseData);
+  return await apiService.request("/expenses/raise", {
+    method: "POST",
+    body: JSON.stringify(expenseData),
+  });
+},
+
+// Get my expenses
+getMyExpenses: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/expenses/my-expenses?${queryString}` : "/expenses/my-expenses";
+  console.log("🔄 Fetching my expenses:", url);
+  return await apiService.request(url);
+},
+
+// Get pending expenses (Manager/HR/Admin)
+getPendingExpenses: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/expenses/pending?${queryString}` : "/expenses/pending";
+  console.log("🔄 Fetching pending expenses:", url);
+  return await apiService.request(url);
+},
+
+// Approve/Reject expense
+updateExpenseStatus: async (expenseId, statusData) => {
+  console.log(`🔄 Updating expense status for ${expenseId}:`, statusData);
+  return await apiService.request(`/expenses/${expenseId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(statusData),
+  });
+},
+
+// Get expense by ID
+getExpenseById: async (expenseId) => {
+  return await apiService.request(`/expenses/${expenseId}`);
+},
+
+// Delete/Cancel expense
+deleteExpense: async (expenseId) => {
+  return await apiService.request(`/expenses/${expenseId}`, {
+    method: "DELETE",
+  });
+},
+
+// Get expense analytics (HR/Admin)
+getExpenseAnalytics: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/expenses/analytics/summary?${queryString}` : "/expenses/analytics/summary";
+  console.log("🔄 Fetching expense analytics:", url);
+  return await apiService.request(url);
+},
+
+
+// ==================== WORK FROM HOME APIs ====================
+// Apply for WFH
+applyWorkFromHome: async (wfhData) => {
+  console.log("🔄 Applying for WFH:", wfhData);
+  return await apiService.request("/leaves/wfh/apply", {
+    method: "POST",
+    body: JSON.stringify(wfhData),
+  });
+},
+
+// Get my WFH requests
+getMyWFHRequests: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/leaves/wfh/my-requests?${queryString}` : "/leaves/wfh/my-requests";
+  console.log("🔄 Fetching my WFH requests:", url);
+  return await apiService.request(url);
+},
+
+// Get pending WFH requests (Manager/HR/Admin)
+getPendingWFHRequests: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/leaves/wfh/pending?${queryString}` : "/leaves/wfh/pending";
+  console.log("🔄 Fetching pending WFH requests:", url);
+  return await apiService.request(url);
+},
+
+// Update WFH status
+updateWFHStatus: async (wfhId, statusData) => {
+  console.log(`🔄 Updating WFH status for ${wfhId}:`, statusData);
+  return await apiService.request(`/leaves/wfh/${wfhId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify(statusData),
+  });
+},
+
+// ==================== BIRTHDAY CALENDAR APIs ====================
+// Get birthday calendar (accessible to all employees)
+getBirthdayCalendar: async (filters = {}) => {
+  const params = new URLSearchParams();
+  Object.keys(filters).forEach((key) => {
+    if (filters[key] !== undefined && filters[key] !== "" && filters[key] !== null) {
+      params.append(key, filters[key]);
+    }
+  });
+  const queryString = params.toString();
+  const url = queryString ? `/birthdays/calendar?${queryString}` : "/birthdays/calendar";
+  console.log("🔄 Fetching birthday calendar:", url);
+  return await apiService.request(url);
+},
+
+// Get today's birthdays
+getTodaysBirthdays: async () => {
+  console.log("🔄 Fetching today's birthdays");
+  return await apiService.request("/birthdays/today");
+},
+
+// Get upcoming birthdays
+getUpcomingBirthdays: async (days = 30) => {
+  console.log(`🔄 Fetching upcoming birthdays (${days} days)`);
+  return await apiService.request(`/birthdays/upcoming?days=${days}`);
+},
+
+// Send birthday wish (uses employee routes)
+sendBirthdayWish: async (employeeId, wishData) => {
+  console.log(`🔄 Sending birthday wish to employee ${employeeId}`);
+  return await apiService.request(`/employees/${employeeId}/birthday-wish`, {
+    method: 'POST',
+    body: JSON.stringify(wishData)
+  });
+},
+
+// Get employee's birthday wishes (uses employee routes)
+getBirthdayWishes: async (employeeId) => {
+  console.log(`🔄 Fetching birthday wishes for employee ${employeeId}`);
+  return await apiService.request(`/employees/${employeeId}/birthday-wishes`);
+},
+
+
   // In apiService.js - add these methods to the ASSET MANAGEMENT section
 
   // Get Asset Analytics

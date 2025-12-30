@@ -18,6 +18,8 @@ const {
   getOrgChart,
   getMyTeam,
   getReportingManagers,
+  sendBirthdayWish,      // ✅ NEW
+  getBirthdayWishes,     // ✅ NEW
   // uploadProfilePicture, // Comment out if not implemented
   // bulkUpdateEmployees, // Comment out if not implemented
 } = require("../controllers/employeeController");
@@ -47,6 +49,13 @@ router.get(
   authorize("hr", "admin", "manager"),
   getAllEmployees
 );
+
+// ==================== BIRTHDAY WISHES ROUTES ====================
+// ✅ NEW: Send birthday wish - All authenticated users can wish any employee
+router.post("/:id/birthday-wish", protect, sendBirthdayWish);
+
+// ✅ NEW: Get birthday wishes - All authenticated users can view wishes
+router.get("/:id/birthday-wishes", protect, getBirthdayWishes);
 
 // ==================== INDIVIDUAL EMPLOYEE ACCESS ====================
 // Modified: Employees can view their own details, managers/hr/admin can view any

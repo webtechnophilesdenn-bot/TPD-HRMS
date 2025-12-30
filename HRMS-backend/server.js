@@ -5,7 +5,7 @@ const helmet = require("helmet");
 const connectDB = require("./src/config/database");
 const errorHandler = require("./src/middlewares/errorHandler.middleware");
 const logger = require("./src/utils/logger");
-const meetingRoutes = require('./src/routes/meeting.routes'); // adjust path
+const meetingRoutes = require('./src/routes/meeting.routes');
 const app = express();
 
 // ==================== MIDDLEWARE ====================
@@ -44,6 +44,9 @@ app.use("/api/v1/auth", require("./src/routes/auth.routes"));
 app.use("/api/v1/employees", require("./src/routes/employee.routes"));
 app.use("/api/v1/departments", require("./src/routes/department.routes"));
 app.use("/api/v1/designations", require("./src/routes/designation.routes"));
+
+// ✅ BIRTHDAY ROUTES - ADD THIS LINE
+app.use("/api/v1/birthdays", require("./src/routes/birthday.routes"));
 
 // Attendance & Leaves
 app.use("/api/v1/attendance", require("./src/routes/attendance.routes"));
@@ -86,12 +89,13 @@ app.use("/api/v1/chatbot", require("./src/routes/chatbot.routes"));
 // Events Calendar
 app.use('/api/v1/events', require('./src/routes/event.routes'));
 
-
-// contract
+// Contracts
 app.use("/api/v1/contracts", require("./src/routes/contract.routes"));
 
-// mwetings 
+// Expenses
+app.use('/api/v1/expenses', require('./src/routes/expense.routes'));
 
+// Meetings
 app.use('/api/v1/meetings', meetingRoutes);
 
 // ==================== 404 HANDLER ====================
@@ -134,6 +138,7 @@ const server = app.listen(PORT, () => {
   logger.info(`🚀 HRMS Server running on port ${PORT}`);
   logger.info(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
   logger.info(`📊 Database: ${process.env.MONGO_URI ? "Connected" : "Not configured"}`);
+  logger.info(`🎂 Birthday routes registered at /api/v1/birthdays`); // ✅ ADD THIS LOG
 });
 
 // ==================== INITIALIZE CRON JOBS ====================

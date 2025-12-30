@@ -3,12 +3,15 @@ const mongoose = require("mongoose");
 
 const payrollSchema = new mongoose.Schema(
   {
+    // ==================== BASIC INFORMATION ====================
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
       required: true,
-      index: true
+      index: true,
     },
+
+    // Payroll Period
     month: {
       type: Number,
       required: true,
@@ -18,357 +21,350 @@ const payrollSchema = new mongoose.Schema(
     year: {
       type: Number,
       required: true,
+      min: 2020,
     },
-    
-    // Period details for frontend compatibility
-    period: {
-      month: { type: Number, required: true },
-      year: { type: Number, required: true },
-      startDate: Date,
-      endDate: Date,
-      paymentDate: Date
+
+    // Salary Structure Reference
+    salaryStructure: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SalaryStructure",
+      required: true,
     },
-    
-    // Earnings - Updated to match frontend field names
+
+    attendanceData: {
+      totalWorkingDays: { type: Number, required: true, default: 0 },
+      presentDays: { type: Number, required: true, default: 0 },
+      absentDays: { type: Number, default: 0 },
+      halfDays: { type: Number, default: 0 },
+      paidLeaveDays: { type: Number, default: 0 },
+      unpaidLeaveDays: { type: Number, default: 0 },
+      weekendDays: { type: Number, default: 0 }, // Changed from weekOffDays
+      holidayDays: { type: Number, default: 0 }, // Changed from holidays
+      lopDays: { type: Number, default: 0 },
+      paidDays: { type: Number, required: true, default: 0 },
+      overtimeHours: { type: Number, default: 0 },
+      totalWorkingHours: { type: Number, default: 0 }, // Added
+      lateCount: { type: Number, default: 0 }, // Added
+      earlyCheckoutCount: { type: Number, default: 0 }, // Added
+    },
+
+    // ==================== EARNINGS BREAKDOWN ====================
     earnings: {
       basic: { type: Number, default: 0 },
       hra: { type: Number, default: 0 },
+      da: { type: Number, default: 0 },
       specialAllowance: { type: Number, default: 0 },
       conveyance: { type: Number, default: 0 },
       medicalAllowance: { type: Number, default: 0 },
       educationAllowance: { type: Number, default: 0 },
       lta: { type: Number, default: 0 },
+      performanceBonus: { type: Number, default: 0 },
       overtime: { type: Number, default: 0 },
-      bonus: { type: Number, default: 0 },
-      incentives: { type: Number, default: 0 },
-      arrears: { type: Number, default: 0 },
-      otherAllowances: { type: Number, default: 0 }
+      otherAllowances: { type: Number, default: 0 },
     },
-    
-    // Deductions - Updated to match frontend field names
+
+    // ==================== DEDUCTIONS BREAKDOWN ====================
     deductions: {
+      // Statutory Deductions
       pfEmployee: { type: Number, default: 0 },
       pfEmployer: { type: Number, default: 0 },
       esiEmployee: { type: Number, default: 0 },
       esiEmployer: { type: Number, default: 0 },
       professionalTax: { type: Number, default: 0 },
       tds: { type: Number, default: 0 },
-      loanRecovery: { type: Number, default: 0 },
-      advanceRecovery: { type: Number, default: 0 },
+      lwfEmployee: { type: Number, default: 0 },
+      lwfEmployer: { type: Number, default: 0 },
+
+      // Attendance-based
       lossOfPay: { type: Number, default: 0 },
-      otherDeductions: { type: Number, default: 0 }
+
+      // Recoveries
+      loanRecovery: {
+        amount: { type: Number, default: 0 },
+        loans: {
+          type: [
+            {
+              loanId: { type: mongoose.Schema.Types.ObjectId, ref: "Loan" },
+              amount: { type: Number, default: 0 },
+              emiNumber: { type: Number, default: 0 },
+            },
+          ],
+          default: [],
+        },
+      },
+      advanceRecovery: {
+        amount: { type: Number, default: 0 },
+        advances: {
+          type: [
+            {
+              advanceId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Advance",
+              },
+              amount: { type: Number, default: 0 },
+              installmentNumber: { type: Number, default: 0 },
+            },
+          ],
+          default: [],
+        },
+      },
+
+      // Other deductions
+      otherDeductions: { type: Number, default: 0 },
+      otherDeductionsRemarks: String,
     },
-    
-    // Summary - This is what frontend expects
+
+    // ==================== SUMMARY ====================
     summary: {
-      grossEarnings: { type: Number, default: 0 },
-      totalDeductions: { type: Number, default: 0 },
-      netSalary: { type: Number, default: 0 },
-      costToCompany: { type: Number, default: 0 },
-      takeHomeSalary: { type: Number, default: 0 }
+      grossEarnings: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      totalDeductions: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      netSalary: {
+        type: Number,
+        required: true,
+        default: 0,
+      },
+      costToCompany: {
+        type: Number,
+        default: 0,
+      },
+      perDayRate: {
+        type: Number,
+        default: 0,
+      },
+      takeHome: {
+        type: Number,
+        default: 0,
+      },
     },
-    
-    // Attendance - Updated to match frontend expectations
-    attendance: {
-      presentDays: { type: Number, default: 0 },
-      absentDays: { type: Number, default: 0 },
-      halfDays: { type: Number, default: 0 },
-      holidays: { type: Number, default: 0 },
-      weekends: { type: Number, default: 0 },
-      totalWorkingDays: { type: Number, default: 0 },
-      paidDays: { type: Number, default: 0 },
-      lossOfPayDays: { type: Number, default: 0 },
-      overtimeHours: { type: Number, default: 0 },
-      paidLeaves: { type: Number, default: 0 },
-      unpaidLeaves: { type: Number, default: 0 },
-      sickLeaves: { type: Number, default: 0 },
-      casualLeaves: { type: Number, default: 0 },
-      attendancePercentage: { type: Number, default: 0 }
+
+    // ==================== PAYMENT INFORMATION ====================
+    paymentDetails: {
+      paymentMode: {
+        type: String,
+        enum: ["Bank Transfer", "Cash", "Cheque"],
+        default: "Bank Transfer",
+      },
+      paymentDate: Date,
+      transactionId: String,
+      bankAccount: {
+        accountNumber: String,
+        ifscCode: String,
+        bankName: String,
+      },
     },
-    
-    // Leaves for frontend
-    leaves: {
-      paidLeaves: { type: Number, default: 0 },
-      unpaidLeaves: { type: Number, default: 0 },
-      sickLeaves: { type: Number, default: 0 },
-      casualLeaves: { type: Number, default: 0 }
-    },
-    
-    // Loan & Advance details
-    loanDetails: {
-      loanId: { type: mongoose.Schema.Types.ObjectId, ref: "Loan" },
-      emiAmount: { type: Number, default: 0 },
-      outstandingBefore: { type: Number, default: 0 },
-      outstandingAfter: { type: Number, default: 0 }
-    },
-    
-    advanceDetails: {
-      advanceId: { type: mongoose.Schema.Types.ObjectId, ref: "Advance" },
-      recoveryAmount: { type: Number, default: 0 },
-      outstandingBefore: { type: Number, default: 0 },
-      outstandingAfter: { type: Number, default: 0 }
-    },
-    
-    // Bank details for payslip
-    bankDetails: {
-      accountNumber: String,
-      bankName: String,
-      ifscCode: String,
-      branch: String,
-      accountHolderName: String
-    },
-    
-    // Status - Updated enum values to match frontend
+
+    // ==================== STATUS & WORKFLOW ====================
     status: {
       type: String,
-      enum: ["Generated", "Pending Approval", "Approved", "Paid", "Rejected", "Draft", "Cancelled"],
-      default: "Generated",
+      enum: [
+        "Draft",
+        "Pending Approval",
+        "Approved",
+        "Processing",
+        "Paid",
+        "On Hold",
+        "Rejected",
+        "Cancelled",
+      ],
+      default: "Draft",
+      index: true,
     },
-    
-    // Payment details
-    paymentMethod: {
-      type: String,
-      enum: ["Bank Transfer", "Cash", "Cheque", "Online"],
-      default: "Bank Transfer"
+
+    // Approval Workflow
+    approvalWorkflow: {
+      managerApproval: {
+        approved: { type: Boolean, default: false },
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        approvedAt: Date,
+        remarks: String,
+      },
+      hrApproval: {
+        approved: { type: Boolean, default: false },
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        approvedAt: Date,
+        remarks: String,
+      },
+      financeApproval: {
+        approved: { type: Boolean, default: false },
+        approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        approvedAt: Date,
+        remarks: String,
+      },
     },
-    paymentDate: Date,
-    paymentReference: String,
-    
-    // Workflow status
-    workflowStatus: {
-      generatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      generatedAt: Date,
-      approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      approvedAt: Date,
-      paidBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      paidAt: Date,
-      approvalRemarks: String
-    },
-    
-    // Generated by info
+
+    // ==================== AUDIT TRAIL ====================
     generatedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
-    approvedBy: {
+    generatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    lastModifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
-    approvedAt: Date,
-    paidBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
-    },
-    paidAt: Date,
-    
+
+    // Remarks and Notes
     remarks: String,
-    payslipUrl: String,
-    
-    // Salary structure snapshot
-    salaryStructureSnapshot: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "SalaryStructure"
+    internalNotes: String,
+
+    // Payslip number
+    payslipNumber: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
-    
-    // Notifications
-    notifications: {
-      payslipDownloaded: { type: Boolean, default: false },
-      payslipDownloadedAt: Date,
-      emailSent: { type: Boolean, default: false },
-      emailSentAt: Date
+
+    // Hold reasons
+    holdReason: String,
+    rejectionReason: String,
+
+    // ==================== FLAGS ====================
+    isLocked: {
+      type: Boolean,
+      default: false,
     },
-    
-    // Audit trail - Updated to match frontend/backend expectations
-    auditTrail: [{
-      action: {
-        type: String,
-        enum: [
-          "PAYROLL_GENERATED",
-          "PAYROLL_APPROVED",
-          "PAYROLL_PAID",
-          "PAYROLL_REJECTED",
-          "STATUS_CHANGED",
-          "PAYSLIP_DOWNLOADED"
-        ]
-      },
-      performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      timestamp: { type: Date, default: Date.now },
-      remarks: String,
-      ipAddress: String
-    }],
-    
-    // History for backward compatibility
-    history: [{
-      action: String,
-      performedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      performedAt: { type: Date, default: Date.now },
-      remarks: String
-    }]
+    isPaid: {
+      type: Boolean,
+      default: false,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-payrollSchema.index({ 'period.month': 1, 'period.year': 1, employee: 1 }, { unique: true });
-payrollSchema.index({ status: 1, 'period.year': 1, 'period.month': 1 });
-
-// Compound indexes
+// ==================== INDEXES ====================
 payrollSchema.index({ employee: 1, month: 1, year: 1 }, { unique: true });
-payrollSchema.index({ employee: 1, "period.month": 1, "period.year": 1 }, { unique: true });
-payrollSchema.index({ status: 1, month: 1, year: 1 });
-payrollSchema.index({ status: 1, "period.year": 1, "period.month": 1 });
-payrollSchema.index({ year: 1, month: 1 });
-payrollSchema.index({ "period.year": 1, "period.month": 1 });
+payrollSchema.index({ status: 1, createdAt: -1 });
+payrollSchema.index({ month: 1, year: 1, status: 1 });
+payrollSchema.index({ generatedAt: -1 });
+payrollSchema.index({ payslipNumber: 1 });
 
-// Pre-save middleware to ensure data consistency
-payrollSchema.pre("save", function(next) {
-  // Ensure period data is set
-  if (!this.period || !this.period.month) {
-    this.period = {
-      month: this.month,
-      year: this.year,
-      startDate: this.period?.startDate || new Date(this.year, this.month - 1, 1),
-      endDate: this.period?.endDate || new Date(this.year, this.month, 0),
-      paymentDate: this.period?.paymentDate || new Date(this.year, this.month, 7) // 7th of next month
-    };
+// ==================== PRE-SAVE MIDDLEWARE ====================
+payrollSchema.pre("save", async function (next) {
+  // Generate payslip number if approved and not already generated
+  if (this.status === "Approved" && !this.payslipNumber) {
+    const count = await this.constructor.countDocuments();
+    const year = this.year.toString().slice(-2);
+    const month = this.month.toString().padStart(2, "0");
+    this.payslipNumber = `PAY${year}${month}${(count + 1)
+      .toString()
+      .padStart(5, "0")}`;
   }
-  
-  // Calculate totals if not already calculated
-  if (!this.summary || this.summary.grossEarnings === 0) {
-    this.calculateTotals();
-  }
-  
-  // Ensure month and year are set from period
-  if (this.period && this.period.month && !this.month) {
-    this.month = this.period.month;
-  }
-  
-  if (this.period && this.period.year && !this.year) {
-    this.year = this.period.year;
-  }
-  
+
   next();
 });
 
-// Method to calculate totals - Updated to match frontend field names
-payrollSchema.methods.calculateTotals = function() {
-  // Calculate gross earnings from all earnings components
-  this.summary = this.summary || {};
-  this.summary.grossEarnings = Object.values(this.earnings || {}).reduce((sum, val) => sum + (val || 0), 0);
-  
-  // Calculate total deductions from all deductions components
-  this.summary.totalDeductions = Object.values(this.deductions || {}).reduce((sum, val) => sum + (val || 0), 0);
-  
-  // Calculate net salary
-  this.summary.netSalary = this.summary.grossEarnings - this.summary.totalDeductions;
-  this.summary.takeHomeSalary = this.summary.netSalary;
-  
-  // Calculate cost to company (gross + employer contributions)
-  this.summary.costToCompany = this.summary.grossEarnings + 
-    (this.deductions?.pfEmployer || 0) + 
-    (this.deductions?.esiEmployer || 0);
-  
-  // Also set the legacy fields for backward compatibility
-  this.grossSalary = this.summary.grossEarnings;
-  this.totalDeductions = this.summary.totalDeductions;
-  this.netSalary = this.summary.netSalary;
-  
-  return this.summary;
+// ==================== VIRTUAL PROPERTIES ====================
+payrollSchema.virtual("periodString").get(function () {
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  return `${months[this.month - 1]} ${this.year}`;
+});
+
+// ==================== METHODS ====================
+// Lock payroll record
+payrollSchema.methods.lock = function () {
+  this.isLocked = true;
+  return this.save();
 };
 
-// Method to add audit entry
-payrollSchema.methods.addAuditEntry = function(action, performedBy, remarks, ipAddress) {
-  this.auditTrail = this.auditTrail || [];
-  this.auditTrail.push({
-    action,
-    performedBy,
-    timestamp: new Date(),
-    remarks,
-    ipAddress
-  });
+// Unlock payroll record
+payrollSchema.methods.unlock = function () {
+  this.isLocked = false;
+  return this.save();
 };
 
-// Method to add history (for backward compatibility)
-payrollSchema.methods.addHistory = function(action, performedBy, remarks) {
-  this.history = this.history || [];
-  this.history.push({
-    action,
-    performedBy,
-    performedAt: new Date(),
-    remarks
-  });
-};
-
-// Method to approve payroll
-payrollSchema.methods.approve = function(approvedBy, remarks) {
-  this.status = "Approved";
-  this.approvedBy = approvedBy;
-  this.approvedAt = new Date();
-  
-  this.workflowStatus = this.workflowStatus || {};
-  this.workflowStatus.approvedBy = approvedBy;
-  this.workflowStatus.approvedAt = new Date();
-  this.workflowStatus.approvalRemarks = remarks;
-  
-  this.addAuditEntry("PAYROLL_APPROVED", approvedBy, remarks);
-  this.addHistory("Approved", approvedBy, remarks);
-};
-
-// Method to mark as paid
-payrollSchema.methods.markAsPaid = function(paidBy, paymentDetails) {
+// Mark as paid
+payrollSchema.methods.markAsPaid = function (paymentDetails) {
   this.status = "Paid";
-  this.paidBy = paidBy;
-  this.paidAt = new Date();
-  this.paymentDate = paymentDetails.date || new Date();
-  this.paymentMethod = paymentDetails.mode || "Bank Transfer";
-  this.paymentReference = paymentDetails.referenceNumber;
-  
-  this.workflowStatus = this.workflowStatus || {};
-  this.workflowStatus.paidBy = paidBy;
-  this.workflowStatus.paidAt = new Date();
-  
-  this.addAuditEntry("PAYROLL_PAID", paidBy, `Payment processed via ${this.paymentMethod}`);
-  this.addHistory("Paid", paidBy, `Payment reference: ${this.paymentReference}`);
+  this.isPaid = true;
+  this.paymentDetails = {
+    ...this.paymentDetails,
+    ...paymentDetails,
+    paymentDate: new Date(),
+  };
+  return this.save();
 };
 
-// Method to reject payroll
-payrollSchema.methods.reject = function(rejectedBy, remarks) {
-  this.status = "Rejected";
-  this.addAuditEntry("PAYROLL_REJECTED", rejectedBy, remarks);
-  this.addHistory("Rejected", rejectedBy, remarks);
+// Approve by role
+payrollSchema.methods.approveByRole = async function (role, userId, remarks) {
+  const approvalKey = `${role}Approval`;
+
+  if (!this.approvalWorkflow[approvalKey]) {
+    throw new Error(`Invalid approval role: ${role}`);
+  }
+
+  this.approvalWorkflow[approvalKey] = {
+    approved: true,
+    approvedBy: userId,
+    approvedAt: new Date(),
+    remarks: remarks || "",
+  };
+
+  // Check if all required approvals are done
+  const allApproved =
+    this.approvalWorkflow.managerApproval.approved &&
+    this.approvalWorkflow.hrApproval.approved &&
+    this.approvalWorkflow.financeApproval.approved;
+
+  if (allApproved && this.status === "Pending Approval") {
+    this.status = "Approved";
+  }
+
+  return this.save();
 };
 
-// Static method to get payroll by period
-payrollSchema.statics.findByPeriod = function(employeeId, month, year) {
+// ==================== STATIC METHODS ====================
+// Check if payroll exists for period
+payrollSchema.statics.existsForPeriod = function (employeeId, month, year) {
   return this.findOne({
     employee: employeeId,
-    month: month,
-    year: year
+    month,
+    year,
+    isDeleted: false,
   });
 };
 
-// Static method to get payrolls by status
-payrollSchema.statics.findByStatus = function(status, options = {}) {
-  const query = { status };
-  
-  if (options.year) {
-    query.year = options.year;
-  }
-  
-  if (options.month) {
-    query.month = options.month;
-  }
-  
-  if (options.department) {
-    // This would need population
-    return this.find(query).populate({
-      path: 'employee',
-      match: { department: options.department }
-    });
-  }
-  
-  return this.find(query);
+// Get payrolls by status
+payrollSchema.statics.getByStatus = function (status, filters = {}) {
+  return this.find({ status, isDeleted: false, ...filters })
+    .populate(
+      "employee",
+      "firstName lastName employeeId department designation"
+    )
+    .populate("generatedBy", "name email")
+    .sort({ createdAt: -1 });
 };
 
 const Payroll = mongoose.model("Payroll", payrollSchema);

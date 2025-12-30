@@ -531,6 +531,87 @@ salaryStructureSchema.methods.deactivate = function(effectiveTo) {
   this.effectiveTo = effectiveTo || new Date();
   return this.save();
 };
+// Add this static method to SalaryStructure model
+salaryStructureSchema.statics.createFromDesignation = async function(employeeId, designationId, ctc, effectiveFrom) {
+  const Designation = require('./Designation');
+  const designation = await Designation.findById(designationId);
+  
+  if (!designation) {
+    throw new Error('Designation not found');
+  }
+  
+  // Validate CTC
+  const ctcValidation = designation.isValidCTC(ctc);
+  if (!ctcValidation.valid) {
+    throw new Error(ctcValidation.message);
+  }
+  
+  // Generate salary components based on designation
+  const components = designation.generateDefaultSalaryStructure(ctc);
+  
+  // Create salary structure
+  const salaryStructure = new this({
+    employee: employeeId,
+    effectiveFrom: effectiveFrom || new Date(),
+    earnings: {
+      basic: components.basic,
+      hra: components.hra,
+      hraPercentage: components.hraPercentage,
+      da: components.da,
+      daPercentage: components.daPercentage,
+      specialAllowance: components.specialAllowance,
+      conveyance: components.conveyance,
+      medicalAllowance: components.medicalAllowance,
+      educationAllowance: 0,
+      lta: 0,
+      performanceBonus: 0,
+      otherAllowances: 0,
+      overtime: {
+        enabled: designation.benefits.overtimeEligible,
+        hourlyRate: 0
+      }
+    },
+    deductions: {
+      pf: {
+        applicable: designation.statutoryConfig.pfApplicable,
+        employeePercentage: 12,
+        employerPercentage: 12,
+        employeeContribution: 0,
+        employerContribution: 0,
+        maxWageLimit: 15000
+      },
+      esi: {
+        applicable: designation.statutoryConfig.esiApplicable,
+        employeePercentage: 0.75,
+        employerPercentage: 3.25,
+        employeeContribution: 0,
+        employerContribution: 0,
+        maxWageLimit: 21000
+      },
+      professionalTax: {
+        applicable: true,
+        amount: 200
+      },
+      tds: {
+        applicable: false,
+        regime: 'New',
+        monthlyTDS: 0,
+        annualTDS: 0
+      },
+      lwf: {
+        applicable: false,
+        employeeContribution: 0,
+        employerContribution: 0
+      }
+    }
+  });
+  
+  // Calculate and save
+  salaryStructure.calculateSalary();
+  await salaryStructure.save();
+  
+  return salaryStructure;
+};
 
 // ==================== STATIC: GET ACTIVE STRUCTURE ====================
 salaryStructureSchema.statics.getActiveStructure = function(employeeId, asOfDate = new Date()) {

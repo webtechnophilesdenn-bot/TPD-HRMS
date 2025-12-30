@@ -42,7 +42,7 @@ const Login = () => {
           <div className="inline-flex h-16 w-16 bg-indigo-600 rounded-xl items-center justify-center mb-4">
             <span className="text-white font-bold text-2xl">H</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900">HRMS Pro</h2>
+          <h2 className="text-3xl font-bold text-gray-900">TPD HRMS</h2>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
         </div>
 

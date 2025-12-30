@@ -1906,4 +1906,591 @@ const calculateLeavesByStatus = (leaves) => {
   }, {});
 };
 
+
+// Add to leaveController.js
+
+// ==================== APPLY WORK FROM HOME ====================
+exports.applyWorkFromHome = async (req, res, next) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      isHalfDay,
+      halfDayType,
+      reason
+    } = req.body;
+
+    const employee = await Employee.findOne({ userId: req.user._id });
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    // Date validation
+    const start = moment(startDate);
+    const end = moment(endDate);
+    const today = moment().startOf("day");
+
+    if (start.isBefore(today)) {
+      return sendResponse(res, 400, false, "Cannot apply for past dates");
+    }
+
+    // Calculate duration
+    let totalDays = calculateWorkingDays(start, end);
+    if (isHalfDay) {
+      totalDays = 0.5;
+    }
+
+    // Create WFH request (using Leave model with special type)
+    const wfhRequest = new Leave({
+      employee: employee._id,
+      leaveType: "Work From Home",
+      leaveTypeCode: "WFH",
+      startDate: start.toDate(),
+      endDate: end.toDate(),
+      totalDays,
+      isHalfDay,
+      halfDayType: isHalfDay ? halfDayType : null,
+      reason,
+      status: "Pending",
+      currentStage: "Manager"
+    });
+
+    // Setup approval workflow
+    if (employee.reportingManager) {
+      await setupApprovalWorkflow(wfhRequest, employee, { 
+        requiresApproval: true,
+        approvalWorkflow: "Manager" 
+      });
+    } else {
+      wfhRequest.status = "Approved";
+      wfhRequest.currentStage = "Completed";
+    }
+
+    wfhRequest.addHistory("Applied", employee._id, "WFH request submitted");
+    await wfhRequest.save();
+
+    await wfhRequest.populate("employee", "firstName lastName employeeId");
+
+    sendResponse(res, 201, true, "WFH request submitted successfully", { 
+      wfhRequest 
+    });
+  } catch (error) {
+    console.error("❌ Error in applyWorkFromHome:", error);
+    next(error);
+  }
+};
+
+// ==================== GET MY WFH REQUESTS ====================
+exports.getMyWFHRequests = async (req, res, next) => {
+  try {
+    const { year = moment().year(), status, page = 1, limit = 20 } = req.query;
+    
+    const employee = await Employee.findOne({ userId: req.user._id });
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    const query = { 
+      employee: employee._id,
+      leaveTypeCode: "WFH"
+    };
+
+    if (status) query.status = status;
+    if (year) {
+      query.startDate = {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`)
+      };
+    }
+
+    const wfhRequests = await Leave.find(query)
+      .populate("employee", "firstName lastName employeeId")
+      .populate("managerApproval.approvedBy", "firstName lastName")
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Leave.countDocuments(query);
+
+    sendResponse(res, 200, true, "WFH requests fetched successfully", {
+      wfhRequests,
+      pagination: {
+        total,
+        page: parseInt(page),
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== WORK FROM HOME (WFH) FUNCTIONS ====================
+
+// ✅ APPLY FOR WORK FROM HOME
+exports.applyWorkFromHome = async (req, res, next) => {
+  try {
+    const { startDate, endDate, isHalfDay, halfDayType, reason } = req.body;
+
+    console.log("🏠 Received WFH application:", { startDate, endDate, isHalfDay, reason });
+
+    // Get employee
+    const employee = await Employee.findOne({ userId: req.user.id });
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    console.log("✅ Employee found:", employee.employeeId, employee.firstName);
+
+    // Date validation
+    const start = moment(startDate);
+    const end = moment(endDate);
+    const today = moment().startOf("day");
+
+    if (start.isBefore(today)) {
+      return sendResponse(res, 400, false, "Cannot apply for past dates");
+    }
+
+    if (end.isBefore(start)) {
+      return sendResponse(res, 400, false, "End date cannot be before start date");
+    }
+
+    // Calculate duration
+    let totalDays = calculateWorkingDays(start, end);
+    if (isHalfDay) {
+      totalDays = 0.5;
+    }
+
+    console.log("📅 Duration calculated:", totalDays, "days");
+
+    // Check for overlapping WFH/leave requests
+    const overlapping = await Leave.findOne({
+      employee: employee._id,
+      status: { $in: ["Pending", "Approved"] },
+      $or: [
+        {
+          startDate: { $lte: end.toDate() },
+          endDate: { $gte: start.toDate() },
+        },
+      ],
+    });
+
+    if (overlapping) {
+      return sendResponse(
+        res,
+        400,
+        false,
+        "You already have a leave/WFH request for overlapping dates"
+      );
+    }
+
+    // Create WFH request (stored as Leave with special type)
+    const wfhRequest = new Leave({
+      employee: employee._id,
+      leaveType: "Work From Home",
+      leaveTypeCode: "WFH",
+      startDate: start.toDate(),
+      endDate: end.toDate(),
+      totalDays,
+      isHalfDay,
+      halfDayType: isHalfDay ? halfDayType : null,
+      reason,
+      ipAddress: req.ip,
+      userAgent: req.get("User-Agent"),
+      status: "Pending",
+      currentStage: "Manager",
+    });
+
+    console.log("📝 WFH request object created with status:", wfhRequest.status);
+
+    // Setup approval workflow
+    await setupApprovalWorkflow(wfhRequest, employee, { 
+      requiresApproval: true,
+      approvalWorkflow: "Manager" 
+    });
+
+    console.log("✅ Workflow setup complete");
+
+    // Set expiry for pending requests (7 days)
+    if (wfhRequest.status === "Pending") {
+      wfhRequest.expiresAt = moment().add(7, "days").toDate();
+    }
+
+    // Add to history
+    wfhRequest.addHistory("Applied", employee._id, "WFH request submitted");
+
+    console.log("💾 Saving WFH request to database...");
+    await wfhRequest.save();
+    console.log("✅ WFH request saved successfully with ID:", wfhRequest._id);
+
+    // Populate before sending response
+    await wfhRequest.populate("employee", "firstName lastName employeeId department");
+
+    console.log("📤 Sending response with WFH data");
+    sendResponse(res, 201, true, "WFH request submitted successfully", wfhRequest);
+  } catch (error) {
+    console.error("❌ Error in applyWorkFromHome:", error);
+    next(error);
+  }
+};
+
+// ✅ GET MY WFH REQUESTS
+exports.getMyWFHRequests = async (req, res, next) => {
+  try {
+    const {
+      year = moment().year(),
+      status,
+      page = 1,
+      limit = 20,
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    const employee = await Employee.findOne({ userId: req.user.id });
+    if (!employee) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    // Build query
+    const query = {
+      employee: employee._id,
+      leaveTypeCode: "WFH",
+    };
+
+    if (year) {
+      query.$or = [
+        {
+          startDate: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+        {
+          endDate: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      ];
+    }
+
+    if (status) {
+      query.status = status;
+    }
+
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    const wfhRequests = await Leave.find(query)
+      .populate("employee", "firstName lastName employeeId department")
+      .populate("managerApproval.approvedBy", "firstName lastName")
+      .populate("hrApproval.approvedBy", "firstName lastName")
+      .populate("history.performedBy", "firstName lastName")
+      .sort(sort)
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+
+    const total = await Leave.countDocuments(query);
+
+    // Calculate summary
+    const allWFH = await Leave.find({
+      employee: employee._id,
+      leaveTypeCode: "WFH",
+      startDate: {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`),
+      },
+    });
+
+    const summary = {
+      total: allWFH.length,
+      approved: allWFH.filter((w) => w.status === "Approved").length,
+      pending: allWFH.filter((w) => w.status === "Pending").length,
+      rejected: allWFH.filter((w) => w.status === "Rejected").length,
+      totalDays: allWFH
+        .filter((w) => w.status === "Approved")
+        .reduce((sum, wfh) => sum + wfh.totalDays, 0),
+    };
+
+    sendResponse(res, 200, true, "WFH requests fetched successfully", {
+      wfhRequests,
+      summary,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalRecords: total,
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getMyWFHRequests:", error);
+    next(error);
+  }
+};
+
+// ✅ GET PENDING WFH REQUESTS (Manager/HR/Admin)
+exports.getPendingWFHRequests = async (req, res, next) => {
+  try {
+    const { department, employeeId, year, page = 1, limit = 20 } = req.query;
+
+    const approver = await Employee.findOne({ userId: req.user.id });
+    if (!approver) {
+      return sendResponse(res, 404, false, "Approver not found");
+    }
+
+    // Build base query
+    let query = {
+      leaveTypeCode: "WFH",
+      status: "Pending",
+    };
+
+    // Role-based filtering
+    if (req.user.role === "admin") {
+      // Admin sees ALL pending WFH requests
+      console.log("👤 Admin: Showing all pending WFH requests");
+    } else if (req.user.role === "manager") {
+      // Managers see only their team/department
+      query.$or = [
+        {
+          currentStage: "Manager",
+          approvers: {
+            $elemMatch: {
+              employee: approver._id,
+              level: "Manager",
+              status: "Pending",
+            },
+          },
+        },
+        {
+          currentStage: "Manager",
+          employee: {
+            $in: (
+              await Employee.find({ reportingManager: approver._id }).select("_id")
+            ).map((e) => e._id),
+          },
+        },
+      ];
+    } else if (req.user.role === "hr") {
+      // HR sees HR-stage WFH only
+      query.$or = [
+        { currentStage: "HR" },
+        {
+          approvers: {
+            $elemMatch: { level: "HR", status: "Pending" },
+          },
+        },
+      ];
+    }
+
+    // Additional filters
+    if (employeeId) {
+      const employee = await Employee.findOne({ employeeId });
+      if (employee) {
+        query.employee = employee._id;
+      }
+    }
+
+    if (department) {
+      const deptEmployees = await Employee.find({ department }).select("_id");
+      const empIds = deptEmployees.map((e) => e._id);
+      
+      if (query.employee) {
+        // If employee filter exists, intersect with department
+        if (!empIds.some((id) => id.equals(query.employee))) {
+          query.employee = { $in: [] }; // No match
+        }
+      } else {
+        query.employee = { $in: empIds };
+      }
+    }
+
+    if (year) {
+      query.startDate = {
+        $gte: new Date(`${year}-01-01`),
+        $lte: new Date(`${year}-12-31`),
+      };
+    }
+
+    console.log("🔍 Pending WFH query:", JSON.stringify(query, null, 2));
+
+    const wfhRequests = await Leave.find(query)
+      .populate("employee", "firstName lastName employeeId department designation")
+      .populate("approvers.employee", "firstName lastName")
+      .populate("managerApproval.approvedBy", "firstName lastName")
+      .populate("hrApproval.approvedBy", "firstName lastName")
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    const total = await Leave.countDocuments(query);
+
+    console.log(
+      `✅ Found ${wfhRequests.length} pending WFH requests out of ${total} total for role ${req.user.role}`
+    );
+
+    sendResponse(res, 200, true, "Pending WFH requests fetched successfully", {
+      wfhRequests,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalRecords: total,
+        hasNext: parseInt(page) * parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Error in getPendingWFHRequests:", error);
+    next(error);
+  }
+};
+
+// ✅ UPDATE WFH STATUS (Approve/Reject)
+exports.updateWFHStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, comments } = req.body;
+
+    console.log("🔄 Processing WFH status update:", id, "new status:", status);
+
+    const approver = await Employee.findOne({ userId: req.user.id });
+    if (!approver) {
+      return sendResponse(res, 404, false, "Approver not found");
+    }
+
+    const wfhRequest = await Leave.findById(id).populate("employee");
+    if (!wfhRequest || wfhRequest.leaveTypeCode !== "WFH") {
+      return sendResponse(res, 404, false, "WFH request not found");
+    }
+
+    console.log(
+      "📋 WFH details:",
+      "employeeId:",
+      wfhRequest.employee._id,
+      "days:",
+      wfhRequest.totalDays,
+      "currentStatus:",
+      wfhRequest.status,
+      "currentStage:",
+      wfhRequest.currentStage,
+      "approverRole:",
+      req.user.role
+    );
+
+    // Check if approver has permission
+    const canApprove = await checkApprovalPermission(
+      wfhRequest,
+      approver,
+      req.user.role
+    );
+    if (!canApprove) {
+      return sendResponse(
+        res,
+        403,
+        false,
+        "Not authorized to approve this WFH request"
+      );
+    }
+
+    // Admin can approve at ANY stage
+    if (req.user.role === "admin") {
+      console.log(
+        "👤 Admin override - approving at current stage:",
+        wfhRequest.currentStage
+      );
+
+      // Update appropriate approval based on current stage
+      if (wfhRequest.currentStage === "Manager") {
+        wfhRequest.managerApproval = {
+          status,
+          comments,
+          approvedBy: approver._id,
+          approvedOn: new Date(),
+        };
+      } else if (wfhRequest.currentStage === "HR") {
+        wfhRequest.hrApproval = {
+          status,
+          comments,
+          approvedBy: approver._id,
+          approvedOn: new Date(),
+        };
+      }
+
+      // For admins, always finalize the request
+      wfhRequest.status = status;
+      wfhRequest.currentStage = "Completed";
+    }
+    // Manager approval logic
+    else if (req.user.role === "manager") {
+      wfhRequest.currentStage = "Manager";
+      wfhRequest.managerApproval = {
+        status,
+        comments,
+        approvedBy: approver._id,
+        approvedOn: new Date(),
+      };
+
+      if (status === "Approved") {
+        // WFH typically doesn't need HR approval, finalize immediately
+        wfhRequest.currentStage = "Completed";
+        wfhRequest.status = "Approved";
+      } else {
+        wfhRequest.status = "Rejected";
+        wfhRequest.currentStage = "Completed";
+      }
+    }
+    // HR approval logic
+    else if (req.user.role === "hr") {
+      wfhRequest.currentStage = "HR";
+      wfhRequest.hrApproval = {
+        status,
+        comments,
+        approvedBy: approver._id,
+        approvedOn: new Date(),
+      };
+
+      wfhRequest.status = status;
+      wfhRequest.currentStage = "Completed";
+    } else {
+      return sendResponse(
+        res,
+        403,
+        false,
+        `Cannot approve WFH at ${wfhRequest.currentStage} stage with ${req.user.role} role`
+      );
+    }
+
+    // Add to history
+    wfhRequest.addHistory(
+      status,
+      approver._id,
+      comments || `WFH request ${status.toLowerCase()} by ${req.user.role}`
+    );
+
+    // Remove expiry if approved
+    if (wfhRequest.status === "Approved") {
+      wfhRequest.expiresAt = null;
+    }
+
+    await wfhRequest.save();
+
+    // Populate for response
+    await wfhRequest.populate("managerApproval.approvedBy", "firstName lastName");
+    await wfhRequest.populate("hrApproval.approvedBy", "firstName lastName");
+
+    console.log(`✅ WFH request ${status.toLowerCase()} successfully`);
+
+    sendResponse(
+      res,
+      200,
+      true,
+      `WFH request ${status.toLowerCase()} successfully`,
+      wfhRequest
+    );
+  } catch (error) {
+    console.error("❌ Error in updateWFHStatus:", error);
+    next(error);
+  }
+};
+
 module.exports = exports;

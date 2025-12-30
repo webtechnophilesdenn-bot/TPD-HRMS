@@ -269,3 +269,143 @@ exports.sendEventReminders = async (req, res, next) => {
     next(error);
   }
 };
+
+
+// Add to eventController.js
+
+// ==================== GET BIRTHDAY CALENDAR ====================
+exports.getBirthdayCalendar = async (req, res, next) => {
+  try {
+    const { month, year = moment().year() } = req.query;
+    
+    let query = { 
+      status: "Active",
+      dateOfBirth: { $exists: true, $ne: null }
+    };
+
+    const employees = await Employee.find(query)
+      .select("firstName lastName employeeId dateOfBirth department profilePicture")
+      .populate("department", "name");
+
+    // Filter by month if specified
+    let birthdayList = employees.map(emp => {
+      const dob = moment(emp.dateOfBirth);
+      return {
+        _id: emp._id,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        fullName: `${emp.firstName} ${emp.lastName}`,
+        employeeId: emp.employeeId,
+        department: emp.department?.name || "N/A",
+        profilePicture: emp.profilePicture,
+        dateOfBirth: emp.dateOfBirth,
+        birthMonth: dob.month() + 1,
+        birthDay: dob.date(),
+        birthdayThisYear: moment(`${year}-${dob.format('MM-DD')}`).toDate(),
+        age: year - dob.year()
+      };
+    });
+
+    // Filter by month if provided
+    if (month) {
+      birthdayList = birthdayList.filter(b => b.birthMonth === parseInt(month));
+    }
+
+    // Sort by birth day
+    birthdayList.sort((a, b) => {
+      if (a.birthMonth === b.birthMonth) {
+        return a.birthDay - b.birthDay;
+      }
+      return a.birthMonth - b.birthMonth;
+    });
+
+    // Find today's and upcoming birthdays
+    const today = moment();
+    const upcomingBirthdays = birthdayList.filter(b => {
+      const birthday = moment(b.birthdayThisYear);
+      return birthday.isSameOrAfter(today, 'day') && 
+             birthday.isBefore(today.clone().add(30, 'days'), 'day');
+    });
+
+    const todaysBirthdays = birthdayList.filter(b => {
+      return moment(b.birthdayThisYear).isSame(today, 'day');
+    });
+
+    sendResponse(res, 200, true, "Birthday calendar fetched successfully", {
+      allBirthdays: birthdayList,
+      todaysBirthdays,
+      upcomingBirthdays: upcomingBirthdays.slice(0, 10),
+      totalEmployees: birthdayList.length
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== SEND BIRTHDAY WISH ====================
+exports.sendBirthdayWish = async (req, res, next) => {
+  try {
+    const { employeeId } = req.params;
+    const { message } = req.body;
+
+    const sender = await Employee.findOne({ userId: req.user._id });
+    const receiver = await Employee.findById(employeeId);
+
+    if (!receiver) {
+      return sendResponse(res, 404, false, "Employee not found");
+    }
+
+    // Create a birthday wish record (you can store in Event or create BirthdayWish model)
+    const wish = {
+      from: sender._id,
+      to: receiver._id,
+      message,
+      sentOn: new Date()
+    };
+
+    // Store wish in employee's record or separate collection
+    // For now, you can use Event model with type "Birthday"
+    const birthdayEvent = await Event.create({
+      title: `Birthday Wish for ${receiver.firstName}`,
+      description: message,
+      type: "Birthday",
+      startDate: new Date(),
+      endDate: new Date(),
+      organizer: sender._id,
+      attendees: [{
+        employee: receiver._id,
+        rsvpStatus: "Accepted"
+      }],
+      visibility: "Private"
+    });
+
+    sendResponse(res, 200, true, "Birthday wish sent successfully", {
+      wish: {
+        to: `${receiver.firstName} ${receiver.lastName}`,
+        message,
+        sentOn: wish.sentOn
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==================== GET BIRTHDAY WISHES FOR ME ====================
+exports.getMyBirthdayWishes = async (req, res, next) => {
+  try {
+    const employee = await Employee.findOne({ userId: req.user._id });
+    
+    const wishes = await Event.find({
+      type: "Birthday",
+      "attendees.employee": employee._id
+    })
+      .populate("organizer", "firstName lastName profilePicture")
+      .sort({ startDate: -1 })
+      .limit(50);
+
+    sendResponse(res, 200, true, "Birthday wishes fetched successfully", wishes);
+  } catch (error) {
+    next(error);
+  }
+};

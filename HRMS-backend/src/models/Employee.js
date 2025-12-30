@@ -1,3 +1,4 @@
+// models/Employee.js
 const mongoose = require("mongoose");
 
 const employeeSchema = new mongoose.Schema(
@@ -141,6 +142,30 @@ const employeeSchema = new mongoose.Schema(
       },
     },
 
+    // ==================== BIRTHDAY WISHES ====================
+    // ✅ NEW: Array of birthday wishes received
+    birthdayWishes: [
+      {
+        wisherId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Employee",
+        },
+        wisherName: {
+          type: String,
+          required: true,
+        },
+        message: {
+          type: String,
+          required: true,
+          maxlength: 500,
+        },
+        wishedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
     isActive: { type: Boolean, default: true },
   },
   {
@@ -155,6 +180,7 @@ employeeSchema.index({ employeeId: 1 }, { unique: true });
 employeeSchema.index({ userId: 1 }, { unique: true });
 employeeSchema.index({ department: 1, status: 1 });
 employeeSchema.index({ status: 1 });
+employeeSchema.index({ dateOfBirth: 1 }); // ✅ NEW: Index for birthday queries
 
 // Virtuals
 employeeSchema.virtual("fullName").get(function () {

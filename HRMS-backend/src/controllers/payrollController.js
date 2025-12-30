@@ -1,814 +1,583 @@
-// controllers/payrollController.js
+// controllers/payrollController.js - COMPLETE WITH ATTENDANCE INTEGRATION
 const Payroll = require('../models/Payroll');
-const Employee = require('../models/Employee');
 const SalaryStructure = require('../models/SalaryStructure');
+const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
+const Leave = require('../models/Leave');
 const Loan = require('../models/Loan');
 const Advance = require('../models/Advance');
-const { sendResponse } = require('../utils/responseHandler');
 const moment = require('moment');
-const PDFDocument = require('pdfkit');
+const { sendResponse } = require('../utils/responseHandler');
+
 // ==================== HELPER FUNCTIONS ====================
 
 /**
- * Calculate attendance summary for payroll period
+ * Calculate attendance summary for an employee in a month
  */
-const calculateAttendanceSummary = (attendanceRecords, startDate, endDate) => {
-  const totalDays = endDate.diff(startDate, 'days') + 1;
-  let presentDays = 0;
-  let absentDays = 0;
-  let halfDays = 0;
-  let paidLeaves = 0;
-  let unpaidLeaves = 0;
-  let sickLeaves = 0;
-  let casualLeaves = 0;
-  let holidays = 0;
-  let weekends = 0;
-  let overtimeHours = 0;
-
-  // Count weekends
-  for (let d = moment(startDate); d.isSameOrBefore(endDate); d.add(1, 'day')) {
-    if (d.day() === 0 || d.day() === 6) {
-      weekends++;
-    }
-  }
-
-  // Process attendance records
-  attendanceRecords.forEach((record) => {
-    if (record.status === 'Present') {
-      presentDays++;
-      if (record.overtimeHours) overtimeHours += record.overtimeHours;
-    } else if (record.status === 'Absent') {
-      absentDays++;
-    } else if (record.status === 'Half Day') {
-      halfDays++;
-    } else if (record.status === 'Leave') {
-      if (record.leaveType === 'Paid Leave' || record.leaveType === 'Casual Leave') {
-        paidLeaves++;
-        casualLeaves++;
-      } else if (record.leaveType === 'Sick Leave') {
-        paidLeaves++;
-        sickLeaves++;
-      } else if (record.leaveType === 'Unpaid Leave' || record.leaveType === 'Loss of Pay') {
-        unpaidLeaves++;
-      }
-    } else if (record.status === 'Holiday') {
-      holidays++;
+const calculateAttendanceSummary = async (employeeId, month, year) => {
+  const startDate = moment({ year, month: month - 1, day: 1 }).startOf('month');
+  const endDate = moment(startDate).endOf('month');
+  
+  // Get total working days (excluding Sundays)
+  const totalWorkingDays = getWorkingDaysInMonth(year, month);
+  
+  // Fetch attendance records
+  const attendanceRecords = await Attendance.find({
+    employee: employeeId,
+    date: {
+      $gte: startDate.toDate(),
+      $lte: endDate.toDate()
     }
   });
 
-  const totalWorkingDays = totalDays - weekends - holidays;
-  const paidDays = presentDays + halfDays * 0.5 + paidLeaves;
-  const lossOfPayDays = unpaidLeaves + absentDays;
+  // Fetch approved leaves in this month
+  const approvedLeaves = await Leave.find({
+    employee: employeeId,
+    status: 'Approved',
+    $or: [
+      {
+        startDate: { $gte: startDate.toDate(), $lte: endDate.toDate() }
+      },
+      {
+        endDate: { $gte: startDate.toDate(), $lte: endDate.toDate() }
+      },
+      {
+        startDate: { $lte: startDate.toDate() },
+        endDate: { $gte: endDate.toDate() }
+      }
+    ]
+  }).populate('leaveType');
 
-  return {
-    presentDays,
-    absentDays,
-    halfDays,
-    holidays,
-    weekends,
-    totalWorkingDays,
-    paidDays: Math.round(paidDays * 10) / 10,
-    lossOfPayDays,
-    overtimeHours,
-    paidLeaves,
-    unpaidLeaves,
-    sickLeaves,
-    casualLeaves,
-    attendancePercentage: totalWorkingDays > 0 ? parseFloat(((paidDays / totalWorkingDays) * 100).toFixed(2)) : 0,
+  const summary = {
+    totalWorkingDays: totalWorkingDays,
+    presentDays: 0,
+    absentDays: 0,
+    halfDays: 0,
+    paidLeaveDays: 0,
+    unpaidLeaveDays: 0,
+    weekendDays: 0,
+    holidayDays: 0,
+    lossOfPayDays: 0,
+    paidDays: 0,
+    overtimeHours: 0,
+    totalWorkingHours: 0,
+    lateCount: 0,
+    earlyCheckoutCount: 0
   };
+
+  // Process attendance records
+  attendanceRecords.forEach(record => {
+    summary.totalWorkingHours += (record.workingHours || 0);
+    summary.overtimeHours += (record.overtime || 0);
+    
+    if (record.isLate) summary.lateCount++;
+    if (record.isEarlyCheckout) summary.earlyCheckoutCount++;
+
+    switch (record.status) {
+      case 'Present':
+        summary.presentDays += 1;
+        break;
+      case 'Absent':
+        summary.absentDays += 1;
+        summary.lossOfPayDays += 1;
+        break;
+      case 'Half-Day':
+        summary.halfDays += 1;
+        summary.presentDays += 0.5;
+        summary.lossOfPayDays += 0.5;
+        break;
+      case 'On Leave':
+        // Check if it's paid or unpaid leave from Leave model
+        const leaveForDate = approvedLeaves.find(leave => {
+          const leaveStart = moment(leave.startDate);
+          const leaveEnd = moment(leave.endDate);
+          const recordDate = moment(record.date);
+          return recordDate.isBetween(leaveStart, leaveEnd, null, '[]');
+        });
+        
+        if (leaveForDate && leaveForDate.leaveType && leaveForDate.leaveType.isPaid) {
+          summary.paidLeaveDays += 1;
+        } else {
+          summary.unpaidLeaveDays += 1;
+          summary.lossOfPayDays += 1;
+        }
+        break;
+      case 'Holiday':
+        summary.holidayDays += 1;
+        break;
+      case 'Week-Off':
+        summary.weekendDays += 1;
+        break;
+    }
+  });
+
+  // Calculate paid days (total working days - LOP days)
+  summary.paidDays = Math.max(0, summary.totalWorkingDays - summary.lossOfPayDays);
+
+  // If no attendance records for some days, count them as absent (LOP)
+  const recordedWorkingDays = attendanceRecords.filter(a => 
+    !['Week-Off', 'Holiday'].includes(a.status)
+  ).length;
+  const missingDays = totalWorkingDays - recordedWorkingDays;
+  
+  if (missingDays > 0) {
+    summary.absentDays += missingDays;
+    summary.lossOfPayDays += missingDays;
+    summary.paidDays = Math.max(0, summary.totalWorkingDays - summary.lossOfPayDays);
+  }
+
+  return summary;
 };
 
 /**
- * Calculate loan recovery for the month
+ * Get working days in a month (excluding Sundays)
  */
-const calculateLoanRecovery = async (employeeId, month, year) => {
+const getWorkingDaysInMonth = (year, month) => {
+  const startDate = moment({ year, month: month - 1, day: 1 });
+  const endDate = moment(startDate).endOf('month');
+  
+  let workingDays = 0;
+  let currentDate = moment(startDate);
+
+  while (currentDate.isSameOrBefore(endDate)) {
+    const dayOfWeek = currentDate.day();
+    // Exclude Sundays (0) - adjust based on your company policy
+    if (dayOfWeek !== 0) {
+      workingDays++;
+    }
+    currentDate.add(1, 'day');
+  }
+
+  return workingDays;
+};
+
+/**
+ * Calculate pro-rata salary based on paid days
+ */
+const calculateProRataSalary = (fullAmount, paidDays, totalWorkingDays) => {
+  if (totalWorkingDays === 0) return 0;
+  return Math.round((fullAmount * paidDays) / totalWorkingDays);
+};
+
+/**
+ * Calculate LOP (Loss of Pay) deduction
+ */
+const calculateLOPDeduction = (basicSalary, lopDays, totalWorkingDays) => {
+  if (totalWorkingDays === 0) return 0;
+  return Math.round((basicSalary * lopDays) / totalWorkingDays);
+};
+
+/**
+ * Calculate overtime amount
+ */
+const calculateOvertimeAmount = (basicSalary, overtimeHours, totalWorkingDays) => {
+  if (overtimeHours <= 0) return 0;
+  
+  // Calculate hourly rate (assuming 8 hours per day)
+  const hourlyRate = basicSalary / (totalWorkingDays * 8);
+  
+  // Overtime is paid at 1.5x or 2x rate (adjust as per company policy)
+  const overtimeRate = hourlyRate * 1.5;
+  
+  return Math.round(overtimeRate * overtimeHours);
+};
+
+/**
+ * Process loan recovery for the month
+ */
+const processLoanRecovery = async (employeeId, month, year) => {
   const activeLoans = await Loan.find({
     employee: employeeId,
     status: 'Active',
-    'repayment.startDate': { $lte: new Date(year, month - 1, 1) },
+    'repayment.startDate': { 
+      $lte: moment({ year, month: month - 1 }).endOf('month').toDate() 
+    }
   });
 
   let totalRecovery = 0;
-  const loanDetails = [];
+  const loanRecoveries = [];
 
   for (const loan of activeLoans) {
-    if (loan.outstandingAmount > 0) {
-      const emiAmount = Math.min(loan.repayment?.emiAmount || 0, loan.outstandingAmount);
-      totalRecovery += emiAmount;
+    const emiAmount = loan.repayment.emiAmount || 0;
+    
+    if (emiAmount > 0 && loan.repayment.remainingAmount > 0) {
+      const recoveryAmount = Math.min(emiAmount, loan.repayment.remainingAmount);
       
-      loanDetails.push({
+      totalRecovery += recoveryAmount;
+      loanRecoveries.push({
         loanId: loan._id,
-        emiAmount,
-        outstandingBefore: loan.outstandingAmount,
-        outstandingAfter: loan.outstandingAmount - emiAmount
+        amount: recoveryAmount,
+        emiNumber: loan.repayment.paidInstallments + 1
       });
     }
   }
 
-  return { amount: totalRecovery, loanDetails };
+  return { totalRecovery, loanRecoveries };
 };
 
 /**
- * Calculate advance recovery for the month
+ * Process advance recovery for the month
  */
-const calculateAdvanceRecovery = async (employeeId, month, year) => {
+const processAdvanceRecovery = async (employeeId, month, year) => {
   const activeAdvances = await Advance.find({
     employee: employeeId,
     status: 'Active',
-    'recovery.startDate': { $lte: new Date(year, month - 1, 1) },
-    'recovery.endDate': { $gte: new Date(year, month - 1, 1) },
+    'recovery.startDate': { 
+      $lte: moment({ year, month: month - 1 }).endOf('month').toDate() 
+    }
   });
 
   let totalRecovery = 0;
-  const advanceDetails = [];
+  const advanceRecoveries = [];
 
   for (const advance of activeAdvances) {
-    if (advance.outstandingAmount > 0) {
-      const recoveryAmount = Math.min(
-        advance.recovery?.monthlyRecovery || 0,
-        advance.outstandingAmount
-      );
-      totalRecovery += recoveryAmount;
+    const installmentAmount = advance.recovery.monthlyInstallment || 0;
+    
+    if (installmentAmount > 0 && advance.recovery.remainingAmount > 0) {
+      const recoveryAmount = Math.min(installmentAmount, advance.recovery.remainingAmount);
       
-      advanceDetails.push({
+      totalRecovery += recoveryAmount;
+      advanceRecoveries.push({
         advanceId: advance._id,
-        recoveryAmount,
-        outstandingBefore: advance.outstandingAmount,
-        outstandingAfter: advance.outstandingAmount - recoveryAmount
+        amount: recoveryAmount,
+        installmentNumber: advance.recovery.paidInstallments + 1
       });
     }
   }
 
-  return { amount: totalRecovery, advanceDetails };
+  return { totalRecovery, advanceRecoveries };
 };
 
-// ==================== GENERATE MONTHLY PAYROLL (ENHANCED) ====================
+// ==================== MAIN PAYROLL GENERATION ====================
+
+/**
+ * @desc    Generate payroll for employees
+ * @route   POST /api/v1/payroll/generate
+ * @access  Private (HR, Admin)
+ */
 exports.generatePayroll = async (req, res, next) => {
   try {
-    const { month, year, department, includeInactive = false, employeeIds } = req.body;
-    console.log('🔄 Generating payroll for', { month, year, department });
+    const { month, year, department, includeInactive = false, sendNotifications = true, processOvertime = true } = req.body;
 
+    // Validate inputs
     if (!month || !year) {
       return sendResponse(res, 400, false, 'Month and year are required');
     }
 
-    const employeeFilter = {
-      status: includeInactive ? { $in: ['Active', 'Inactive', 'On Leave'] } : 'Active',
+    const currentMonth = parseInt(month);
+    const currentYear = parseInt(year);
+
+    // Build employee query
+    const employeeQuery = {
+      isActive: includeInactive ? { $in: [true, false] } : true
     };
-    if (department) employeeFilter.department = department;
-    if (employeeIds && employeeIds.length > 0) {
-      employeeFilter._id = { $in: employeeIds };
+
+    if (department) {
+      employeeQuery.department = department;
     }
 
-    const employees = await Employee.find(employeeFilter)
-      .populate('department')
-      .populate('designation')
-      .populate('currentSalaryStructure');
+    // Fetch eligible employees
+    const employees = await Employee.find(employeeQuery)
+      .populate('department designation currentSalaryStructure');
 
     if (employees.length === 0) {
-      return sendResponse(res, 404, false, 'No employees found for payroll generation');
+      return sendResponse(res, 404, false, 'No eligible employees found');
     }
 
-    const payrollRecords = [];
-    const errors = [];
-    const warnings = [];
-    const startDate = moment(`${year}-${String(month).padStart(2, '0')}-01`).startOf('month');
-    const endDate = moment(startDate).endOf('month');
-    const paymentDate = moment(startDate).add(1, 'month').date(7);
+    const results = {
+      success: [],
+      failed: [],
+      summary: {
+        total: employees.length,
+        success: 0,
+        failed: 0,
+        totalGrossPaid: 0,
+        totalDeductions: 0,
+        totalNetPaid: 0
+      }
+    };
 
-    // ✅ ENHANCED VALIDATION LOOP
+    // Process each employee
     for (const employee of employees) {
       try {
-        // ✅ CHECK 1: Check for existing payroll
+        // Check if salary structure exists
+        if (!employee.currentSalaryStructure) {
+          results.failed.push({
+            employeeId: employee.employeeId,
+            name: `${employee.firstName} ${employee.lastName}`,
+            error: 'No active salary structure found'
+          });
+          continue;
+        }
+
+        // Check if payroll already exists
         const existingPayroll = await Payroll.findOne({
           employee: employee._id,
-          'period.month': month,
-          'period.year': year,
+          month: currentMonth,
+          year: currentYear
         });
 
         if (existingPayroll) {
-          warnings.push({
+          results.failed.push({
             employeeId: employee.employeeId,
             name: `${employee.firstName} ${employee.lastName}`,
-            message: 'Payroll already exists for this period',
-            status: existingPayroll.status,
-            existingPayrollId: existingPayroll._id,
+            error: 'Payroll already generated for this month'
           });
           continue;
         }
 
-        // ✅ CHECK 2: Validate salary structure EXISTS and is ACTIVE
-        let salaryStructure = employee.currentSalaryStructure;
-        
-        if (!salaryStructure) {
-          salaryStructure = await SalaryStructure.findOne({
-            employee: employee._id,
-            isActive: true,
-            effectiveFrom: { $lte: new Date(year, month - 1, 1) } // Must be effective by payroll period
-          }).sort({ effectiveFrom: -1 });
-        }
+        const salaryStructure = employee.currentSalaryStructure;
 
-        if (!salaryStructure) {
-          errors.push({
-            employeeId: employee.employeeId,
-            name: `${employee.firstName} ${employee.lastName}`,
-            error: 'No active salary structure found',
-            action: 'Create salary structure before generating payroll',
-            department: employee.department?.name,
-            designation: employee.designation?.title,
-          });
-          continue; // ✅ SKIP this employee
-        }
-
-        // ✅ CHECK 3: Validate salary structure has basic salary > 0
-        if (!salaryStructure.earnings || !salaryStructure.earnings.basic || salaryStructure.earnings.basic === 0) {
-          errors.push({
-            employeeId: employee.employeeId,
-            name: `${employee.firstName} ${employee.lastName}`,
-            error: 'Salary structure exists but basic salary is zero or missing',
-            action: 'Update salary structure with valid basic salary',
-          });
-          continue;
-        }
-
-        // ✅ CHECK 4: Validate bank details (optional but recommended)
-        if (!employee.bankDetails || !employee.bankDetails.accountNumber) {
-          warnings.push({
-            employeeId: employee.employeeId,
-            name: `${employee.firstName} ${employee.lastName}`,
-            message: 'Bank details missing - payroll will be generated but payment may fail',
-          });
-        }
-
-        // ✅ Proceed with payroll generation - ALL VALIDATIONS PASSED
-        const attendanceRecords = await Attendance.find({
-          employee: employee._id,
-          date: { $gte: startDate.toDate(), $lte: endDate.toDate() },
-        });
-
-        const attendanceSummary = calculateAttendanceSummary(attendanceRecords, startDate, endDate);
-
-        // Calculate Loan & Advance recovery
-        const loanRecovery = await calculateLoanRecovery(employee._id, month, year);
-        const advanceRecovery = await calculateAdvanceRecovery(employee._id, month, year);
-
-        console.log(`💰 Employee ${employee.employeeId} - Loan: ₹${loanRecovery.amount}, Advance: ₹${advanceRecovery.amount}`);
-
-        const payrollCalc = salaryStructure.calculateMonthlyPayroll(
-          attendanceSummary.paidDays,
-          attendanceSummary.totalWorkingDays,
-          attendanceSummary.overtimeHours || 0,
-          {
-            loanRecovery: loanRecovery.amount,
-            advanceRecovery: advanceRecovery.amount,
-            other: 0,
-          }
+        // ===== ATTENDANCE CALCULATION =====
+        const attendanceSummary = await calculateAttendanceSummary(
+          employee._id,
+          currentMonth,
+          currentYear
         );
 
+        // Calculate pro-rata salary based on attendance
+        const totalWorkingDays = attendanceSummary.totalWorkingDays;
+        const paidDays = attendanceSummary.paidDays;
+        const lopDays = attendanceSummary.lossOfPayDays;
+
+        // ===== EARNINGS CALCULATION =====
+        const earnings = {
+          basic: calculateProRataSalary(salaryStructure.earnings.basic, paidDays, totalWorkingDays),
+          hra: calculateProRataSalary(salaryStructure.earnings.hra, paidDays, totalWorkingDays),
+          specialAllowance: calculateProRataSalary(salaryStructure.earnings.specialAllowance, paidDays, totalWorkingDays),
+          conveyance: calculateProRataSalary(salaryStructure.earnings.conveyance, paidDays, totalWorkingDays),
+          medicalAllowance: calculateProRataSalary(salaryStructure.earnings.medicalAllowance, paidDays, totalWorkingDays),
+          educationAllowance: calculateProRataSalary(salaryStructure.earnings.educationAllowance || 0, paidDays, totalWorkingDays),
+          lta: calculateProRataSalary(salaryStructure.earnings.lta || 0, paidDays, totalWorkingDays),
+          otherAllowances: calculateProRataSalary(salaryStructure.earnings.otherAllowances || 0, paidDays, totalWorkingDays),
+          overtime: 0
+        };
+
+        // Add overtime if enabled and exists
+        if (processOvertime && attendanceSummary.overtimeHours > 0) {
+          earnings.overtime = calculateOvertimeAmount(
+            salaryStructure.earnings.basic,
+            attendanceSummary.overtimeHours,
+            totalWorkingDays
+          );
+        }
+
+        // Calculate gross earnings
+        const grossEarnings = Object.values(earnings).reduce((sum, val) => sum + val, 0);
+
+        // ===== DEDUCTIONS CALCULATION =====
+        const deductions = {
+          pfEmployee: calculateProRataSalary(salaryStructure.deductions.pf.employeeContribution, paidDays, totalWorkingDays),
+          pfEmployer: calculateProRataSalary(salaryStructure.deductions.pf.employerContribution, paidDays, totalWorkingDays),
+          esiEmployee: salaryStructure.deductions.esi.applicable 
+            ? calculateProRataSalary(salaryStructure.deductions.esi.employeeContribution, paidDays, totalWorkingDays)
+            : 0,
+          esiEmployer: salaryStructure.deductions.esi.applicable
+            ? calculateProRataSalary(salaryStructure.deductions.esi.employerContribution, paidDays, totalWorkingDays)
+            : 0,
+          professionalTax: salaryStructure.deductions.professionalTax.applicable
+            ? salaryStructure.deductions.professionalTax.amount
+            : 0,
+          tds: salaryStructure.deductions.tds.applicable
+            ? salaryStructure.deductions.tds.monthlyTDS
+            : 0,
+          lossOfPay: calculateLOPDeduction(salaryStructure.earnings.basic, lopDays, totalWorkingDays),
+          loanRecovery: null,
+          advanceRecovery: null,
+          otherDeductions: 0
+        };
+
+        // Process loan recovery
+        const loanRecovery = await processLoanRecovery(employee._id, currentMonth, currentYear);
+        if (loanRecovery.totalRecovery > 0) {
+          deductions.loanRecovery = {
+            amount: loanRecovery.totalRecovery,
+            loans: loanRecovery.loanRecoveries
+          };
+        }
+
+        // Process advance recovery
+        const advanceRecovery = await processAdvanceRecovery(employee._id, currentMonth, currentYear);
+        if (advanceRecovery.totalRecovery > 0) {
+          deductions.advanceRecovery = {
+            amount: advanceRecovery.totalRecovery,
+            advances: advanceRecovery.advanceRecoveries
+          };
+        }
+
+        // Calculate total deductions
+        const totalDeductions = 
+          deductions.pfEmployee +
+          deductions.esiEmployee +
+          deductions.professionalTax +
+          deductions.tds +
+          deductions.lossOfPay +
+          (deductions.loanRecovery?.amount || 0) +
+          (deductions.advanceRecovery?.amount || 0) +
+          deductions.otherDeductions;
+
+        // Calculate net salary
+        const netSalary = grossEarnings - totalDeductions;
+
+        // Calculate CTC (employer contributions)
+        const costToCompany = grossEarnings + deductions.pfEmployer + deductions.esiEmployer;
+
+        // Create payroll record
         const payroll = await Payroll.create({
           employee: employee._id,
-          period: {
-            month,
-            year,
-            startDate: startDate.toDate(),
-            endDate: endDate.toDate(),
-            paymentDate: paymentDate.toDate(),
-          },
-          earnings: {
-            basic: payrollCalc.breakdown.earnings.basic,
-            hra: payrollCalc.breakdown.earnings.hra,
-            specialAllowance: payrollCalc.breakdown.earnings.specialAllowance,
-            conveyance: payrollCalc.breakdown.earnings.conveyance,
-            medicalAllowance: payrollCalc.breakdown.earnings.medicalAllowance,
-            educationAllowance: payrollCalc.breakdown.earnings.educationAllowance || 0,
-            lta: payrollCalc.breakdown.earnings.lta || 0,
-            overtime: payrollCalc.breakdown.earnings.overtime,
-            bonus: 0,
-            incentives: 0,
-            arrears: 0,
-            otherAllowances: payrollCalc.breakdown.earnings.otherAllowances || 0,
-          },
-          deductions: {
-            pfEmployee: payrollCalc.breakdown.deductions.pfEmployee,
-            pfEmployer: payrollCalc.breakdown.deductions.pfEmployer,
-            esiEmployee: payrollCalc.breakdown.deductions.esiEmployee,
-            esiEmployer: payrollCalc.breakdown.deductions.esiEmployer,
-            professionalTax: payrollCalc.breakdown.deductions.professionalTax,
-            tds: payrollCalc.breakdown.deductions.tds,
-            loanRecovery: loanRecovery.amount,
-            advanceRecovery: advanceRecovery.amount,
-            lossOfPay: payrollCalc.lossOfPay,
-            otherDeductions: 0,
+          month: currentMonth,
+          year: currentYear,
+          salaryStructure: salaryStructure._id,
+          earnings,
+          deductions,
+          attendanceData: {
+            totalWorkingDays: attendanceSummary.totalWorkingDays,
+            presentDays: attendanceSummary.presentDays,
+            absentDays: attendanceSummary.absentDays,
+            halfDays: attendanceSummary.halfDays,
+            paidLeaveDays: attendanceSummary.paidLeaveDays,
+            unpaidLeaveDays: attendanceSummary.unpaidLeaveDays,
+            lopDays: attendanceSummary.lossOfPayDays,
+            paidDays: attendanceSummary.paidDays,
+            overtimeHours: attendanceSummary.overtimeHours,
+            totalWorkingHours: attendanceSummary.totalWorkingHours,
+            lateCount: attendanceSummary.lateCount,
+            earlyCheckoutCount: attendanceSummary.earlyCheckoutCount
           },
           summary: {
-            grossEarnings: payrollCalc.grossEarnings,
-            totalDeductions: payrollCalc.totalDeductions,
-            netSalary: payrollCalc.netSalary,
-            costToCompany: payrollCalc.grossEarnings + payrollCalc.breakdown.deductions.pfEmployer + payrollCalc.breakdown.deductions.esiEmployer,
-            takeHomeSalary: payrollCalc.netSalary,
+            grossEarnings: Math.round(grossEarnings),
+            totalDeductions: Math.round(totalDeductions),
+            netSalary: Math.round(netSalary),
+            costToCompany: Math.round(costToCompany)
           },
-          attendance: attendanceSummary,
-          leaves: {
-            paidLeaves: attendanceSummary.paidLeaves,
-            unpaidLeaves: attendanceSummary.unpaidLeaves,
-            sickLeaves: attendanceSummary.sickLeaves,
-            casualLeaves: attendanceSummary.casualLeaves,
-          },
-          loanDetails: loanRecovery.loanDetails.length > 0 ? loanRecovery.loanDetails[0] : undefined,
-          advanceDetails: advanceRecovery.advanceDetails.length > 0 ? advanceRecovery.advanceDetails[0] : undefined,
-          status: 'Generated',
-          generatedBy: req.user.id,
-          generatedAt: new Date(),
-          salaryStructureSnapshot: salaryStructure._id,
-          bankDetails: {
-            accountNumber: employee.bankDetails?.accountNumber,
-            bankName: employee.bankDetails?.bankName,
-            ifscCode: employee.bankDetails?.ifscCode,
-            branch: employee.bankDetails?.branch,
-            accountHolderName: employee.bankDetails?.accountHolderName || `${employee.firstName} ${employee.lastName}`,
-          },
-          auditTrail: [{
-            action: 'PAYROLL_GENERATED',
-            performedBy: req.user.id,
-            timestamp: new Date(),
-            remarks: `Payroll generated for ${month}/${year}`,
-          }],
+          status: 'Pending Approval',
+          generatedBy: req.user._id,
+          generatedAt: new Date()
         });
 
-        payrollRecords.push(payroll);
-        console.log(`✅ Payroll generated for ${employee.employeeId}`);
+        // Update loan installments
+        if (loanRecovery.loanRecoveries.length > 0) {
+          for (const recovery of loanRecovery.loanRecoveries) {
+            const loan = await Loan.findById(recovery.loanId);
+            await Loan.findByIdAndUpdate(recovery.loanId, {
+              $inc: {
+                'repayment.paidInstallments': 1,
+                'repayment.paidAmount': recovery.amount,
+                'repayment.remainingAmount': -recovery.amount
+              },
+              $set: {
+                status: recovery.amount === loan.repayment.remainingAmount 
+                  ? 'Closed' 
+                  : 'Active'
+              }
+            });
+          }
+        }
 
-      } catch (error) {
-        console.error(`❌ Error for employee ${employee.employeeId}:`, error);
-        errors.push({
+        // Update advance installments
+        if (advanceRecovery.advanceRecoveries.length > 0) {
+          for (const recovery of advanceRecovery.advanceRecoveries) {
+            const advance = await Advance.findById(recovery.advanceId);
+            await Advance.findByIdAndUpdate(recovery.advanceId, {
+              $inc: {
+                'recovery.paidInstallments': 1,
+                'recovery.recoveredAmount': recovery.amount,
+                'recovery.remainingAmount': -recovery.amount
+              },
+              $set: {
+                status: recovery.amount === advance.recovery.remainingAmount 
+                  ? 'Recovered' 
+                  : 'Active'
+              }
+            });
+          }
+        }
+
+        results.success.push({
           employeeId: employee.employeeId,
           name: `${employee.firstName} ${employee.lastName}`,
-          error: error.message,
+          payrollId: payroll._id,
+          netSalary: Math.round(netSalary)
         });
+
+        results.summary.success++;
+        results.summary.totalGrossPaid += Math.round(grossEarnings);
+        results.summary.totalDeductions += Math.round(totalDeductions);
+        results.summary.totalNetPaid += Math.round(netSalary);
+
+      } catch (error) {
+        console.error(`Error generating payroll for ${employee.employeeId}:`, error);
+        results.failed.push({
+          employeeId: employee.employeeId,
+          name: `${employee.firstName} ${employee.lastName}`,
+          error: error.message
+        });
+        results.summary.failed++;
       }
     }
 
     sendResponse(res, 201, true, 'Payroll generation completed', {
-      summary: {
-        totalEmployees: employees.length,
-        generated: payrollRecords.length,
-        failed: errors.length,
-        warnings: warnings.length,
-        totalGrossPayout: payrollRecords.reduce((sum, p) => sum + p.summary.grossEarnings, 0),
-        totalNetPayout: payrollRecords.reduce((sum, p) => sum + p.summary.netSalary, 0),
-        totalDeductions: payrollRecords.reduce((sum, p) => sum + p.summary.totalDeductions, 0),
-        totalLoanRecovery: payrollRecords.reduce((sum, p) => sum + (p.deductions.loanRecovery || 0), 0),
-        totalAdvanceRecovery: payrollRecords.reduce((sum, p) => sum + (p.deductions.advanceRecovery || 0), 0),
-      },
-      payrolls: payrollRecords,
-      errors,
-      warnings,
+      summary: results.summary,
+      success: results.success,
+      failed: results.failed
     });
 
   } catch (error) {
-    console.error('❌ Error in generatePayroll:', error);
+    console.error('Error in generatePayroll:', error);
     next(error);
   }
 };
 
-// Add this to your payrollController.js (at the end, before module.exports)
-exports.validatePayrollEligibility = async (req, res, next) => {
-  try {
-    const { month, year, department, employeeIds } = req.body;
-    
-    if (!month || !year) {
-      return sendResponse(res, 400, false, 'Month and year are required');
-    }
+// ==================== GET PAYROLL RECORDS ====================
 
-    const employeeFilter = { status: { $in: ['Active', 'On Leave'] } };
-    if (department) employeeFilter.department = department;
-    if (employeeIds?.length > 0) employeeFilter._id = { $in: employeeIds };
-
-    const employees = await Employee.find(employeeFilter)
-      .populate('department', 'name')
-      .populate('designation', 'title')
-      .select('employeeId firstName lastName department designation status basicSalary currentSalaryStructure');
-
-    const employeesWithEstimates = await Promise.all(employees.map(async (emp) => {
-      let salaryStructure = emp.currentSalaryStructure;
-      if (!salaryStructure) {
-        salaryStructure = await SalaryStructure.findOne({ 
-          employee: emp._id, 
-          isActive: true 
-        }).sort({ effectiveFrom: -1 });
-      }
-
-      const estimatedGross = salaryStructure ? salaryStructure.summary.grossSalary : emp.basicSalary || 0;
-      const estimatedNet = salaryStructure ? salaryStructure.summary.netSalary : emp.basicSalary || 0;
-
-      return {
-        id: emp._id,
-        employeeId: emp.employeeId,
-        firstName: emp.firstName,
-        lastName: emp.lastName,
-        department: emp.department,
-        designation: emp.designation,
-        status: emp.status,
-        basicSalary: emp.basicSalary || 0,
-        estimatedGross,
-        estimatedNet,
-        hasSalaryStructure: !!salaryStructure,
-        salaryStructureId: salaryStructure?._id
-      };
-    }));
-
-    const summary = {
-      totalEmployees: employeesWithEstimates.length,
-      withSalaryStructure: employeesWithEstimates.filter(e => e.hasSalaryStructure).length,
-      withoutSalaryStructure: employeesWithEstimates.filter(e => !e.hasSalaryStructure).length,
-      totalEstimatedGross: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedGross, 0),
-      totalEstimatedNet: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedNet, 0)
-    };
-
-    sendResponse(res, 200, true, 'Validation successful', { 
-      employees: employeesWithEstimates, 
-      summary 
-    });
-  } catch (error) {
-    console.error('Error in validatePayrollEligibility:', error);
-    next(error);
-  }
-};
-
-
-// ==================== CREATE DEFAULT SALARY STRUCTURES ====================
-exports.createDefaultSalaryStructures = async (req, res, next) => {
-  try {
-    const { employeeIds, effectiveFrom = new Date() } = req.body;
-
-    const employees = await Employee.find({
-      _id: { $in: employeeIds },
-    });
-
-    const created = [];
-    const failed = [];
-
-    for (const employee of employees) {
-      try {
-        // Check if salary structure already exists
-        const existing = await SalaryStructure.findOne({
-          employee: employee._id,
-          isActive: true,
-        });
-
-        if (existing) {
-          failed.push({
-            employeeId: employee.employeeId,
-            error: 'Salary structure already exists',
-          });
-          continue;
-        }
-
-        // Create basic salary structure from employee's basicSalary field
-        const basicSalary = employee.basicSalary || 0;
-        
-        if (basicSalary === 0) {
-          failed.push({
-            employeeId: employee.employeeId,
-            error: 'Employee has no basic salary defined',
-          });
-          continue;
-        }
-
-        const salaryStructure = await SalaryStructure.create({
-          employee: employee._id,
-          effectiveFrom: effectiveFrom,
-          isActive: true,
-          earnings: {
-            basic: basicSalary,
-            hraPercentage: 40, // Will auto-calculate
-            specialAllowance: basicSalary * 0.2, // 20% of basic
-            conveyance: 1600,
-            medicalAllowance: 1250,
-          },
-          deductions: {
-            pf: {
-              applicable: true,
-              employeePercentage: 12,
-              employerPercentage: 12,
-            },
-            esi: {
-              applicable: basicSalary <= 21000,
-            },
-            professionalTax: {
-              applicable: true,
-              amount: 200,
-            },
-          },
-          createdBy: req.user.id,
-        });
-
-        // Update employee's currentSalaryStructure reference
-        employee.currentSalaryStructure = salaryStructure._id;
-        await employee.save();
-
-        created.push({
-          employeeId: employee.employeeId,
-          salaryStructureId: salaryStructure._id,
-        });
-      } catch (error) {
-        failed.push({
-          employeeId: employee.employeeId,
-          error: error.message,
-        });
-      }
-    }
-
-    sendResponse(res, 201, true, 'Salary structures created', {
-      summary: {
-        total: employees.length,
-        created: created.length,
-        failed: failed.length,
-      },
-      created,
-      failed,
-    });
-  } catch (error) {
-    console.error('Error creating salary structures:', error);
-    next(error);
-  }
-};
-
-// ==================== APPROVE PAYROLL (Process Loan & Advance Deductions) ====================
-exports.approvePayroll = async (req, res, next) => {
-  try {
-    const { payrollIds, paymentDate, remarks } = req.body;
-
-    console.log(`🔄 Approving payroll for ${payrollIds.length} records`);
-
-    const results = [];
-    const errors = [];
-
-    for (const payrollId of payrollIds) {
-      try {
-        const payroll = await Payroll.findById(payrollId);
-        
-        if (!payroll) {
-          errors.push({ payrollId, error: "Payroll not found" });
-          continue;
-        }
-
-        if (payroll.status !== "Generated" && payroll.status !== "Pending") {
-          errors.push({ payrollId, error: "Payroll is not in pending state" });
-          continue;
-        }
-
-        // ✅ DEDUCT LOAN EMI
-        if (payroll.loanDetails && payroll.loanDetails.loanId) {
-          const loan = await Loan.findById(payroll.loanDetails.loanId);
-          if (loan && loan.status === "Active") {
-            loan.deductEMI(payroll.loanDetails.emiAmount);
-            loan.addHistory(
-              "EMI deducted from payroll",
-              payroll.loanDetails.emiAmount,
-              req.user.id,
-              `Payroll ${payroll.period.month}/${payroll.period.year}`
-            );
-            await loan.save();
-            console.log(`✅ Loan EMI deducted: ₹${payroll.loanDetails.emiAmount}`);
-          }
-        }
-
-        // ✅ RECOVER ADVANCE
-        if (payroll.advanceDetails && payroll.advanceDetails.advanceId) {
-          const advance = await Advance.findById(payroll.advanceDetails.advanceId);
-          if (advance && advance.status === "Active") {
-            advance.recoverInstallment(payroll.advanceDetails.recoveryAmount);
-            advance.addHistory(
-              "Recovery from payroll",
-              payroll.advanceDetails.recoveryAmount,
-              req.user.id,
-              `Payroll ${payroll.period.month}/${payroll.period.year}`
-            );
-            await advance.save();
-            console.log(`✅ Advance recovered: ₹${payroll.advanceDetails.recoveryAmount}`);
-          }
-        }
-
-        // Update payroll status
-        payroll.status = "Approved";
-        payroll.workflowStatus = {
-          ...payroll.workflowStatus,
-          approvedBy: req.user.id,
-          approvedAt: new Date(),
-          approvalRemarks: remarks
-        };
-        payroll.auditTrail.push({
-          action: "PAYROLL_APPROVED",
-          performedBy: req.user.id,
-          timestamp: new Date(),
-          remarks: remarks || "Payroll approved"
-        });
-
-        if (paymentDate) {
-          payroll.period.paymentDate = paymentDate;
-        }
-
-        await payroll.save();
-
-        results.push({ payrollId, status: "success" });
-        console.log(`✅ Payroll approved: ${payrollId}`);
-
-      } catch (error) {
-        console.error(`❌ Error approving payroll ${payrollId}:`, error);
-        errors.push({ payrollId, error: error.message });
-      }
-    }
-
-    console.log(`✅ Approval complete: ${results.length} successful, ${errors.length} errors`);
-
-    sendResponse(res, 200, true, "Payroll approved successfully", {
-      successful: results,
-      failed: errors,
-      summary: {
-        total: payrollIds.length,
-        successful: results.length,
-        failed: errors.length
-      }
-    });
-  } catch (error) {
-    console.error("❌ Error in approvePayroll:", error);
-    next(error);
-  }
-};
-
-// controllers/payrollController.js - ADD getAnalytics function
-
-exports.getAnalytics = async (req, res, next) => {
-  try {
-    const { year, month, department } = req.query;
-    const user = req.user;
-
-    const matchQuery = {};
-    
-    if (year) matchQuery['period.year'] = parseInt(year);
-    if (month) matchQuery['period.month'] = parseInt(month);
-
-    // Role-based filtering
-    if (user.role === 'employee') {
-      const employee = await Employee.findOne({ userId: user._id });
-      if (!employee) {
-        return res.status(404).json({ 
-          success: false, 
-          message: 'Employee not found' 
-        });
-      }
-      matchQuery.employee = employee._id;
-    } else if (department) {
-      const employees = await Employee.find({ department }).select('_id');
-      matchQuery.employee = { $in: employees.map(e => e._id) };
-    }
-
-    console.log('Analytics Query:', matchQuery);
-
-    // Get payrolls matching criteria
-    const payrolls = await Payroll.find(matchQuery)
-      .populate({
-        path: 'employee',
-        populate: [
-          { path: 'department', select: 'name code' },
-          { path: 'designation', select: 'title' }
-        ]
-      });
-
-    // Calculate summary
-    const summary = {
-      totalGross: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
-      totalNet: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
-      totalDeductions: payrolls.reduce((sum, p) => sum + (p.summary?.totalDeductions || 0), 0),
-      employeeCount: payrolls.length
-    };
-
-    // Department breakdown
-    const deptMap = {};
-    payrolls.forEach(p => {
-      const deptName = p.employee?.department?.name || 'Unassigned';
-      const deptId = p.employee?.department?._id || 'unassigned';
-      const deptCode = p.employee?.department?.code || 'N/A';
-      
-      if (!deptMap[deptId]) {
-        deptMap[deptId] = {
-          _id: {
-            departmentId: deptId,
-            departmentName: deptName,
-            departmentCode: deptCode
-          },
-          totalGross: 0,
-          totalNet: 0,
-          totalDeductions: 0,
-          employeeCount: 0,
-          avgSalary: 0
-        };
-      }
-      
-      deptMap[deptId].totalGross += (p.summary?.grossEarnings || 0);
-      deptMap[deptId].totalNet += (p.summary?.netSalary || 0);
-      deptMap[deptId].totalDeductions += (p.summary?.totalDeductions || 0);
-      deptMap[deptId].employeeCount += 1;
-    });
-
-    // Calculate averages
-    const departmentBreakdown = Object.values(deptMap).map(dept => ({
-      ...dept,
-      avgSalary: dept.employeeCount > 0 ? dept.totalNet / dept.employeeCount : 0
-    }));
-
-    console.log('Analytics Summary:', summary);
-    console.log('Department Breakdown:', departmentBreakdown);
-
-    res.status(200).json({
-      success: true,
-      message: 'Analytics fetched successfully',
-      summary: summary,
-      departmentBreakdown: departmentBreakdown
-    });
-
-  } catch (error) {
-    console.error('Error in getAnalytics:', error);
-    next(error);
-  }
-};
-
-
-// controllers/payrollController.js - FIX getAllPayrolls response format
+/**
+ * @desc    Get all payrolls with filters
+ * @route   GET /api/v1/payroll
+ * @access  Private (HR, Admin, Finance)
+ */
 exports.getAllPayrolls = async (req, res, next) => {
   try {
-    const { year, month, department, status, page = 1, limit = 20 } = req.query;
-    const user = req.user;
+    const { month, year, department, status, employee, page = 1, limit = 50 } = req.query;
 
-    let query = {};
+    const query = {};
 
-    // Role-based filtering
-    if (user.role === 'employee') {
-      const employee = await Employee.findOne({ userId: user._id });
-      if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message: 'Employee record not found'
-        });
-      }
-      query.employee = employee._id;
-    } else if (department) {
-      const employees = await Employee.find({ department }).select('_id');
-      query.employee = { $in: employees.map(emp => emp._id) };
+    if (month) query.month = parseInt(month);
+    if (year) query.year = parseInt(year);
+    if (status) query.status = status;
+    if (employee) {
+      const emp = await Employee.findOne({ employeeId: employee });
+      if (emp) query.employee = emp._id;
     }
 
-    // Filters
-    if (year) query['period.year'] = parseInt(year);
-    if (month) query['period.month'] = parseInt(month);
-    if (status) query.status = status;
-
-    console.log('Payroll Query:', query);
+    // Department filter
+    if (department) {
+      const employees = await Employee.find({ department }).select('_id');
+      query.employee = { $in: employees.map(e => e._id) };
+    }
 
     const payrolls = await Payroll.find(query)
       .populate({
         path: 'employee',
-        select: 'firstName lastName employeeId designation department',
+        select: 'firstName lastName employeeId department designation',
         populate: [
-          { path: 'designation', select: 'title' },
-          { path: 'department', select: 'name' }
+          { path: 'department', select: 'name' },
+          { path: 'designation', select: 'title' }
         ]
       })
-      .populate('generatedBy', 'firstName lastName')
-      .populate('approvedBy', 'firstName lastName')
-      .sort({ 'period.year': -1, 'period.month': -1, createdAt: -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
+      .sort({ year: -1, month: -1, 'employee.employeeId': 1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
 
     const total = await Payroll.countDocuments(query);
 
-    // Calculate summary from actual payroll data
-    const summary = {
-      totalGross: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || p.grossSalary || 0), 0),
-      totalGrossEarnings: payrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || p.grossSalary || 0), 0),
-      totalDeductions: payrolls.reduce((sum, p) => sum + (p.summary?.totalDeductions || p.totalDeductions || 0), 0),
-      totalNet: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || p.netSalary || 0), 0),
-      totalNetSalary: payrolls.reduce((sum, p) => sum + (p.summary?.netSalary || p.netSalary || 0), 0),
-      employeeCount: payrolls.length
-    };
-
-    console.log('Summary:', summary);
-    console.log('Found', payrolls.length, 'payrolls');
-
-    // ✅ FIX: Return flat structure that frontend expects
-    res.status(200).json({
-      success: true,
-      message: 'Payrolls fetched successfully',
-      payrolls: payrolls,  // ✅ Return payrolls at root level
-      data: payrolls,      // ✅ Also include in data for compatibility
-      summary: summary,    // ✅ Summary at root level
+    sendResponse(res, 200, true, 'Payrolls fetched successfully', {
+      payrolls,
       pagination: {
         currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
+        totalPages: Math.ceil(total / limit),
         totalRecords: total,
-        hasNext: parseInt(page) * parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
+        hasNext: page * limit < total,
+        hasPrev: page > 1
       }
     });
 
@@ -818,877 +587,537 @@ exports.getAllPayrolls = async (req, res, next) => {
   }
 };
 
-
-
-
-// ==================== GET MY PAYSLIPS (EMPLOYEE) ====================
+/**
+ * @desc    Get employee's payslips
+ * @route   GET /api/v1/payroll/my-payslips
+ * @access  Private (Employee)
+ */
 exports.getMyPayslips = async (req, res, next) => {
   try {
-    const { year, month, page = 1, limit = 12 } = req.query;
-    
-    const employee = await Employee.findOne({ userId: req.user.id });
+    const { year, month, status } = req.query;
+
+    const employee = await Employee.findOne({ userId: req.user._id });
     if (!employee) {
-      return sendResponse(res, 404, false, 'Employee not found');
+      return sendResponse(res, 404, false, 'Employee record not found');
     }
 
     const query = { employee: employee._id };
-    if (year) query['period.year'] = parseInt(year);
-    if (month) query['period.month'] = parseInt(month);
+    if (year) query.year = parseInt(year);
+    if (month) query.month = parseInt(month);
+    if (status) query.status = status;
 
     const payslips = await Payroll.find(query)
-      .populate('employee', 'firstName lastName employeeId designation department')
-      .populate('generatedBy', 'firstName lastName')
-      .sort({ 'period.year': -1, 'period.month': -1 })
-      .limit(parseInt(limit))
-      .skip((parseInt(page) - 1) * parseInt(limit));
+      .populate('salaryStructure')
+      .sort({ year: -1, month: -1 });
 
-    const total = await Payroll.countDocuments(query);
-
-    const currentYear = moment().year();
-    const yearlySummary = await Payroll.aggregate([
-      {
-        $match: {
-          employee: employee._id,
-          'period.year': currentYear,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalEarnings: { $sum: '$summary.grossEarnings' },
-          totalDeductions: { $sum: '$summary.totalDeductions' },
-          totalNetSalary: { $sum: '$summary.netSalary' },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
+    const summary = {
+      totalEarnings: payslips.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
+      totalDeductions: payslips.reduce((sum, p) => sum + (p.summary?.totalDeductions || 0), 0),
+      totalNetSalary: payslips.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
+      count: payslips.length
+    };
 
     sendResponse(res, 200, true, 'Payslips fetched successfully', {
       payslips,
-      summary: yearlySummary[0] || {
-        totalEarnings: 0,
-        totalDeductions: 0,
-        totalNetSalary: 0,
-        count: 0,
-      },
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / parseInt(limit)),
-        totalRecords: total,
-        hasNext: parseInt(page) * parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1,
-      },
+      summary
     });
+
   } catch (error) {
     console.error('Error in getMyPayslips:', error);
     next(error);
   }
 };
 
-// ==================== GET SALARY STRUCTURE (EMPLOYEE) ====================
+/**
+ * @desc    Get salary structure
+ * @route   GET /api/v1/payroll/salary-structure
+ * @access  Private
+ */
 exports.getSalaryStructure = async (req, res, next) => {
   try {
-    const employee = await Employee.findOne({ userId: req.user.id })
-      .populate('designation')
-      .populate('department')
-      .populate('currentSalaryStructure');
+    const { employeeId } = req.query;
+
+    let employee;
+    if (employeeId && ['admin', 'hr'].includes(req.user.role)) {
+      employee = await Employee.findOne({ employeeId });
+    } else {
+      employee = await Employee.findOne({ userId: req.user._id });
+    }
 
     if (!employee) {
       return sendResponse(res, 404, false, 'Employee not found');
     }
 
-    let salaryStructure = employee.currentSalaryStructure;
-    if (!salaryStructure) {
-      salaryStructure = await SalaryStructure.findOne({
-        employee: employee._id,
-        isActive: true,
-      }).sort({ effectiveFrom: -1 });
-    }
+    const salaryStructure = await SalaryStructure.findOne({
+      employee: employee._id,
+      isActive: true
+    }).populate('employee', 'firstName lastName employeeId department designation');
 
     if (!salaryStructure) {
-      return sendResponse(res, 404, false, 'No salary structure found');
+      return sendResponse(res, 404, false, 'Salary structure not found');
     }
 
-    const structureData = {
-      employee: {
-        name: `${employee.firstName} ${employee.lastName}`,
-        employeeId: employee.employeeId,
-        designation: employee.designation?.title,
-        department: employee.department?.name,
-        joiningDate: employee.joiningDate,
-      },
-      earnings: salaryStructure.earnings,
-      deductions: {
-        pf: {
-          employeeContribution: salaryStructure.deductions.pf.employeeContribution,
-          employerContribution: salaryStructure.deductions.pf.employerContribution,
-          epfNumber: salaryStructure.deductions.pf.epfNumber,
-          uanNumber: salaryStructure.deductions.pf.uanNumber,
-        },
-        esi: {
-          employeeContribution: salaryStructure.deductions.esi.employeeContribution,
-          employerContribution: salaryStructure.deductions.esi.employerContribution,
-          esiNumber: salaryStructure.deductions.esi.esiNumber,
-        },
-        professionalTax: salaryStructure.deductions.professionalTax.amount,
-        tds: salaryStructure.deductions.tds.monthlyTDS,
-      },
-      summary: salaryStructure.summary,
-      payment: {
-        mode: salaryStructure.paymentSettings.paymentMode,
-        bankName: employee.bankDetails?.bankName,
-        accountNumber: employee.bankDetails?.accountNumber?.replace(/\d(?=\d{4})/g, '*'),
-        ifscCode: employee.bankDetails?.ifscCode,
-      },
-      effectiveFrom: salaryStructure.effectiveFrom,
-    };
+    sendResponse(res, 200, true, 'Salary structure fetched successfully', {
+      salaryStructure
+    });
 
-    sendResponse(res, 200, true, 'Salary structure fetched successfully', structureData);
   } catch (error) {
     console.error('Error in getSalaryStructure:', error);
     next(error);
   }
 };
 
-// ==================== UPDATE PAYROLL STATUS ====================
-exports.updatePayrollStatus = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { status, paymentDate, paymentMode, referenceNumber, transactionId, remarks } = req.body;
-
-    const payroll = await Payroll.findById(id);
-    if (!payroll) {
-      return sendResponse(res, 404, false, 'Payroll not found');
-    }
-
-    if (status === 'Approved') {
-      await payroll.approve(req.user.id, remarks);
-    } else if (status === 'Paid') {
-      await payroll.markAsPaid(req.user.id, {
-        date: paymentDate,
-        mode: paymentMode,
-        referenceNumber,
-        transactionId,
-      });
-    } else if (status === 'Rejected') {
-      await payroll.reject(req.user.id, remarks);
-    } else {
-      payroll.status = status;
-      payroll.addAuditEntry(`STATUS_CHANGED_TO_${status}`, req.user.id, remarks, req.ip);
-      await payroll.save();
-    }
-
-    sendResponse(res, 200, true, `Payroll ${status.toLowerCase()} successfully`, { payroll });
-  } catch (error) {
-    console.error('Error in updatePayrollStatus:', error);
-    next(error);
-  }
-};
-// controllers/payrollController.js - Add this if missing
-exports.bulkUpdatePayrollStatus = async (req, res, next) => {
-  try {
-    const { payrollIds, status, paymentDate, paymentMode, remarks } = req.body;
-
-    console.log(`🔄 Bulk updating payroll status:`, { payrollIds, status });
-
-    if (!Array.isArray(payrollIds) || payrollIds.length === 0) {
-      return sendResponse(res, 400, false, 'Payroll IDs are required');
-    }
-
-    if (!status) {
-      return sendResponse(res, 400, false, 'Status is required');
-    }
-
-    const validStatuses = ['Generated', 'Approved', 'Paid', 'Rejected'];
-    if (!validStatuses.includes(status)) {
-      return sendResponse(res, 400, false, 'Invalid status');
-    }
-
-    const results = [];
-    const errors = [];
-
-    for (const payrollId of payrollIds) {
-      try {
-        const payroll = await Payroll.findById(payrollId);
-        if (!payroll) {
-          errors.push({ payrollId, error: "Payroll not found" });
-          continue;
-        }
-
-        // Update payroll
-        payroll.status = status;
-        
-        if (paymentDate) payroll.paymentDate = paymentDate;
-        if (paymentMode) payroll.paymentMethod = paymentMode;
-        
-        payroll.auditTrail.push({
-          action: `STATUS_CHANGED_TO_${status}`,
-          performedBy: req.user.id,
-          timestamp: new Date(),
-          remarks: remarks || `Bulk status update to ${status}`
-        });
-
-        await payroll.save();
-        results.push(payrollId);
-        console.log(`✅ Updated payroll ${payrollId} to ${status}`);
-        
-      } catch (error) {
-        console.error(`❌ Error updating payroll ${payrollId}:`, error);
-        errors.push({ payrollId, error: error.message });
-      }
-    }
-
-    sendResponse(res, 200, true, 'Bulk status update completed', {
-      successful: results,
-      failed: errors,
-      summary: {
-        total: payrollIds.length,
-        successful: results.length,
-        failed: errors.length
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error in bulkUpdatePayrollStatus:', error);
-    next(error);
-  }
-};
-
-
-// controllers/payrollController.js - Enhanced analytics
-exports.getPayrollAnalytics = async (req, res, next) => {
-  try {
-    const { year, month } = req.query;
-    const user = req.user;
-    const currentYear = year ? parseInt(year) : moment().year();
-    
-    let matchQuery = { 'period.year': currentYear };
-    
-    // Apply department filtering based on role
-    if (user.role === 'manager') {
-      const employees = await Employee.find({ department: user.department }).select('_id');
-      matchQuery.employee = { $in: employees.map(e => e._id) };
-    } else if (user.role === 'hr' && user.permissions?.departments?.length > 0) {
-      const employees = await Employee.find({ 
-        department: { $in: user.permissions.departments } 
-      }).select('_id');
-      matchQuery.employee = { $in: employees.map(e => e._id) };
-    }
-    
-    if (month) matchQuery['period.month'] = parseInt(month);
-    
-    // Department-wise breakdown
-    const departmentBreakdown = await Payroll.aggregate([
-      { $match: matchQuery },
-      {
-        $lookup: {
-          from: 'employees',
-          localField: 'employee',
-          foreignField: '_id',
-          as: 'employeeData'
-        }
-      },
-      { $unwind: '$employeeData' },
-      {
-        $lookup: {
-          from: 'departments',
-          localField: 'employeeData.department',
-          foreignField: '_id',
-          as: 'deptData'
-        }
-      },
-      { $unwind: '$deptData' },
-      {
-        $group: {
-          _id: {
-            departmentId: '$deptData._id',
-            departmentName: '$deptData.name',
-            departmentCode: '$deptData.code'
-          },
-          totalGross: { $sum: '$summary.grossEarnings' },
-          totalNet: { $sum: '$summary.netSalary' },
-          totalDeductions: { $sum: '$summary.totalDeductions' },
-          totalPF: { $sum: { $add: ['$deductions.pfEmployee', '$deductions.pfEmployer'] } },
-          totalESI: { $sum: { $add: ['$deductions.esiEmployee', '$deductions.esiEmployer'] } },
-          totalTDS: { $sum: '$deductions.tds' },
-          totalLOP: { $sum: '$deductions.lossOfPay' },
-          employeeCount: { $sum: 1 },
-          avgSalary: { $avg: '$summary.netSalary' }
-        }
-      },
-      { $sort: { '_id.departmentName': 1 } }
-    ]);
-    
-    // Status breakdown
-    const statusBreakdown = await Payroll.aggregate([
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          totalAmount: { $sum: '$summary.netSalary' }
-        }
-      }
-    ]);
-    
-    // Overall summary
-    const overallSummary = await Payroll.aggregate([
-      { $match: matchQuery },
-      {
-        $group: {
-          _id: null,
-          totalGross: { $sum: '$summary.grossEarnings' },
-          totalNet: { $sum: '$summary.netSalary' },
-          totalDeductions: { $sum: '$summary.totalDeductions' },
-          totalPF: { $sum: '$deductions.pfEmployee' },
-          totalPFEmployer: { $sum: '$deductions.pfEmployer' },
-          totalESI: { $sum: '$deductions.esiEmployee' },
-          totalESIEmployer: { $sum: '$deductions.esiEmployer' },
-          totalTax: { $sum: '$deductions.professionalTax' },
-          totalTDS: { $sum: '$deductions.tds' },
-          totalLOP: { $sum: '$deductions.lossOfPay' },
-          totalLoanRecovery: { $sum: '$deductions.loanRecovery' },
-          totalAdvanceRecovery: { $sum: '$deductions.advanceRecovery' },
-          employeeCount: { $sum: 1 }
-        }
-      }
-    ]);
-    
-    res.json({
-      success: true,
-      data: {
-        departmentBreakdown,
-        statusBreakdown,
-        summary: overallSummary[0] || {}
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-
-// controllers/payrollController.js - Update the getEligibleEmployees function
+/**
+ * @desc    Get eligible employees for payroll
+ * @route   GET /api/v1/payroll/eligible-employees
+ * @access  Private (HR, Admin)
+ */
 exports.getEligibleEmployees = async (req, res, next) => {
   try {
-    const { department, includeInactive } = req.query;
+    const { month = moment().month() + 1, year = moment().year(), department, includeInactive = false } = req.query;
 
-    const employeeFilter = {
-      status: includeInactive === 'true' ? { $in: ['Active', 'Inactive', 'On Leave'] } : 'Active',
+    const query = {
+      isActive: includeInactive === 'true' ? { $in: [true, false] } : true,
+      currentSalaryStructure: { $exists: true, $ne: null }
     };
 
-    if (department) employeeFilter.department = department;
+    if (department) {
+      query.department = department;
+    }
 
-    // ✅ FIX: Remove problematic population or fix schema
-    const employees = await Employee.find(employeeFilter)
-      .populate('department', 'name')
-      .populate('designation', 'title')
-      // ✅ Temporarily remove currentSalaryStructure population until schema is fixed
-      // .populate('currentSalaryStructure') // Comment this out for now
-      .select('employeeId firstName lastName department designation status basicSalary currentSalaryStructure');
+    const employees = await Employee.find(query)
+      .populate('department designation currentSalaryStructure')
+      .select('firstName lastName employeeId basicSalary ctc department designation currentSalaryStructure');
 
-    // Get salary structures separately
-    const employeesWithEstimates = await Promise.all(
-      employees.map(async (emp) => {
-        // Get salary structure - try from currentSalaryStructure first, then find latest
-        let salaryStructure;
-        if (emp.currentSalaryStructure) {
-          salaryStructure = await SalaryStructure.findById(emp.currentSalaryStructure);
-        }
-        
-        if (!salaryStructure) {
-          // Fallback: get the latest active salary structure
-          salaryStructure = await SalaryStructure.findOne({
-            employee: emp._id,
-            isActive: true,
-          }).sort({ effectiveFrom: -1 });
-        }
+    // Estimate salary for each employee
+    const enrichedEmployees = await Promise.all(employees.map(async (emp) => {
+      const salaryStructure = emp.currentSalaryStructure;
+      
+      // Get attendance for estimation
+      const attendanceSummary = await calculateAttendanceSummary(emp._id, parseInt(month), parseInt(year));
+      
+      const estimatedGross = salaryStructure.summary.grossSalary;
+      const estimatedDeductions = salaryStructure.summary.totalDeductions;
+      const estimatedNet = salaryStructure.summary.netSalary;
 
-        // Calculate estimated values based on basic salary if no structure
-        let estimatedGross = emp.basicSalary || 0;
-        let estimatedNet = emp.basicSalary || 0;
-        
-        if (salaryStructure) {
-          estimatedGross = salaryStructure.summary.grossSalary || emp.basicSalary || 0;
-          estimatedNet = salaryStructure.summary.netSalary || emp.basicSalary || 0;
-        }
-
-        return {
-          _id: emp._id,
-          employeeId: emp.employeeId,
-          firstName: emp.firstName,
-          lastName: emp.lastName,
-          department: emp.department,
-          designation: emp.designation,
-          status: emp.status,
-          basicSalary: emp.basicSalary || 0,
-          estimatedGross: estimatedGross,
-          estimatedNet: estimatedNet,
-          hasSalaryStructure: !!salaryStructure,
-          salaryStructureId: salaryStructure?._id,
-        };
-      })
-    );
+      return {
+        _id: emp._id,
+        firstName: emp.firstName,
+        lastName: emp.lastName,
+        employeeId: emp.employeeId,
+        basicSalary: salaryStructure.earnings.basic,
+        department: emp.department,
+        designation: emp.designation,
+        hasSalaryStructure: true,
+        estimatedGross: Math.round(estimatedGross),
+        estimatedNet: Math.round(estimatedNet),
+        paidDays: attendanceSummary.paidDays,
+        lopDays: attendanceSummary.lossOfPayDays
+      };
+    }));
 
     const summary = {
-      totalEmployees: employeesWithEstimates.length,
-      withSalaryStructure: employeesWithEstimates.filter(e => e.hasSalaryStructure).length,
-      withoutSalaryStructure: employeesWithEstimates.filter(e => !e.hasSalaryStructure).length,
-      totalEstimatedGross: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedGross, 0),
-      totalEstimatedNet: employeesWithEstimates.reduce((sum, emp) => sum + emp.estimatedNet, 0),
-      totalBasicSalary: employeesWithEstimates.reduce((sum, emp) => sum + emp.basicSalary, 0),
+      totalEmployees: enrichedEmployees.length,
+      totalEstimatedGross: enrichedEmployees.reduce((sum, e) => sum + e.estimatedGross, 0),
+      totalEstimatedNet: enrichedEmployees.reduce((sum, e) => sum + e.estimatedNet, 0)
     };
 
     sendResponse(res, 200, true, 'Eligible employees fetched successfully', {
-      employees: employeesWithEstimates,
-      summary,
+      employees: enrichedEmployees,
+      summary
     });
+
   } catch (error) {
     console.error('Error in getEligibleEmployees:', error);
     next(error);
   }
 };
 
-// ==================== GET PAYROLL GENERATION SUMMARY ====================
-// In payrollController.js
+/**
+ * @desc    Get payroll generation summary
+ * @route   GET /api/v1/payroll/generation-summary
+ * @access  Private (HR, Admin)
+ */
 exports.getPayrollGenerationSummary = async (req, res, next) => {
   try {
     const { month, year, department } = req.query;
-    
-    if (!month || !year) {
-      return sendResponse(res, 400, false, 'Month and year are required');
-    }
 
-    // Count existing payrolls
-    const query = {
-      'period.month': parseInt(month),
-      'period.year': parseInt(year),
-    };
+    const currentMonth = parseInt(month) || moment().month() + 1;
+    const currentYear = parseInt(year) || moment().year();
 
+    // Check existing payrolls
+    const existingQuery = { month: currentMonth, year: currentYear };
     if (department) {
       const employees = await Employee.find({ department }).select('_id');
-      query.employee = { $in: employees.map(e => e._id) };
+      existingQuery.employee = { $in: employees.map(e => e._id) };
     }
 
-    const existingPayrolls = await Payroll.countDocuments(query);
-    const existingEmployees = await Payroll.find(query)
-      .populate('employee', 'employeeId firstName lastName')
-      .select('employee');
+    const existingPayrolls = await Payroll.find(existingQuery).populate('employee', 'firstName lastName employeeId');
+    
+    let message = '';
+    let existingEmployees = [];
 
-    sendResponse(res, 200, true, 'Generation summary fetched', {
-      existingPayrolls,
-      existingEmployees: existingEmployees.map(p => ({
-        employeeId: p.employee.employeeId,
-        name: `${p.employee.firstName} ${p.employee.lastName}`,
-      })),
-      message: existingPayrolls > 0 
-        ? `${existingPayrolls} payroll(s) already exist for this period` 
-        : 'No existing payrolls found',
+    if (existingPayrolls.length > 0) {
+      message = `⚠ Warning: Payroll already generated for ${existingPayrolls.length} employees in ${moment().month(currentMonth - 1).format('MMMM')} ${currentYear}`;
+      existingEmployees = existingPayrolls.map(p => `${p.employee.firstName} ${p.employee.lastName} (${p.employee.employeeId})`);
+    } else {
+      message = `✓ No existing payroll found for ${moment().month(currentMonth - 1).format('MMMM')} ${currentYear}. Ready to generate.`;
+    }
+
+    sendResponse(res, 200, true, 'Payroll summary fetched', {
+      month: currentMonth,
+      year: currentYear,
+      existingPayrolls: existingPayrolls.length,
+      existingEmployees,
+      message
     });
+
   } catch (error) {
     console.error('Error in getPayrollGenerationSummary:', error);
     next(error);
   }
 };
 
-
-// controllers/payrollController.js
-
-exports.downloadPayslip = async (req, res, next) => {
+/**
+ * @desc    Validate payroll eligibility
+ * @route   GET /api/v1/payroll/validate-eligibility
+ * @access  Private (HR, Admin)
+ */
+exports.validatePayrollEligibility = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    
-    const payroll = await Payroll.findById(id)
-      .populate({
-        path: 'employee',
-        select: 'firstName lastName employeeId designation department bankDetails',
-        populate: [
-          { path: 'designation', select: 'title' },
-          { path: 'department', select: 'name' }
-        ]
-      })
-      .populate('salaryStructureSnapshot');
+    const { month, year, department, includeInactive } = req.query;
 
-    if (!payroll) {
-      return sendResponse(res, 404, false, 'Payroll not found');
-    }
-
-    // Create PDF with A4 size
-    const doc = new PDFDocument({ 
-      size: 'A4',
-      margin: 50,
-      bufferPages: true
-    });
-
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 
-      `attachment; filename=Payslip_${payroll.employee.employeeId}_${payroll.period.month}_${payroll.period.year}.pdf`
-    );
-
-    // Pipe PDF to response
-    doc.pipe(res);
-
-    // ==================== HEADER SECTION ====================
-    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    
-    // Company logo/name (replace with actual logo if needed)
-    doc.fontSize(22)
-       .fillColor('#1e40af')
-       .text('YOUR COMPANY NAME', { align: 'center' })
-       .fontSize(10)
-       .fillColor('#6b7280')
-       .text('Company Address Line 1, City, State - PIN CODE', { align: 'center' })
-       .text('Email: hr@company.com | Phone: +91-1234567890', { align: 'center' });
-    
-    doc.moveDown(0.5);
-    
-    // Horizontal line
-    doc.strokeColor('#e5e7eb')
-       .lineWidth(1)
-       .moveTo(50, doc.y)
-       .lineTo(doc.page.width - 50, doc.y)
-       .stroke();
-    
-    doc.moveDown(1);
-
-    // ==================== PAYSLIP TITLE ====================
-    doc.fontSize(18)
-       .fillColor('#1f2937')
-       .font('Helvetica-Bold')
-       .text('SALARY SLIP', { align: 'center' });
-    
-    doc.fontSize(11)
-       .fillColor('#6b7280')
-       .font('Helvetica')
-       .text(
-         `${new Date(payroll.period.year, payroll.period.month - 1).toLocaleString('default', { month: 'long' })} ${payroll.period.year}`,
-         { align: 'center' }
-       );
-    
-    doc.moveDown(1.5);
-
-    // ==================== EMPLOYEE DETAILS SECTION ====================
-    const leftCol = 50;
-    const rightCol = 320;
-    let currentY = doc.y;
-
-    // Helper function to draw labeled value
-    const drawLabelValue = (label, value, x, y, isRight = false) => {
-      doc.fontSize(9)
-         .fillColor('#6b7280')
-         .font('Helvetica')
-         .text(label, x, y);
-      
-      doc.fontSize(10)
-         .fillColor('#1f2937')
-         .font('Helvetica-Bold')
-         .text(value, x, y + 12, { width: isRight ? 220 : 220 });
-      
-      return y + 35;
+    const query = {
+      isActive: includeInactive === 'true' ? { $in: [true, false] } : true
     };
 
-    // Left column
-    currentY = drawLabelValue(
-      'Employee Name',
-      `${payroll.employee.firstName} ${payroll.employee.lastName}`,
-      leftCol,
-      currentY
-    );
-    
-    currentY = drawLabelValue(
-      'Employee ID',
-      payroll.employee.employeeId,
-      leftCol,
-      currentY
-    );
-    
-    currentY = drawLabelValue(
-      'Department',
-      payroll.employee.department?.name || 'N/A',
-      leftCol,
-      currentY
-    );
+    if (department) {
+      query.department = department;
+    }
 
-    // Right column (reset Y)
-    currentY = doc.y - 105; // Go back up
-    
-    currentY = drawLabelValue(
-      'Designation',
-      payroll.employee.designation?.title || 'N/A',
-      rightCol,
-      currentY,
-      true
-    );
-    
-    currentY = drawLabelValue(
-      'Bank Account',
-      payroll.bankDetails?.accountNumber?.replace(/.(?=.{4})/g, '*') || 'N/A',
-      rightCol,
-      currentY,
-      true
-    );
-    
-    currentY = drawLabelValue(
-      'Payment Date',
-      moment(payroll.period.paymentDate).format('DD-MMM-YYYY'),
-      rightCol,
-      currentY,
-      true
-    );
+    const employees = await Employee.find(query)
+      .populate('currentSalaryStructure')
+      .select('firstName lastName employeeId currentSalaryStructure basicSalary ctc');
 
-    doc.y = currentY + 20;
+    const eligible = [];
+    const ineligible = [];
 
-    // ==================== ATTENDANCE SUMMARY ====================
-    doc.fontSize(12)
-       .fillColor('#1f2937')
-       .font('Helvetica-Bold')
-       .text('Attendance Summary');
-    
-    doc.moveDown(0.5);
+    employees.forEach(emp => {
+      const issues = [];
 
-    const attendanceTable = [
-      ['Total Days', payroll.attendance.totalWorkingDays],
-      ['Present Days', payroll.attendance.presentDays],
-      ['Paid Days', payroll.attendance.paidDays],
-      ['LOP Days', payroll.attendance.lossOfPayDays]
-    ];
+      if (!emp.currentSalaryStructure) {
+        issues.push('No active salary structure');
+      }
 
-    let attX = leftCol;
-    attendanceTable.forEach(([label, value]) => {
-      doc.fontSize(9)
-         .fillColor('#6b7280')
-         .font('Helvetica')
-         .text(label, attX, doc.y);
-      
-      doc.fontSize(10)
-         .fillColor('#1f2937')
-         .font('Helvetica-Bold')
-         .text(value, attX, doc.y + 12);
-      
-      attX += 130;
+      if (!emp.basicSalary && !emp.ctc) {
+        issues.push('No salary configured');
+      }
+
+      if (issues.length > 0) {
+        ineligible.push({
+          employeeId: emp.employeeId,
+          name: `${emp.firstName} ${emp.lastName}`,
+          issues
+        });
+      } else {
+        eligible.push({
+          employeeId: emp.employeeId,
+          name: `${emp.firstName} ${emp.lastName}`
+        });
+      }
     });
 
-    doc.moveDown(3);
-
-    // ==================== EARNINGS & DEDUCTIONS TABLE ====================
-    const tableTop = doc.y;
-    const colWidth = (pageWidth - 20) / 4;
-
-    // Table header
-    doc.rect(leftCol, tableTop, pageWidth, 30)
-       .fillAndStroke('#1e40af', '#1e40af');
-    
-    doc.fontSize(10)
-       .fillColor('#ffffff')
-       .font('Helvetica-Bold')
-       .text('EARNINGS', leftCol + 10, tableTop + 10, { width: colWidth * 1.5 })
-       .text('AMOUNT (₹)', leftCol + colWidth * 1.5 + 10, tableTop + 10, { width: colWidth * 0.5 - 20, align: 'right' })
-       .text('DEDUCTIONS', leftCol + colWidth * 2 + 10, tableTop + 10, { width: colWidth * 1.5 })
-       .text('AMOUNT (₹)', leftCol + colWidth * 3.5 + 10, tableTop + 10, { width: colWidth * 0.5 - 20, align: 'right' });
-
-    let tableY = tableTop + 35;
-    const rowHeight = 22;
-
-    // Earnings data
-    const earningsData = [
-      ['Basic Salary', payroll.earnings.basic],
-      ['HRA', payroll.earnings.hra],
-      ['Special Allowance', payroll.earnings.specialAllowance],
-      ['Conveyance', payroll.earnings.conveyance],
-      ['Medical Allowance', payroll.earnings.medicalAllowance],
-      ['Education Allowance', payroll.earnings.educationAllowance || 0],
-      ['LTA', payroll.earnings.lta || 0],
-      ['Overtime', payroll.earnings.overtime || 0],
-      ['Bonus', payroll.earnings.bonus || 0],
-      ['Other Allowances', payroll.earnings.otherAllowances || 0]
-    ].filter(([, amount]) => amount > 0);
-
-    // Deductions data
-    const deductionsData = [
-      ['PF (Employee)', payroll.deductions.pfEmployee],
-      ['ESI (Employee)', payroll.deductions.esiEmployee],
-      ['Professional Tax', payroll.deductions.professionalTax],
-      ['TDS', payroll.deductions.tds],
-      ['Loan Recovery', payroll.deductions.loanRecovery || 0],
-      ['Advance Recovery', payroll.deductions.advanceRecovery || 0],
-      ['Loss of Pay', payroll.deductions.lossOfPay || 0],
-      ['Other Deductions', payroll.deductions.otherDeductions || 0]
-    ].filter(([, amount]) => amount > 0);
-
-    // Draw rows
-    const maxRows = Math.max(earningsData.length, deductionsData.length);
-    
-    for (let i = 0; i < maxRows; i++) {
-      // Alternate row background
-      if (i % 2 === 0) {
-        doc.rect(leftCol, tableY, pageWidth, rowHeight)
-           .fillAndStroke('#f9fafb', '#e5e7eb');
-      } else {
-        doc.rect(leftCol, tableY, pageWidth, rowHeight)
-           .stroke('#e5e7eb');
-      }
-
-      // Earnings column
-      if (earningsData[i]) {
-        doc.fontSize(9)
-           .fillColor('#374151')
-           .font('Helvetica')
-           .text(earningsData[i][0], leftCol + 10, tableY + 6, { width: colWidth * 1.5 - 20 });
-        
-        doc.fontSize(9)
-           .fillColor('#1f2937')
-           .font('Helvetica-Bold')
-           .text(
-             formatCurrency(earningsData[i][1]),
-             leftCol + colWidth * 1.5,
-             tableY + 6,
-             { width: colWidth * 0.5, align: 'right' }
-           );
-      }
-
-      // Deductions column
-      if (deductionsData[i]) {
-        doc.fontSize(9)
-           .fillColor('#374151')
-           .font('Helvetica')
-           .text(deductionsData[i][0], leftCol + colWidth * 2 + 10, tableY + 6, { width: colWidth * 1.5 - 20 });
-        
-        doc.fontSize(9)
-           .fillColor('#1f2937')
-           .font('Helvetica-Bold')
-           .text(
-             formatCurrency(deductionsData[i][1]),
-             leftCol + colWidth * 3.5,
-             tableY + 6,
-             { width: colWidth * 0.5, align: 'right' }
-           );
-      }
-
-      tableY += rowHeight;
-    }
-
-    // ==================== TOTALS ROW ====================
-    doc.rect(leftCol, tableY, pageWidth, 30)
-       .fillAndStroke('#dcfce7', '#10b981');
-    
-    doc.fontSize(10)
-       .fillColor('#065f46')
-       .font('Helvetica-Bold')
-       .text('GROSS EARNINGS', leftCol + 10, tableY + 10, { width: colWidth * 1.5 })
-       .text(
-         formatCurrency(payroll.summary.grossEarnings),
-         leftCol + colWidth * 1.5,
-         tableY + 10,
-         { width: colWidth * 0.5, align: 'right' }
-       )
-       .text('TOTAL DEDUCTIONS', leftCol + colWidth * 2 + 10, tableY + 10, { width: colWidth * 1.5 })
-       .text(
-         formatCurrency(payroll.summary.totalDeductions),
-         leftCol + colWidth * 3.5,
-         tableY + 10,
-         { width: colWidth * 0.5, align: 'right' }
-       );
-
-    tableY += 35;
-
-    // ==================== NET SALARY ====================
-    doc.rect(leftCol, tableY, pageWidth, 40)
-       .fillAndStroke('#1e40af', '#1e40af');
-    
-    doc.fontSize(14)
-       .fillColor('#ffffff')
-       .font('Helvetica-Bold')
-       .text('NET SALARY (Take Home)', leftCol + 10, tableY + 12)
-       .fontSize(16)
-       .text(
-         formatCurrency(payroll.summary.netSalary),
-         leftCol + colWidth * 2,
-         tableY + 12,
-         { width: pageWidth - colWidth * 2, align: 'right' }
-       );
-
-    doc.moveDown(3);
-
-    // ==================== EMPLOYER CONTRIBUTION ====================
-    doc.fontSize(11)
-       .fillColor('#1f2937')
-       .font('Helvetica-Bold')
-       .text('Employer Contribution (Not part of Net Salary)');
-    
-    doc.moveDown(0.5);
-    
-    doc.fontSize(9)
-       .fillColor('#6b7280')
-       .font('Helvetica')
-       .text(`PF (Employer): ${formatCurrency(payroll.deductions.pfEmployer || 0)}`, { continued: true })
-       .text(`     ESI (Employer): ${formatCurrency(payroll.deductions.esiEmployer || 0)}`);
-
-    doc.moveDown(2);
-
-    // ==================== FOOTER ====================
-    const footerY = doc.page.height - 80;
-    
-    doc.fontSize(8)
-       .fillColor('#9ca3af')
-       .font('Helvetica')
-       .text(
-         'This is a computer-generated payslip and does not require a signature.',
-         50,
-         footerY,
-         { align: 'center', width: pageWidth }
-       );
-    
-    doc.text(
-      `Generated on: ${moment().format('DD-MMM-YYYY hh:mm A')}`,
-      50,
-      footerY + 15,
-      { align: 'center', width: pageWidth }
-    );
-
-    // Add page numbers
-    const pages = doc.bufferedPageRange();
-    for (let i = 0; i < pages.count; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(8)
-         .fillColor('#9ca3af')
-         .text(
-           `Page ${i + 1} of ${pages.count}`,
-           50,
-           doc.page.height - 50,
-           { align: 'center', width: pageWidth }
-         );
-    }
-
-    // Finalize PDF
-    doc.end();
+    sendResponse(res, 200, true, 'Eligibility validation completed', {
+      summary: {
+        total: employees.length,
+        eligible: eligible.length,
+        ineligible: ineligible.length
+      },
+      eligible,
+      ineligible
+    });
 
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    console.error('Error in validatePayrollEligibility:', error);
     next(error);
   }
 };
 
-// Helper function (already exists in your code)
-function formatCurrency(amount) {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    minimumFractionDigits: 0,
-  }).format(amount || 0);
-}
+/**
+ * @desc    Update payroll status
+ * @route   PATCH /api/v1/payroll/:id/status
+ * @access  Private (HR, Admin, Finance)
+ */
+exports.updatePayrollStatus = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, remarks } = req.body;
 
+    const payroll = await Payroll.findById(id);
+    if (!payroll) {
+      return sendResponse(res, 404, false, 'Payroll record not found');
+    }
 
+    payroll.status = status;
+    if (remarks) payroll.remarks = remarks;
 
+    if (status === 'Paid') {
+      payroll.paidDate = new Date();
+      payroll.paidBy = req.user._id;
+    }
 
+    await payroll.save();
 
-// ==================== DOWNLOAD PAYROLL REPORT ====================
+    sendResponse(res, 200, true, 'Payroll status updated successfully', payroll);
+
+  } catch (error) {
+    console.error('Error in updatePayrollStatus:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Bulk update payroll status
+ * @route   PATCH /api/v1/payroll/bulk/status
+ * @access  Private (HR, Admin, Finance)
+ */
+exports.bulkUpdatePayrollStatus = async (req, res, next) => {
+  try {
+    const { payrollIds, status, remarks } = req.body;
+
+    if (!payrollIds || payrollIds.length === 0) {
+      return sendResponse(res, 400, false, 'Payroll IDs are required');
+    }
+
+    const updateData = { status };
+    if (remarks) updateData.remarks = remarks;
+    if (status === 'Paid') {
+      updateData.paidDate = new Date();
+      updateData.paidBy = req.user._id;
+    }
+
+    const result = await Payroll.updateMany(
+      { _id: { $in: payrollIds } },
+      { $set: updateData }
+    );
+
+    sendResponse(res, 200, true, 'Payroll status updated successfully', {
+      updated: result.modifiedCount
+    });
+
+  } catch (error) {
+    console.error('Error in bulkUpdatePayrollStatus:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Download payslip
+ * @route   GET /api/v1/payroll/:id/download
+ * @access  Private
+ */
+exports.downloadPayslip = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const payroll = await Payroll.findById(id)
+      .populate({
+        path: 'employee',
+        populate: [
+          { path: 'department', select: 'name' },
+          { path: 'designation', select: 'title' }
+        ]
+      });
+
+    if (!payroll) {
+      return sendResponse(res, 404, false, 'Payroll record not found');
+    }
+
+    // TODO: Generate PDF using a library like puppeteer or pdfkit
+    // For now, return JSON
+    sendResponse(res, 200, true, 'Payslip downloaded', payroll);
+
+  } catch (error) {
+    console.error('Error in downloadPayslip:', error);
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get payroll analytics
+ * @route   GET /api/v1/payroll/analytics
+ * @access  Private (HR, Admin, Finance, Manager)
+ */
+exports.getAnalytics = async (req, res, next) => {
+  try {
+    const { month, year, startMonth, endMonth, startYear, endYear } = req.query;
+
+    // Default to current year if not specified
+    const currentYear = parseInt(year) || moment().year();
+    const currentMonth = parseInt(month) || moment().month() + 1;
+
+    // Build query for current period
+    const currentQuery = { year: currentYear };
+    if (month) {
+      currentQuery.month = currentMonth;
+    }
+
+    // Get payrolls for current period
+    const currentPayrolls = await Payroll.find(currentQuery)
+      .populate('employee', 'firstName lastName employeeId department')
+      .populate({
+        path: 'employee',
+        populate: { path: 'department', select: 'name' }
+      });
+
+    // Get payrolls for previous period (for comparison)
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const previousPayrolls = await Payroll.find({ 
+      month: prevMonth, 
+      year: prevYear 
+    });
+
+    // Calculate current period stats
+    const currentStats = {
+      totalEmployees: currentPayrolls.length,
+      totalGrossEarnings: currentPayrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
+      totalDeductions: currentPayrolls.reduce((sum, p) => sum + (p.summary?.totalDeductions || 0), 0),
+      totalNetSalary: currentPayrolls.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
+      totalCTC: currentPayrolls.reduce((sum, p) => sum + (p.summary?.costToCompany || 0), 0),
+      averageSalary: 0,
+      statusBreakdown: {
+        draft: currentPayrolls.filter(p => p.status === 'Draft').length,
+        pendingApproval: currentPayrolls.filter(p => p.status === 'Pending Approval').length,
+        approved: currentPayrolls.filter(p => p.status === 'Approved').length,
+        processing: currentPayrolls.filter(p => p.status === 'Processing').length,
+        paid: currentPayrolls.filter(p => p.status === 'Paid').length,
+        onHold: currentPayrolls.filter(p => p.status === 'On Hold').length,
+        rejected: currentPayrolls.filter(p => p.status === 'Rejected').length
+      }
+    };
+
+    currentStats.averageSalary = currentStats.totalEmployees > 0 
+      ? Math.round(currentStats.totalNetSalary / currentStats.totalEmployees)
+      : 0;
+
+    // Calculate previous period stats
+    const previousStats = {
+      totalGrossEarnings: previousPayrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
+      totalNetSalary: previousPayrolls.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
+      totalEmployees: previousPayrolls.length
+    };
+
+    // Calculate growth percentages
+    const growth = {
+      grossEarnings: previousStats.totalGrossEarnings > 0
+        ? ((currentStats.totalGrossEarnings - previousStats.totalGrossEarnings) / previousStats.totalGrossEarnings * 100).toFixed(2)
+        : 0,
+      netSalary: previousStats.totalNetSalary > 0
+        ? ((currentStats.totalNetSalary - previousStats.totalNetSalary) / previousStats.totalNetSalary * 100).toFixed(2)
+        : 0,
+      employees: previousStats.totalEmployees > 0
+        ? ((currentStats.totalEmployees - previousStats.totalEmployees) / previousStats.totalEmployees * 100).toFixed(2)
+        : 0
+    };
+
+    // Department-wise breakdown
+    const departmentBreakdown = {};
+    currentPayrolls.forEach(payroll => {
+      const deptName = payroll.employee?.department?.name || 'Unknown';
+      if (!departmentBreakdown[deptName]) {
+        departmentBreakdown[deptName] = {
+          count: 0,
+          totalGross: 0,
+          totalNet: 0,
+          totalDeductions: 0
+        };
+      }
+      departmentBreakdown[deptName].count++;
+      departmentBreakdown[deptName].totalGross += payroll.summary?.grossEarnings || 0;
+      departmentBreakdown[deptName].totalNet += payroll.summary?.netSalary || 0;
+      departmentBreakdown[deptName].totalDeductions += payroll.summary?.totalDeductions || 0;
+    });
+
+    // Monthly trend (last 6 months)
+    const monthlyTrend = [];
+    for (let i = 5; i >= 0; i--) {
+      const trendMonth = moment().subtract(i, 'months');
+      const trendPayrolls = await Payroll.find({
+        month: trendMonth.month() + 1,
+        year: trendMonth.year()
+      });
+
+      monthlyTrend.push({
+        month: trendMonth.format('MMM YYYY'),
+        totalGross: trendPayrolls.reduce((sum, p) => sum + (p.summary?.grossEarnings || 0), 0),
+        totalNet: trendPayrolls.reduce((sum, p) => sum + (p.summary?.netSalary || 0), 0),
+        employeeCount: trendPayrolls.length
+      });
+    }
+
+    // Attendance impact analysis
+    const attendanceImpact = {
+      totalLOPDeductions: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.lossOfPay || 0), 0),
+      totalOvertimePaid: currentPayrolls.reduce((sum, p) => sum + (p.earnings?.overtime || 0), 0),
+      employeesWithLOP: currentPayrolls.filter(p => p.deductions?.lossOfPay > 0).length,
+      employeesWithOvertime: currentPayrolls.filter(p => p.earnings?.overtime > 0).length,
+      averagePaidDays: currentPayrolls.length > 0
+        ? (currentPayrolls.reduce((sum, p) => sum + (p.attendanceData?.paidDays || 0), 0) / currentPayrolls.length).toFixed(2)
+        : 0
+    };
+
+    // Deduction breakdown
+    const deductionBreakdown = {
+      pf: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.pfEmployee || 0), 0),
+      esi: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.esiEmployee || 0), 0),
+      professionalTax: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.professionalTax || 0), 0),
+      tds: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.tds || 0), 0),
+      lossOfPay: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.lossOfPay || 0), 0),
+      loanRecovery: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.loanRecovery?.amount || 0), 0),
+      advanceRecovery: currentPayrolls.reduce((sum, p) => sum + (p.deductions?.advanceRecovery?.amount || 0), 0)
+    };
+
+    sendResponse(res, 200, true, 'Analytics fetched successfully', {
+      period: {
+        month: currentMonth,
+        year: currentYear,
+        monthName: moment().month(currentMonth - 1).format('MMMM')
+      },
+      current: currentStats,
+      previous: previousStats,
+      growth,
+      departmentBreakdown: Object.entries(departmentBreakdown).map(([name, data]) => ({
+        department: name,
+        ...data,
+        averageSalary: data.count > 0 ? Math.round(data.totalNet / data.count) : 0
+      })),
+      monthlyTrend,
+      attendanceImpact,
+      deductionBreakdown
+    });
+
+  } catch (error) {
+    console.error('Error in getAnalytics:', error);
+    next(error);
+  }
+};
+/**
+ * @desc    Download payroll report (CSV/Excel)
+ * @route   GET /api/v1/payroll/report/download
+ * @access  Private (HR, Admin, Finance)
+ */
 exports.downloadPayrollReport = async (req, res, next) => {
   try {
-    const { month, year, department } = req.query;
+    const { month, year, department, format = 'csv' } = req.query;
+
+    if (!month || !year) {
+      return sendResponse(res, 400, false, 'Month and year are required');
+    }
 
     const query = {
-      'period.month': parseInt(month),
-      'period.year': parseInt(year),
+      month: parseInt(month),
+      year: parseInt(year)
     };
 
     if (department) {
@@ -1697,51 +1126,62 @@ exports.downloadPayrollReport = async (req, res, next) => {
     }
 
     const payrolls = await Payroll.find(query)
-      .populate('employee', 'employeeId firstName lastName designation department')
-      .populate('employee.designation', 'title')
-      .populate('employee.department', 'name');
+      .populate({
+        path: 'employee',
+        select: 'firstName lastName employeeId department designation',
+        populate: [
+          { path: 'department', select: 'name' },
+          { path: 'designation', select: 'title' }
+        ]
+      })
+      .sort({ 'employee.employeeId': 1 });
 
-    const reportData = payrolls.map(p => ({
-      employeeId: p.employee.employeeId,
-      employeeName: `${p.employee.firstName} ${p.employee.lastName}`,
-      department: p.employee.department?.name,
-      designation: p.employee.designation?.title,
-      basic: p.earnings.basic,
-      hra: p.earnings.hra,
-      grossEarnings: p.summary.grossEarnings,
-      pfEmployee: p.deductions.pfEmployee,
-      esiEmployee: p.deductions.esiEmployee,
-      professionalTax: p.deductions.professionalTax,
-      tds: p.deductions.tds,
-      loanRecovery: p.deductions.loanRecovery,
-      advanceRecovery: p.deductions.advanceRecovery,
-      lossOfPay: p.deductions.lossOfPay,
-      totalDeductions: p.summary.totalDeductions,
-      netSalary: p.summary.netSalary,
-      status: p.status,
-    }));
+    if (payrolls.length === 0) {
+      return sendResponse(res, 404, false, 'No payroll records found for the specified period');
+    }
 
-    sendResponse(res, 200, true, 'Payroll report generated', { reportData });
+    // Generate CSV
+    let csvData = 'Employee ID,Name,Department,Designation,Basic,HRA,Special Allowance,Conveyance,Medical,Overtime,Gross Earnings,PF,ESI,PT,TDS,LOP,Loan Recovery,Advance Recovery,Total Deductions,Net Salary,Status,Paid Days,LOP Days\n';
+
+    payrolls.forEach(payroll => {
+      const emp = payroll.employee;
+      csvData += `${emp.employeeId || 'N/A'},`;
+      csvData += `"${emp.firstName} ${emp.lastName}",`;
+      csvData += `"${emp.department?.name || 'N/A'}",`;
+      csvData += `"${emp.designation?.title || 'N/A'}",`;
+      csvData += `${payroll.earnings?.basic || 0},`;
+      csvData += `${payroll.earnings?.hra || 0},`;
+      csvData += `${payroll.earnings?.specialAllowance || 0},`;
+      csvData += `${payroll.earnings?.conveyance || 0},`;
+      csvData += `${payroll.earnings?.medicalAllowance || 0},`;
+      csvData += `${payroll.earnings?.overtime || 0},`;
+      csvData += `${payroll.summary?.grossEarnings || 0},`;
+      csvData += `${payroll.deductions?.pfEmployee || 0},`;
+      csvData += `${payroll.deductions?.esiEmployee || 0},`;
+      csvData += `${payroll.deductions?.professionalTax || 0},`;
+      csvData += `${payroll.deductions?.tds || 0},`;
+      csvData += `${payroll.deductions?.lossOfPay || 0},`;
+      csvData += `${payroll.deductions?.loanRecovery?.amount || 0},`;
+      csvData += `${payroll.deductions?.advanceRecovery?.amount || 0},`;
+      csvData += `${payroll.summary?.totalDeductions || 0},`;
+      csvData += `${payroll.summary?.netSalary || 0},`;
+      csvData += `"${payroll.status}",`;
+      csvData += `${payroll.attendanceData?.paidDays || 0},`;
+      csvData += `${payroll.attendanceData?.lopDays || 0}\n`;
+    });
+
+    // Set headers for download
+    const monthName = moment().month(parseInt(month) - 1).format('MMMM');
+    const filename = `Payroll_Report_${monthName}_${year}.csv`;
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
+
   } catch (error) {
     console.error('Error in downloadPayrollReport:', error);
     next(error);
   }
 };
 
-// controllers/payrollController.js - UPDATE module.exports at the bottom
-module.exports = {
-  generatePayroll: exports.generatePayroll,
-  approvePayroll: exports.approvePayroll,
-  getMyPayslips: exports.getMyPayslips,
-  getSalaryStructure: exports.getSalaryStructure,
-  downloadPayslip: exports.downloadPayslip,
-  getAllPayrolls: exports.getAllPayrolls,
-  updatePayrollStatus: exports.updatePayrollStatus,
-  bulkUpdatePayrollStatus: exports.bulkUpdatePayrollStatus,
-  getAnalytics: exports.getAnalytics,  // ✅ ADD THIS
-  getEligibleEmployees: exports.getEligibleEmployees,
-  getPayrollGenerationSummary: exports.getPayrollGenerationSummary,
-  downloadPayrollReport: exports.downloadPayrollReport,
-  validatePayrollEligibility: exports.validatePayrollEligibility
-};
-
+// THE FILE ENDS HERE - NO module.exports NEEDED!

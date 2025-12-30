@@ -1,4 +1,4 @@
-// services/payrollAPI.js
+// services/payrollAPI.js - COMPLETE ENHANCED VERSION
 import { apiService } from './apiService';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1';
@@ -25,13 +25,12 @@ const request = async (endpoint, options = {}) => {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
       } catch (e) {
-        // If response is not JSON, use status text
         errorMessage = response.statusText || errorMessage;
       }
       throw new Error(errorMessage);
     }
 
-    // For download endpoints, handle differently
+    // For download endpoints, return response directly
     if (endpoint.includes('download')) {
       return response;
     }
@@ -47,6 +46,8 @@ const request = async (endpoint, options = {}) => {
 
 // ==================== PAYROLL API SERVICE ====================
 const payrollAPI = {
+  // ==================== EMPLOYEE PAYROLL ENDPOINTS ====================
+  
   // Get my payslips
   getMyPayslips: async (filters = {}) => {
     const params = new URLSearchParams();
@@ -62,8 +63,9 @@ const payrollAPI = {
   },
 
   // Get my salary structure
-  getSalaryStructure: async () => {
-    return await request('/payroll/salary-structure');
+  getSalaryStructure: async (employeeId = null) => {
+    const params = employeeId ? `?employeeId=${employeeId}` : '';
+    return await request(`/payroll/salary-structure${params}`);
   },
 
   // Download payslip
@@ -74,6 +76,8 @@ const payrollAPI = {
       '_blank'
     );
   },
+
+  // ==================== HR/ADMIN PAYROLL GENERATION ====================
 
   // Get eligible employees for payroll generation
   getEligibleEmployees: async (filters = {}) => {
@@ -105,6 +109,21 @@ const payrollAPI = {
     return await request(url);
   },
 
+  // Validate payroll eligibility for specific employee
+  validatePayrollEligibility: async (filters = {}) => {
+    const params = new URLSearchParams();
+    Object.keys(filters).forEach(key => {
+      if (filters[key] !== undefined && filters[key] !== '') {
+        params.append(key, filters[key]);
+      }
+    });
+    const queryString = params.toString();
+    const url = queryString
+      ? `/payroll/validate-eligibility?${queryString}`
+      : '/payroll/validate-eligibility';
+    return await request(url);
+  },
+
   // Generate payroll
   generatePayroll: async (payrollData) => {
     return await request('/payroll/generate', {
@@ -112,6 +131,8 @@ const payrollAPI = {
       body: JSON.stringify(payrollData),
     });
   },
+
+  // ==================== PAYROLL MANAGEMENT ====================
 
   // Get all payrolls with filters
   getAllPayrolls: async (filters = {}) => {
@@ -127,15 +148,7 @@ const payrollAPI = {
     return await request(url);
   },
 
-  // Approve payroll (process loan/advance deductions)
-  approvePayroll: async (payrollData) => {
-    return await request('/payroll/approve', {
-      method: 'POST',
-      body: JSON.stringify(payrollData),
-    });
-  },
-
-  // Update payroll status
+  // Update payroll status (single)
   updatePayrollStatus: async (payrollId, statusData) => {
     return await request(`/payroll/${payrollId}/status`, {
       method: 'PATCH',
@@ -145,13 +158,15 @@ const payrollAPI = {
 
   // Bulk update payroll status
   bulkUpdatePayrollStatus: async (updates) => {
-    return await request('/payroll/bulk-status', {
+    return await request('/payroll/bulk/status', {
       method: 'PATCH',
       body: JSON.stringify(updates),
     });
   },
 
-  // Get payroll analytics - FIXED: Using apiService.request with leading slash
+  // ==================== ANALYTICS & REPORTS ====================
+
+  // Get payroll analytics
   getAnalytics: async (filters = {}) => {
     const params = new URLSearchParams();
     Object.keys(filters).forEach(key => {
@@ -162,7 +177,7 @@ const payrollAPI = {
     const queryString = params.toString();
     const url = queryString ? `/payroll/analytics?${queryString}` : '/payroll/analytics';
     console.log('📊 Fetching payroll analytics:', url);
-    return await apiService.request(url);
+    return await request(url);
   },
 
   // Download payroll report
@@ -179,34 +194,88 @@ const payrollAPI = {
     );
   },
 
-  // Validate payroll eligibility
-  validatePayrollEligibility: async (filters = {}) => {
+  // ==================== SALARY STRUCTURE MANAGEMENT ====================
+
+  // Check employees without salary structure
+  checkMissingSalaryStructures: async () => {
+    return await request('/salary-structure/missing');
+  },
+
+  // Create missing salary structures
+  createMissingSalaryStructures: async (data = {}) => {
+    return await request('/salary-structure/create-missing', {
+      method: 'POST',
+      body: JSON.stringify({
+        effectiveFrom: data.effectiveFrom || new Date(),
+        useDesignationDefaults: data.useDesignationDefaults !== false
+      })
+    });
+  },
+
+  // Get all salary structures
+  getAllSalaryStructures: async (filters = {}) => {
     const params = new URLSearchParams();
-    Object.keys(filters).forEach(key => {
-      if (filters[key] !== undefined && filters[key] !== '') {
+    Object.keys(filters).forEach((key) => {
+      if (filters[key] !== '' && filters[key] !== null && filters[key] !== undefined) {
         params.append(key, filters[key]);
       }
     });
     const queryString = params.toString();
-    const url = queryString 
-      ? `/payroll/validate-eligibility?${queryString}` 
-      : '/payroll/validate-eligibility';
-    return await apiService.request(url);
+    const url = queryString ? `/salary-structure?${queryString}` : '/salary-structure';
+    return await request(url);
   },
 
-  // Salary Structure Management
-  checkMissingSalaryStructures: async () => {
-    return await apiService.request('/salary-structures/missing');
+  // Get salary structure by ID
+  getSalaryStructureById: async (id) => {
+    return await request(`/salary-structure/${id}`);
   },
 
-  createMissingSalaryStructures: async (data) => {
-    return await apiService.request('/salary-structures/create-missing', {
+  // Create salary structure from designation
+  createFromDesignation: async (data) => {
+    return await request('/salary-structure/from-designation', {
       method: 'POST',
-      body: JSON.stringify(data || { effectiveFrom: new Date() })
+      body: JSON.stringify(data)
     });
   },
 
-  // ==================== LOAN MANAGEMENT APIs ====================
+  // Get designation configuration
+  getDesignationConfig: async (designationId) => {
+    return await request(`/salary-structure/designation-config/${designationId}`);
+  },
+
+  // Validate CTC for designation
+  validateCTC: async (designationId, ctc) => {
+    return await request('/salary-structure/validate-ctc', {
+      method: 'POST',
+      body: JSON.stringify({ designationId, ctc })
+    });
+  },
+
+  // Bulk create salary structures
+  bulkCreateByDesignation: async (employees, effectiveFrom) => {
+    return await request('/salary-structure/bulk-create', {
+      method: 'POST',
+      body: JSON.stringify({ employees, effectiveFrom })
+    });
+  },
+
+  // Update salary structure
+  updateSalaryStructure: async (id, updates) => {
+    return await request(`/salary-structure/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates)
+    });
+  },
+
+  // Deactivate salary structure
+  deactivateSalaryStructure: async (id, effectiveTo) => {
+    return await request(`/salary-structure/${id}/deactivate`, {
+      method: 'PATCH',
+      body: JSON.stringify({ effectiveTo })
+    });
+  },
+
+  // ==================== LOAN MANAGEMENT ====================
 
   // Request a loan
   requestLoan: async (loanData) => {
@@ -271,7 +340,7 @@ const payrollAPI = {
     return await request(url);
   },
 
-  // ==================== ADVANCE MANAGEMENT APIs ====================
+  // ==================== ADVANCE MANAGEMENT ====================
 
   // Request an advance
   requestAdvance: async (advanceData) => {
@@ -336,15 +405,14 @@ const payrollAPI = {
     return await request(url);
   },
 
-  // ==================== ADDITIONAL CONVENIENCE METHODS ====================
+  // ==================== CONVENIENCE METHODS ====================
 
   // Get current month payroll summary
   getCurrentMonthSummary: async () => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     const currentYear = currentDate.getFullYear();
-    
-    return await payrollAPI.getAnalytics({
+    return await payrollAPI.getPayrollGenerationSummary({
       month: currentMonth,
       year: currentYear,
     });
@@ -353,22 +421,25 @@ const payrollAPI = {
   // Get payroll trend for last 6 months
   getPayrollTrend: async () => {
     const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(currentDate.getMonth() - 6);
     
     return await payrollAPI.getAnalytics({
-      year: currentYear,
-      trend: 'monthly',
+      startMonth: sixMonthsAgo.getMonth() + 1,
+      startYear: sixMonthsAgo.getFullYear(),
+      endMonth: currentDate.getMonth() + 1,
+      endYear: currentDate.getFullYear()
     });
   },
 
   // Get department-wise payroll breakdown
-  getDepartmentPayroll: async (filters = {}) => {
-    const params = {
-      ...filters,
-      breakdown: 'department'
-    };
+  getDepartmentPayroll: async (department, month, year) => {
+    const filters = {};
+    if (department) filters.department = department;
+    if (month) filters.month = month;
+    if (year) filters.year = year;
     
-    return await payrollAPI.getAnalytics(params);
+    return await payrollAPI.getAllPayrolls(filters);
   },
 };
 
